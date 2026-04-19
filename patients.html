@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="환자 관리 — 상담·치료 상태를 통합 관리하고 상담 로그를 추적합니다.">
+  <title>환자 관리 | Dental Ops AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0066FF">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .patients-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      padding: 0 14px;
+      flex: 1;
+      max-width: 360px;
+    }
+    .search-box input {
+      border: none;
+      outline: none;
+      padding: 10px 0;
+      width: 100%;
+      font-size: 0.875rem;
+      background: transparent;
+    }
+    .search-box-icon { color: var(--text-tertiary); font-size: 1rem; }
+
+    .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .chip {
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: 1.5px solid var(--gray-200);
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--duration) var(--ease);
+    }
+    .chip:hover, .chip.active { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); }
+
+    .patient-row { cursor: pointer; }
+    .patient-row:hover td { background: var(--primary-bg) !important; }
+
+    .patient-name-cell { display: flex; align-items: center; gap: 12px; }
+    .patient-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.875rem; font-weight: 700;
+      color: #FFF; flex-shrink: 0;
+    }
+
+    .prob-bar {
+      width: 80px; height: 6px;
+      background: var(--gray-200);
+      border-radius: 3px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    .prob-bar-fill { height: 100%; border-radius: 3px; }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .detail-panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 560px;
+      background: var(--surface);
+      box-shadow: var(--shadow-xl);
+      z-index: 200;
+      transform: translateX(100%);
+      transition: transform 0.3s var(--ease);
+      overflow-y: auto;
+    }
+    .detail-panel.open { transform: translateX(0); }
+    .detail-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 199;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .detail-overlay.open { opacity: 1; pointer-events: all; }
+    .detail-header {
+      padding: 24px; border-bottom: 1px solid var(--gray-200);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .detail-body { padding: 24px; }
+    .detail-section { margin-bottom: 28px; }
+    .detail-section h4 { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-100); }
+    .detail-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .detail-info-item label {
+      font-size: 0.75rem; font-weight: 600; color: var(--text-tertiary);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .detail-info-item div { font-size: 0.9375rem; font-weight: 600; margin-top: 4px; }
+
+    .log-item {
+      padding: 12px 14px;
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 0.8125rem;
+    }
+    .log-meta { font-size: 0.6875rem; color: var(--text-tertiary); margin-bottom: 4px; }
+
+    @media (max-width: 768px) {
+      .patients-toolbar { flex-direction: column; align-items: stretch; }
+      .search-box { max-width: none; }
+      .detail-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout" id="app">
+    <div class="main">
+      <header class="header">
+        <div class="flex items-center gap-12">
+          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+          <span class="header-title">환자 관리</span>
+        </div>
+        <div class="header-actions">
+          <span id="sessionBadge"></span>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="patients-toolbar">
+          <div class="search-box">
+            <span class="search-box-icon">&#x1F50D;</span>
+            <input type="text" id="searchInput" placeholder="이름, 전화번호 검색..." oninput="applyFilters()">
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-sm btn-secondary" onclick="reload()">&#x1F504; 새로고침</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('addPatientModal')">+ 신규 환자 등록</button>
+          </div>
+        </div>
+
+        <div class="filter-chips">
+          <button class="chip active" onclick="filterByStatus(this, 'all')">전체</button>
+          <button class="chip" onclick="filterByStatus(this, '상담대기')">상담대기</button>
+          <button class="chip" onclick="filterByStatus(this, '상담중')">상담중</button>
+          <button class="chip" onclick="filterByStatus(this, '계약완료')">계약완료</button>
+          <button class="chip" onclick="filterByStatus(this, '치료중')">치료중</button>
+          <button class="chip" onclick="filterByStatus(this, '치료완료')">치료완료</button>
+          <button class="chip" onclick="filterByStatus(this, '이탈')">이탈</button>
+        </div>
+
+        <div class="kpi-grid mt-24">
+          <div class="kpi-card">
+            <div class="kpi-label">전체 환자</div>
+            <div class="kpi-value" id="kpiTotal">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">상담대기</div>
+            <div class="kpi-value" id="kpiWaiting" style="color:var(--warning);">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">계약완료</div>
+            <div class="kpi-value" id="kpiContract" style="color:var(--success);">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">평균 견적</div>
+            <div class="kpi-value" id="kpiEstimate" style="font-size:1.5rem;">0원</div>
+          </div>
+        </div>
+
+        <div class="card mt-24">
+          <div class="card-header flex items-center justify-between">
+            <h3>환자 리스트</h3>
+            <span id="dataSourceBadge" style="font-size:0.75rem; color:var(--text-tertiary);"></span>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>환자</th>
+                    <th>나이/성별</th>
+                    <th>전화</th>
+                    <th>관심 치료</th>
+                    <th>상태</th>
+                    <th>견적</th>
+                    <th>전환확률</th>
+                    <th>최근방문</th>
+                    <th>액션</th>
+                  </tr>
+                </thead>
+                <tbody id="patientTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <h3 id="detailName">환자명</h3>
+      <button class="btn btn-sm btn-secondary" onclick="closeDetail()">&#x2715;</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+
+  <div class="modal-overlay" id="addPatientModal">
+    <div class="modal">
+      <div class="modal-header"><h3>신규 환자 등록</h3></div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">이름 *</label>
+          <input type="text" class="form-input" id="newName" placeholder="홍길동">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">나이</label>
+            <input type="number" class="form-input" id="newAge" placeholder="30">
+          </div>
+          <div class="form-group">
+            <label class="form-label">성별</label>
+            <select class="form-input" id="newGender">
+              <option value="남">남</option>
+              <option value="여">여</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">전화 *</label>
+          <input type="tel" class="form-input" id="newPhone" placeholder="010-0000-0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">관심 치료</label>
+          <select class="form-input" id="newTreatment">
+            <option>임플란트</option>
+            <option>라미네이트</option>
+            <option>교정</option>
+            <option>보철</option>
+            <option>치아미백</option>
+            <option>기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">메모</label>
+          <textarea class="form-input" id="newMemo" rows="3" placeholder="초진 경위, 특이사항 등"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('addPatientModal')">취소</button>
+        <button class="btn btn-primary" onclick="addPatient()">등록</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/dental-engines.js"></script>
+  <script>
+    document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('patients'));
+
+    let patients = [];
+    let activeFilter = 'all';
+    let usingSupabase = false;
+
+    const avatarColors = ['#0066FF', '#00D4AA', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
+    const statusConfig = {
+      '상담대기': { bg: '#F1F5F9', color: '#475569' },
+      '상담중':   { bg: '#EBF3FF', color: '#0066FF' },
+      '계약완료': { bg: '#D1FAE5', color: '#065F46' },
+      '치료중':   { bg: '#FEF3C7', color: '#92400E' },
+      '치료완료': { bg: '#CCFBF1', color: '#0F766E' },
+      '이탈':     { bg: '#FEE2E2', color: '#991B1B' },
+    };
+
+    async function reload() {
+      patients = [];
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        try {
+          const data = await SupabaseDB.getPatients({ limit: 200 });
+          patients = (data || []).map(p => ({
+            id: p.id,
+            name: p.name,
+            age: p.age || '-',
+            phone: p.phone || '-',
+            gender: p.gender || '-',
+            status: p.status || '상담대기',
+            lastVisit: (p.updated_at || p.created_at || '').split('T')[0] || '-',
+            treatment: p.treatment || '미정',
+            estimate: p.estimate || 0,
+            conversionProb: p.conversion_prob || 50,
+            memo: p.memo || '',
+          }));
+          usingSupabase = true;
+          document.getElementById('dataSourceBadge').innerHTML = '<span style="color:var(--success);">&#x1F7E2; Supabase 연결</span>';
+          showToast(`Supabase에서 ${patients.length}명 로드`, 'success');
+        } catch (e) {
+          console.warn('Supabase 로드 실패:', e);
+          loadSample();
+        }
+      } else {
+        loadSample();
+      }
+      applyFilters();
+    }
+
+    function loadSample() {
+      const local = Store.get('patients_local', null);
+      patients = local && local.length ? local : JSON.parse(JSON.stringify(SampleData.patients));
+      usingSupabase = false;
+      document.getElementById('dataSourceBadge').innerHTML = '<span style="color:var(--warning);">&#x1F7E1; 샘플 데이터 (로컬)</span>';
+    }
+
+    function updateKPI(list) {
+      document.getElementById('kpiTotal').textContent = list.length;
+      document.getElementById('kpiWaiting').textContent = list.filter(p => p.status === '상담대기').length;
+      document.getElementById('kpiContract').textContent = list.filter(p => p.status === '계약완료').length;
+      const avgEst = list.length ? Math.round(list.reduce((s, p) => s + (p.estimate || 0), 0) / list.length) : 0;
+      document.getElementById('kpiEstimate').textContent = formatCurrency(avgEst);
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('patientTable');
+      if (!list || !list.length) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:48px 20px; color:var(--text-tertiary);">
+          <div style="font-size:2rem; margin-bottom:12px;">&#x1F465;</div>
+          등록된 환자가 없습니다.<br>
+          <button class="btn btn-primary btn-sm" style="margin-top:16px;" onclick="openModal('addPatientModal')">+ 신규 환자 등록</button>
+        </td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map((p, i) => {
+        const sc = statusConfig[p.status] || statusConfig['상담대기'];
+        const ac = avatarColors[i % avatarColors.length];
+        const probColor = p.conversionProb >= 70 ? 'var(--success)' : p.conversionProb >= 50 ? 'var(--warning)' : 'var(--danger)';
+        return `<tr class="patient-row" onclick="openDetail('${p.id}')">
+          <td>
+            <div class="patient-name-cell">
+              <div class="patient-avatar" style="background:${ac};">${(p.name || '?').charAt(0)}</div>
+              <div><strong>${p.name}</strong></div>
+            </div>
+          </td>
+          <td>${p.age || '-'}세 / ${p.gender || '-'}</td>
+          <td style="font-family:monospace; font-size:0.8125rem;">${p.phone || '-'}</td>
+          <td>${p.treatment || '-'}</td>
+          <td><span class="status-badge" style="background:${sc.bg}; color:${sc.color};">${p.status}</span></td>
+          <td style="font-weight:600;">${formatCurrency(p.estimate || 0)}</td>
+          <td>
+            <div class="prob-bar"><div class="prob-bar-fill" style="width:${p.conversionProb}%; background:${probColor};"></div></div>
+            <strong>${p.conversionProb}%</strong>
+          </td>
+          <td style="font-size:0.8125rem; color:var(--text-tertiary);">${p.lastVisit}</td>
+          <td onclick="event.stopPropagation();">
+            <a href="consult.html?patient=${p.id}" class="btn btn-sm btn-outline">&#x1F4AC; 상담</a>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function applyFilters() {
+      const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+      let filtered = patients;
+      if (activeFilter !== 'all') filtered = filtered.filter(p => p.status === activeFilter);
+      if (q) filtered = filtered.filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.phone || '').includes(q));
+      renderTable(filtered);
+      updateKPI(filtered);
+    }
+
+    function filterByStatus(el, status) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      activeFilter = status;
+      applyFilters();
+    }
+
+    async function openDetail(id) {
+      const p = patients.find(x => String(x.id) === String(id));
+      if (!p) return;
+
+      document.getElementById('detailName').textContent = p.name;
+      document.getElementById('detailPanel').classList.add('open');
+      document.getElementById('detailOverlay').classList.add('open');
+
+      const sc = statusConfig[p.status] || statusConfig['상담대기'];
+
+      document.getElementById('detailBody').innerHTML = `
+        <div class="detail-section">
+          <h4>기본 정보</h4>
+          <div class="detail-info-grid">
+            <div class="detail-info-item"><label>환자 ID</label><div style="font-size:0.8125rem; font-family:monospace;">${String(p.id).substring(0, 10)}</div></div>
+            <div class="detail-info-item"><label>나이 / 성별</label><div>${p.age || '-'}세 / ${p.gender || '-'}</div></div>
+            <div class="detail-info-item"><label>전화</label><div>${p.phone || '-'}</div></div>
+            <div class="detail-info-item"><label>상태</label><div><span class="status-badge" style="background:${sc.bg}; color:${sc.color};">${p.status}</span></div></div>
+            <div class="detail-info-item"><label>관심 치료</label><div>${p.treatment || '-'}</div></div>
+            <div class="detail-info-item"><label>견적</label><div>${formatCurrency(p.estimate || 0)}</div></div>
+            <div class="detail-info-item"><label>전환 확률</label><div style="color:var(--primary);">${p.conversionProb}%</div></div>
+            <div class="detail-info-item"><label>최근 방문</label><div>${p.lastVisit || '-'}</div></div>
+          </div>
+        </div>
+        ${p.memo ? `<div class="detail-section"><h4>메모</h4><p style="font-size:0.875rem;">${p.memo}</p></div>` : ''}
+        <div class="detail-section">
+          <h4>최근 상담 로그</h4>
+          <div id="detailLogs">
+            <div style="padding:20px; text-align:center; color:var(--text-tertiary); font-size:0.8125rem;">
+              <div class="spinner" style="margin:0 auto;"></div>
+              <p style="margin-top:10px;">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+          <a href="consult.html?patient=${p.id}" class="btn btn-primary" style="flex:1; text-align:center;">&#x1F4AC; 상담 시작</a>
+          <a href="conversion.html?patient=${p.id}" class="btn btn-accent" style="flex:1; text-align:center;">&#x1F3AF; 전환 분석</a>
+        </div>
+      `;
+
+      const logContainer = document.getElementById('detailLogs');
+      if (usingSupabase && typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        try {
+          const logs = await SupabaseDB.getConsultLogs({ patientId: p.id, limit: 5 });
+          if (!logs || !logs.length) {
+            logContainer.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-tertiary); font-size:0.8125rem;">아직 상담 기록이 없습니다.</div>`;
+          } else {
+            logContainer.innerHTML = logs.map(l => `
+              <div class="log-item">
+                <div class="log-meta">${escapeHTML((l.created_at || '').substring(0, 16).replace('T', ' '))} &middot; ${escapeHTML(l.engine || 'consult')}</div>
+                <div style="font-weight:600; margin-bottom:4px;">Q: ${escapeHTML((l.input || '').substring(0, 80))}</div>
+                <div style="color:var(--text-tertiary);">A: ${escapeHTML((l.output || '').substring(0, 120))}...</div>
+              </div>
+            `).join('');
+          }
+        } catch (e) {
+          logContainer.textContent = '';
+          const errEl = document.createElement('div');
+          errEl.style.cssText = 'padding:16px; color:var(--danger); font-size:0.8125rem;';
+          errEl.textContent = '로그 로드 실패: ' + e.message;
+          logContainer.appendChild(errEl);
+        }
+      } else {
+        logContainer.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-tertiary); font-size:0.8125rem;">Supabase 연결 시 실제 상담 로그가 표시됩니다.</div>`;
+      }
+    }
+
+    function closeDetail() {
+      document.getElementById('detailPanel').classList.remove('open');
+      document.getElementById('detailOverlay').classList.remove('open');
+    }
+
+    async function addPatient() {
+      const name = document.getElementById('newName').value.trim();
+      const phone = document.getElementById('newPhone').value.trim();
+      if (!name) { showToast('이름을 입력하세요', 'warning'); return; }
+      if (!phone) { showToast('전화번호를 입력하세요', 'warning'); return; }
+
+      const data = {
+        name,
+        phone,
+        age: parseInt(document.getElementById('newAge').value) || null,
+        gender: document.getElementById('newGender').value,
+        treatment: document.getElementById('newTreatment').value,
+        memo: document.getElementById('newMemo').value.trim(),
+      };
+
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        try {
+          const created = await SupabaseDB.createPatient(data);
+          patients.unshift({
+            id: created.id,
+            name: created.name,
+            age: created.age || '-',
+            phone: created.phone,
+            gender: created.gender || '-',
+            status: created.status || '상담대기',
+            lastVisit: new Date().toISOString().split('T')[0],
+            treatment: created.treatment || '미정',
+            estimate: 0,
+            conversionProb: 50,
+            memo: created.memo || '',
+          });
+          showToast(`${name}님이 Supabase에 등록되었습니다`, 'success');
+        } catch (e) {
+          showToast('Supabase 저장 실패: ' + e.message, 'error');
+          return;
+        }
+      } else {
+        patients.unshift({
+          id: 'P' + Date.now(),
+          ...data,
+          age: data.age || 30,
+          status: '상담대기',
+          lastVisit: new Date().toISOString().split('T')[0],
+          estimate: 0,
+          conversionProb: 50,
+        });
+        Store.set('patients_local', patients);
+        showToast(`${name}님이 등록되었습니다 (로컬)`, 'success');
+      }
+
+      // 입력 필드 초기화
+      ['newName', 'newPhone', 'newAge', 'newMemo'].forEach(id => document.getElementById(id).value = '');
+      closeModal('addPatientModal');
+      applyFilters();
+    }
+
+    // 초기 로드
+    setTimeout(reload, 300);
+  </script>
+</body>
+</html>

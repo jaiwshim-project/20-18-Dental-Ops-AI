@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="상담 AI 엔진 — 환자 질문에 AI 상담실장이 실시간 답변, Triage로 치료·비용·기간 추천">
+  <title>상담 AI | Dental Ops AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0066FF">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .consult-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 20px;
+      min-height: calc(100vh - var(--header-h) - 64px);
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--gray-100);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-body { padding: 18px; flex: 1; overflow-y: auto; }
+
+    .input-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .input-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,102,255,0.1); }
+
+    .reply-area {
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      min-height: 240px;
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .reply-area.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 0.875rem;
+    }
+    .reply-area strong { color: var(--primary); font-weight: 700; }
+
+    .demo-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      background: #FEF3C7;
+      color: #92400E;
+      border-radius: var(--radius-full);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+
+    .triage-kv {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--gray-200);
+      font-size: 0.875rem;
+    }
+    .triage-kv:last-child { border-bottom: none; }
+    .triage-kv .k { color: var(--text-tertiary); font-weight: 600; }
+    .triage-kv .v { color: var(--text-primary); font-weight: 600; text-align: right; }
+
+    .urgency-badge {
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .urgency-긴급 { background: #FEE2E2; color: #991B1B; }
+    .urgency-보통 { background: #FEF3C7; color: #92400E; }
+    .urgency-여유 { background: #D1FAE5; color: #065F46; }
+
+    .history-item {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--gray-50);
+      margin-bottom: 8px;
+      border-left: 3px solid var(--primary);
+    }
+    .history-q { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .history-meta { font-size: 0.6875rem; color: var(--text-tertiary); }
+    .history-a { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+
+    .spinner-inline {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid var(--gray-300);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 1280px) {
+      .consult-layout { grid-template-columns: 280px 1fr 300px; }
+    }
+    @media (max-width: 1024px) {
+      .consult-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout" id="app">
+    <div class="main">
+      <header class="header">
+        <div class="flex items-center gap-12">
+          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+          <span class="header-title">💬 상담 AI</span>
+        </div>
+        <div class="header-actions">
+          <span id="sessionBadge"></span>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="consult-layout">
+          <!-- LEFT: 입력 -->
+          <div class="panel">
+            <div class="panel-header">📝 상담 입력</div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">환자 선택</label>
+                <select class="form-input" id="patientSelect">
+                  <option value="">환자 정보 없이 상담</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">환자 질문 / 증상</label>
+                <textarea class="input-textarea" id="questionInput" placeholder="예) 앞니가 살짝 벌어져 있어서 신경 쓰이는데 어떤 치료가 좋을까요?"></textarea>
+              </div>
+              <button class="btn btn-primary w-full" id="submitBtn" onclick="runConsult()">💬 상담 생성</button>
+              <div style="margin-top:14px; padding:12px; background:var(--primary-bg); border-radius:var(--radius-sm); font-size:0.75rem; color:var(--primary); line-height:1.5;">
+                💡 Gemini API 키가 없어도 데모 응답이 자동으로 표시됩니다. 키를 설정하면 환자 맞춤 상담이 가능합니다.
+              </div>
+            </div>
+          </div>
+
+          <!-- CENTER: 응답 -->
+          <div class="panel">
+            <div class="panel-header">
+              🤖 AI 상담 응답
+              <span id="replyBadge"></span>
+            </div>
+            <div class="panel-body">
+              <div class="reply-area empty" id="replyArea">
+                환자 질문을 입력하고 <strong>상담 생성</strong> 버튼을 눌러주세요.
+              </div>
+
+              <div style="margin-top:24px;">
+                <h4 style="margin-bottom:12px;">🕐 최근 상담 이력</h4>
+                <div id="historyList">
+                  <div style="color:var(--text-tertiary); font-size:0.8125rem; padding:12px; text-align:center;">아직 상담 이력이 없습니다</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Triage -->
+          <div class="panel">
+            <div class="panel-header">🎯 Triage 카드</div>
+            <div class="panel-body">
+              <div id="triageArea">
+                <div style="text-align:center; color:var(--text-tertiary); font-size:0.8125rem; padding:40px 0;">
+                  상담 생성 시<br>증상 분류·추천 치료·<br>예상 비용·기간이<br>여기에 표시됩니다
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/dental-engines.js"></script>
+  <script>
+    document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('consult'));
+
+    // 환자 옵션 채우기
+    function populatePatients() {
+      const sel = document.getElementById('patientSelect');
+      (SampleData.patients || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.name} (${p.age}세, ${p.treatment})`;
+        sel.appendChild(opt);
+      });
+    }
+    populatePatients();
+
+    function getSelectedPatient() {
+      const id = document.getElementById('patientSelect').value;
+      if (!id) return null;
+      return (SampleData.patients || []).find(p => p.id === id) || null;
+    }
+
+    // 마크다운 간단 렌더: **굵게**와 줄바꿈
+    function renderMarkdown(text) {
+      const escaped = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    function renderTriage(data, isDemo) {
+      const el = document.getElementById('triageArea');
+      if (!data) return;
+      const min = (data.estimated_cost_min || 0).toLocaleString();
+      const max = (data.estimated_cost_max || 0).toLocaleString();
+      el.innerHTML = `
+        ${isDemo ? '<div style="text-align:right; margin-bottom:8px;"><span class="demo-badge">DEMO</span></div>' : ''}
+        <div style="text-align:center; margin-bottom:16px;">
+          <span class="urgency-badge urgency-${data.urgency || '보통'}">${data.urgency || '보통'}</span>
+        </div>
+        <div class="triage-kv">
+          <span class="k">카테고리</span>
+          <span class="v">${data.category || '-'}</span>
+        </div>
+        <div class="triage-kv">
+          <span class="k">추천 치료</span>
+          <span class="v" style="color:var(--primary);">${data.recommended_treatment || '-'}</span>
+        </div>
+        <div class="triage-kv">
+          <span class="k">예상 비용</span>
+          <span class="v">${min}~${max}원</span>
+        </div>
+        <div class="triage-kv">
+          <span class="k">예상 기간</span>
+          <span class="v">${data.duration_weeks || '-'}주</span>
+        </div>
+        <div style="margin-top:16px; padding:12px; background:var(--gray-50); border-radius:var(--radius-sm); font-size:0.8125rem; color:var(--text-secondary); line-height:1.5;">
+          💬 ${data.reason || '-'}
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      const el = document.getElementById('historyList');
+      const logs = (Store.get('consult_history', []) || []).slice(0, 5);
+      if (!logs.length) {
+        el.innerHTML = '<div style="color:var(--text-tertiary); font-size:0.8125rem; padding:12px; text-align:center;">아직 상담 이력이 없습니다</div>';
+        return;
+      }
+      el.innerHTML = logs.map(log => `
+        <div class="history-item">
+          <div class="history-q">Q. ${log.question}</div>
+          <div class="history-meta">${log.patient || '익명'} · ${new Date(log.at).toLocaleString('ko-KR')}</div>
+          <div class="history-a">${(log.answer || '').replace(/\*\*/g, '')}</div>
+        </div>
+      `).join('');
+    }
+    renderHistory();
+
+    async function runConsult() {
+      const q = document.getElementById('questionInput').value.trim();
+      if (!q) { showToast('질문을 입력하세요', 'warning'); return; }
+
+      const patient = getSelectedPatient();
+      const btn = document.getElementById('submitBtn');
+      const replyArea = document.getElementById('replyArea');
+      const replyBadge = document.getElementById('replyBadge');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-inline"></span> 분석 중...';
+      replyArea.classList.remove('empty');
+      replyArea.innerHTML = '<span class="spinner-inline"></span> AI 상담실장이 답변을 생성하고 있습니다...';
+      replyBadge.innerHTML = '';
+
+      try {
+        // 1) 상담 답변
+        const replyRes = await ConsultEngine.reply({ question: q, patient });
+        replyArea.innerHTML = renderMarkdown(replyRes.text);
+        if (replyRes.demo) replyBadge.innerHTML = '<span class="demo-badge">DEMO</span>';
+
+        // 2) Triage (병렬로 이미 돌렸어도 좋지만 순차 진행)
+        const triageRes = await ConsultEngine.triage(q);
+        renderTriage(triageRes.data, triageRes.demo);
+
+        // 3) 저장 — Supabase 연결 시 DB, 아니면 localStorage
+        const record = {
+          question: q,
+          answer: replyRes.text,
+          patient: patient?.name || '익명',
+          patientId: patient?.id || null,
+          triage: triageRes.data,
+          at: Date.now()
+        };
+        const hist = Store.get('consult_history', []);
+        hist.unshift(record);
+        Store.set('consult_history', hist.slice(0, 50));
+
+        if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+          try {
+            await SupabaseDB.saveConsultLog({
+              patientId: patient?.id || null,
+              engine: 'consult',
+              input: q,
+              output: replyRes.text,
+              metadata: triageRes.data
+            });
+            showToast('Supabase에 상담 로그가 저장되었습니다', 'success');
+          } catch (e) {
+            console.warn('Supabase 저장 실패', e);
+            showToast('로컬에만 저장됨 (Supabase 오류)', 'warning');
+          }
+        } else {
+          showToast('상담이 로컬에 저장되었습니다', 'success');
+        }
+
+        renderHistory();
+      } catch (e) {
+        console.error(e);
+        replyArea.innerHTML = '⚠️ 오류: ' + e.message;
+        showToast('상담 생성 실패', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '💬 상담 생성';
+      }
+    }
+  </script>
+</body>
+</html>

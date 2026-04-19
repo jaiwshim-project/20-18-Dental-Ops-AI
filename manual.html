@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dental Ops AI 사용 매뉴얼 — 8대 엔진 활용법과 FAQ.">
+  <title>사용 매뉴얼 | Dental Ops AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0066FF">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { background: #FFFFFF; }
+    .manual-hero {
+      padding: 80px 40px 48px;
+      text-align: center;
+      background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .manual-hero h1 {
+      font-size: 3rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+    .manual-hero p {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .manual-kicker {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      background: var(--primary-bg);
+      color: var(--primary);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 20px;
+    }
+
+    .manual-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 48px;
+      max-width: 1200px;
+      margin: 56px auto;
+      padding: 0 32px;
+    }
+
+    .manual-toc {
+      position: sticky;
+      top: 84px;
+      align-self: start;
+      padding: 24px 20px;
+      background: var(--gray-50);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--gray-100);
+    }
+    .manual-toc h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
+    }
+    .toc-link {
+      display: block;
+      padding: 7px 10px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s var(--ease);
+      cursor: pointer;
+    }
+    .toc-link:hover { background: var(--primary-bg); color: var(--primary); }
+
+    .manual-section {
+      margin-bottom: 64px;
+      scroll-margin-top: 40px;
+    }
+    .manual-section h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--gray-100);
+    }
+    .manual-section h3 { margin-top: 24px; margin-bottom: 12px; }
+    .manual-section p {
+      font-size: 1rem;
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    .manual-section ul, .manual-section ol {
+      padding-left: 24px;
+      margin-bottom: 14px;
+      color: var(--text-secondary);
+    }
+    .manual-section li { margin-bottom: 8px; line-height: 1.8; }
+
+    .engine-card {
+      padding: 24px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      margin-bottom: 16px;
+      transition: all 0.2s var(--ease);
+    }
+    .engine-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .engine-card-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .engine-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .screenshot-placeholder {
+      width: 100%;
+      height: 260px;
+      background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
+      border: 1.5px dashed var(--gray-300);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 0.875rem;
+      margin: 20px 0;
+    }
+
+    .faq-item {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .faq-q {
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: flex;
+      gap: 10px;
+    }
+    .faq-q::before { content: 'Q.'; color: var(--primary); font-weight: 800; }
+    .faq-a {
+      color: var(--text-secondary);
+      padding-left: 24px;
+      line-height: 1.8;
+    }
+
+    .trouble-card {
+      padding: 18px 22px;
+      background: #FFFBEB;
+      border-left: 4px solid var(--warning);
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+    }
+    .trouble-card strong { color: #92400E; }
+
+    code.inline {
+      padding: 2px 8px;
+      background: var(--gray-100);
+      border-radius: 4px;
+      font-size: 0.875rem;
+      color: var(--primary-dark);
+      font-family: 'Courier New', monospace;
+    }
+
+    @media (max-width: 900px) {
+      .manual-layout { grid-template-columns: 1fr; }
+      .manual-toc { position: static; }
+      .manual-hero h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout" id="app">
+    <div class="main">
+      <header class="header">
+        <div class="flex items-center gap-12">
+          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+          <span class="header-title">사용 매뉴얼</span>
+        </div>
+        <div class="header-actions">
+          <span id="sessionBadge"></span>
+        </div>
+      </header>
+
+      <div class="content" style="max-width:none; padding:0;">
+        <!-- HERO -->
+        <section class="manual-hero">
+          <span class="manual-kicker">DOCUMENTATION</span>
+          <h1>Dental Ops AI 사용 매뉴얼</h1>
+          <p>치과 상담·운영을 AI로 자동화하는 8대 엔진 플랫폼. 시작 가이드부터 KPI 해석, FAQ까지 한 페이지에 정리했습니다.</p>
+        </section>
+
+        <div class="manual-layout">
+          <!-- TOC -->
+          <aside class="manual-toc">
+            <h4>목차</h4>
+            <a class="toc-link" onclick="scrollTo2('sec-start')">1. 시작하기</a>
+            <a class="toc-link" onclick="scrollTo2('sec-engines')">2. 8대 엔진 소개</a>
+            <a class="toc-link" onclick="scrollTo2('sec-consult')">3. 상담 AI 사용법</a>
+            <a class="toc-link" onclick="scrollTo2('sec-conversion')">4. 전환 전략 활용법</a>
+            <a class="toc-link" onclick="scrollTo2('sec-automation')">5. 자동화 설정</a>
+            <a class="toc-link" onclick="scrollTo2('sec-kpi')">6. KPI 해석 가이드</a>
+            <a class="toc-link" onclick="scrollTo2('sec-training')">7. 교육/훈련 활용</a>
+            <a class="toc-link" onclick="scrollTo2('sec-insight')">8. 인사이트 리포트</a>
+            <a class="toc-link" onclick="scrollTo2('sec-ceo')">9. CEO 대시보드</a>
+            <a class="toc-link" onclick="scrollTo2('sec-faq')">10. FAQ</a>
+            <a class="toc-link" onclick="scrollTo2('sec-trouble')">11. 문제 해결</a>
+          </aside>
+
+          <!-- MAIN -->
+          <main>
+            <section class="manual-section" id="sec-start">
+              <h2>1. 시작하기</h2>
+              <p>Dental Ops AI는 치과 상담실장·원장·코디가 함께 쓰는 운영 자동화 플랫폼입니다. 최초 설정은 3단계입니다.</p>
+              <h3>1.1 로그인</h3>
+              <p>홈 우측 상단의 <strong>로그인</strong> 버튼을 눌러 이름과 역할을 선택합니다. 역할(원장/상담실장/코디/위생사/관리자)에 따라 접근 가능한 메뉴가 달라집니다.</p>
+              <h3>1.2 Gemini API 키 설정</h3>
+              <p>사이드바 하단 <strong>Gemini API 키 설정</strong> 버튼을 눌러 Google AI Studio에서 발급받은 키를 입력합니다. 키는 브라우저 로컬에만 저장됩니다.</p>
+              <h3>1.3 Supabase 연결 (선택)</h3>
+              <p>사이드바 <strong>Supabase DB 연결</strong>에서 Project URL과 Anon Key를 입력합니다. 연결 전엔 샘플 데이터로 동작하며, 연결 후에는 환자/상담/KPI가 영구 저장됩니다. <code class="inline">sql/schema.sql</code>을 Supabase SQL Editor에서 실행하세요.</p>
+            </section>
+
+            <section class="manual-section" id="sec-engines">
+              <h2>2. 8대 엔진 소개</h2>
+              <p>플랫폼은 8개의 독립 엔진으로 구성됩니다. 각 엔진은 사이드바 메뉴에서 바로 접근할 수 있습니다.</p>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:var(--primary-bg); color:var(--primary);">&#x1F4AC;</div>
+                  <div><h3 style="margin:0;">상담 AI (ConsultEngine)</h3><small>환자 질문을 구조화된 상담 응답으로 변환</small></div>
+                </div>
+                <p>환자가 던진 질문에 대해 "직접 답변 → 추천 치료 → 예상 비용/기간 → 다음 액션" 4단계 구조로 답합니다. 증상 분류(Triage)도 지원합니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#D1FAE5; color:#065F46;">&#x1F3AF;</div>
+                  <div><h3 style="margin:0;">전환 전략 (ConversionEngine)</h3><small>반대/거절 상황에서 감정에 공감하며 설득</small></div>
+                </div>
+                <p>"공감 → 재해석 → 해소 정보 → 대안 → CTA" 5단계로 환자 반대를 풀어냅니다. 전환 확률도 0~100 점수로 예측합니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#FEF3C7; color:#92400E;">&#x2699;</div>
+                  <div><h3 style="margin:0;">자동화 (AutomationEngine)</h3><small>반복 메시지를 템플릿으로 자동 발송</small></div>
+                </div>
+                <p>신환 환영, 상담 후속, 시술 전/후 알림, 재방문 유도 등 5종 템플릿을 지원합니다. 커스텀 메시지는 Gemini가 생성합니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#EDE9FE; color:#6D28D9;">&#x1F465;</div>
+                  <div><h3 style="margin:0;">환자 관리 (Patient Management)</h3><small>환자 CRUD + 상태 추적</small></div>
+                </div>
+                <p>환자의 신상/연락처/견적/상태(상담대기→치료완료)를 관리합니다. Supabase 연결 시 영구 저장됩니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#CCFBF1; color:#0F766E;">&#x1F4CA;</div>
+                  <div><h3 style="margin:0;">KPI 대시보드 (KPIEngine)</h3><small>전환율·재방문율·AI 활용률 실시간 모니터링</small></div>
+                </div>
+                <p>6개 핵심 KPI를 한 화면에 표시하고, 목표 대비 달성 여부를 벤치마크로 보여줍니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#FEE2E2; color:#991B1B;">&#x1F393;</div>
+                  <div><h3 style="margin:0;">교육/훈련 (TrainingEngine)</h3><small>시나리오 기반 상담 롤플레이 + AI 평가</small></div>
+                </div>
+                <p>5종 상담 시나리오에 대해 교육생이 응답하면 공감·정확성·설득·대안·CTA 5축으로 100점 만점 채점합니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#FCE7F3; color:#BE185D;">&#x1F9E0;</div>
+                  <div><h3 style="margin:0;">인사이트 리포트 (InsightEngine)</h3><small>6단계 하네스로 데이터에서 통찰 추출</small></div>
+                </div>
+                <p>Curator → Insight Miner → Architect → Writer → Critic → Editor 순으로 리포트를 생성합니다. 패턴/역설/전략/추적 KPI를 자동으로 뽑아냅니다.</p>
+              </div>
+
+              <div class="engine-card">
+                <div class="engine-card-head">
+                  <div class="engine-icon" style="background:#1E293B; color:#F8FAFC;">&#x1F454;</div>
+                  <div><h3 style="margin:0;">CEO Advisory (CEOEngine)</h3><small>원장·관리자 전용 전략 조언</small></div>
+                </div>
+                <p>KPI와 컨텍스트를 바탕으로 growth/steady/caution/danger 4단계 상태 진단, Top 3 액션, 리스크, ROI 추정을 제공합니다.</p>
+              </div>
+            </section>
+
+            <section class="manual-section" id="sec-consult">
+              <h2>3. 상담 AI 사용법</h2>
+              <p>사이드바의 <strong>상담 AI</strong> 메뉴에서 환자 질문을 입력하면 구조화된 답변을 받을 수 있습니다.</p>
+              <div class="screenshot-placeholder">&#x1F4F7; 스크린샷 자리 — 상담 AI 입력 화면</div>
+              <ol>
+                <li>환자 프로필 선택 (선택 사항 — 선택 시 맞춤 답변)</li>
+                <li>환자 질문 텍스트 입력</li>
+                <li><strong>답변 생성</strong> 클릭 → 4단계 응답 출력</li>
+                <li>Supabase 연결 시 상담 로그가 자동 저장됨</li>
+              </ol>
+            </section>
+
+            <section class="manual-section" id="sec-conversion">
+              <h2>4. 전환 전략 활용법</h2>
+              <p>환자가 "가격이 부담된다", "생각해보겠다" 같은 반대를 표현할 때 사용합니다.</p>
+              <div class="screenshot-placeholder">&#x1F4F7; 스크린샷 자리 — 전환 전략 생성 화면</div>
+              <ul>
+                <li><strong>반대/우려</strong> 입력: 환자가 한 말을 그대로 기입</li>
+                <li><strong>치료</strong>와 <strong>예상 비용</strong> 입력</li>
+                <li>AI가 공감→재해석→해소정보→대안→CTA 5단계 멘트를 생성</li>
+                <li><strong>전환 확률 예측</strong>으로 긍정/부정 신호도 함께 분석</li>
+              </ul>
+            </section>
+
+            <section class="manual-section" id="sec-automation">
+              <h2>5. 자동화 설정</h2>
+              <p>자동화 메뉴에서 5종 템플릿을 선택하거나 커스텀 메시지를 생성할 수 있습니다.</p>
+              <ul>
+                <li><strong>신환 환영</strong>: 첫 방문 후 환영 메시지</li>
+                <li><strong>상담 후속</strong>: 상담 다음날 정리 메시지</li>
+                <li><strong>시술 전 알림</strong>: 예약 24시간 전 리마인더</li>
+                <li><strong>시술 후 케어</strong>: 시술 당일 주의사항</li>
+                <li><strong>재방문 유도</strong>: N주 지난 환자에게 검진 권유</li>
+              </ul>
+              <p>발송 이력은 로컬 스토리지와 Supabase(연결 시)에 저장됩니다.</p>
+            </section>
+
+            <section class="manual-section" id="sec-kpi">
+              <h2>6. KPI 해석 가이드</h2>
+              <p>대시보드의 6개 KPI 의미와 목표값:</p>
+              <ul>
+                <li><strong>전환율</strong>: 상담 대비 계약 성공률. 목표 70% 이상</li>
+                <li><strong>평균 상담시간</strong>: 상담 1건 평균 소요. 목표 15분 이하 (짧을수록 효율적)</li>
+                <li><strong>재방문율</strong>: 치료 완료 후 정기검진 복귀. 목표 70% 이상</li>
+                <li><strong>AI 활용률</strong>: 상담 중 AI 엔진 사용 비율. 목표 80% 이상</li>
+                <li><strong>월 매출</strong>: 계약/치료완료 건 합계</li>
+                <li><strong>오늘 상담</strong>: 대기 + 진행 환자 수</li>
+              </ul>
+            </section>
+
+            <section class="manual-section" id="sec-training">
+              <h2>7. 교육/훈련 활용</h2>
+              <p>신규 상담실장·코디를 위한 롤플레이 훈련 도구입니다. 5종 시나리오(비용부담/공포/기간고민/재방문/소아)로 반복 훈련할 수 있습니다.</p>
+              <ul>
+                <li>시나리오 선택 → 환자의 반대 멘트 확인</li>
+                <li>자신의 대응 응답 작성 → AI 평가 요청</li>
+                <li>공감·정확성·설득·대안·CTA 5축 점수 + 코칭 팁 수신</li>
+                <li>결과는 Supabase에 저장되어 개인별 성장 추이 추적 가능</li>
+              </ul>
+            </section>
+
+            <section class="manual-section" id="sec-insight">
+              <h2>8. 인사이트 리포트 생성</h2>
+              <p>주간/월간 경영 리포트를 AI가 자동 생성합니다. 6단계 하네스 방법론으로 데이터→인사이트→전략까지 한 번에.</p>
+              <ul>
+                <li>주제 입력 (예: "이번 주 전환율 하락 원인")</li>
+                <li>데이터 소스 선택 (환자/상담로그/KPI)</li>
+                <li>생성된 리포트: 요약, 패턴 발견, 역설, 전략, 추적 KPI</li>
+                <li>PDF 내보내기로 경영진 보고서 제작</li>
+              </ul>
+            </section>
+
+            <section class="manual-section" id="sec-ceo">
+              <h2>9. CEO 대시보드</h2>
+              <p>원장/관리자만 접근 가능한 전용 페이지입니다. 로그인 시 역할을 <strong>원장</strong> 또는 <strong>관리자 (CEO)</strong>로 선택해야 합니다.</p>
+              <ul>
+                <li>전체 KPI 요약 + 상태 진단 (성장/안정/주의/위험)</li>
+                <li>컨텍스트 입력 → AI 전략 조언 Top 3 + 리스크 + ROI</li>
+                <li>조직 온톨로지 그래프 + 자동화 후보 분석</li>
+                <li>팀원별 성과 비교 테이블</li>
+              </ul>
+            </section>
+
+            <section class="manual-section" id="sec-faq">
+              <h2>10. FAQ</h2>
+
+              <div class="faq-item">
+                <div class="faq-q">Gemini API 키는 어디서 발급받나요?</div>
+                <div class="faq-a"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600;">Google AI Studio</a>에서 무료로 발급받을 수 있습니다. "Get API Key" → "Create API Key" 순서입니다.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q">API 키 없이도 사용할 수 있나요?</div>
+                <div class="faq-a">가능합니다. 키가 없으면 모든 엔진이 데모 응답(미리 준비된 예시)을 반환합니다. UI 흐름을 먼저 익힌 뒤 키를 설정하세요.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q">Supabase 연결 없이 환자 데이터를 저장할 수 있나요?</div>
+                <div class="faq-a">브라우저 로컬 스토리지에 임시 저장됩니다. 다만 기기를 바꾸거나 브라우저 데이터를 지우면 사라지므로, 장기 운영 시에는 Supabase 연결을 권장합니다.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q">여러 직원이 동시에 쓸 수 있나요?</div>
+                <div class="faq-a">Supabase 연결 시 같은 프로젝트 URL/Key를 공유하면 모든 직원이 동일한 데이터를 봅니다. 각자 다른 이름/역할로 로그인하면 활동 추적이 가능합니다.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q">환자 개인정보는 안전한가요?</div>
+                <div class="faq-a">Supabase RLS(Row Level Security)를 활성화하면 접근 제어가 가능합니다. Gemini로 보내는 프롬프트에는 최소 필요 정보만 포함되도록 설계되어 있습니다.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q">모바일에서도 사용 가능한가요?</div>
+                <div class="faq-a">모든 페이지는 반응형으로 구현되어 있어 태블릿/모바일에서도 작동합니다. 사이드바는 햄버거 메뉴로 자동 전환됩니다.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q">AI 응답이 이상할 때는 어떻게 하나요?</div>
+                <div class="faq-a">프롬프트에 더 구체적인 정보(환자 나이, 증상, 치료 이력)를 포함하세요. Gemini는 컨텍스트가 풍부할수록 정확해집니다. 이상한 응답은 <code class="inline">console.log</code>로 원문을 확인할 수 있습니다.</div>
+              </div>
+            </section>
+
+            <section class="manual-section" id="sec-trouble">
+              <h2>11. 문제 해결</h2>
+
+              <div class="trouble-card">
+                <strong>&#x26A0; Gemini API 키 오류 — "API key not valid"</strong>
+                <p style="margin-top:8px; font-size:0.9375rem;">키가 잘못 복사되었을 가능성이 큽니다. Google AI Studio에서 새 키를 발급받아 다시 입력하세요. 키 앞뒤의 공백도 확인하세요.</p>
+              </div>
+
+              <div class="trouble-card">
+                <strong>&#x26A0; Supabase 연결 실패 — "relation does not exist"</strong>
+                <p style="margin-top:8px; font-size:0.9375rem;">테이블이 생성되지 않았습니다. <code class="inline">sql/schema.sql</code> 파일을 Supabase SQL Editor에서 통째로 실행하세요. patients, consult_logs, conversions, automations, training_results, insight_reports, kpi_snapshots 7개 테이블이 생성됩니다.</p>
+              </div>
+
+              <div class="trouble-card">
+                <strong>&#x26A0; 데이터가 안 보여요</strong>
+                <p style="margin-top:8px; font-size:0.9375rem;">1) Supabase 연결 상태 확인 (사이드바 하단 초록불) &nbsp;2) 브라우저 콘솔(F12)에서 에러 확인 &nbsp;3) 환자 리스트가 비어있다면 <strong>+ 신규 환자 등록</strong>으로 추가 &nbsp;4) 그래도 안 되면 브라우저 캐시 삭제 후 재접속</p>
+              </div>
+
+              <div class="trouble-card">
+                <strong>&#x26A0; 로그인이 풀려요</strong>
+                <p style="margin-top:8px; font-size:0.9375rem;">세션 유효기간은 7일입니다. 그 안에 한 번도 접속하지 않으면 자동 로그아웃됩니다. 또한 시크릿 모드에서는 세션이 유지되지 않습니다.</p>
+              </div>
+
+              <div class="trouble-card">
+                <strong>&#x26A0; 차트가 비어있어요</strong>
+                <p style="margin-top:8px; font-size:0.9375rem;">대시보드는 샘플 데이터(SampleData)로 렌더됩니다. Supabase에 실제 데이터가 충분히 쌓이면 실시간 집계로 전환됩니다(향후 버전).</p>
+              </div>
+            </section>
+
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/supabase.js"></script>
+  <script>
+    document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('manual'));
+
+    function scrollTo2(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>
