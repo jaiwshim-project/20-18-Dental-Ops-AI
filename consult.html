@@ -1551,6 +1551,7 @@
           ).join('\n'),
           output: (currentSession.coachResults.slice(-1)[0]?.data?.recommended_reply || []).join(' / ') || '',
           metadata: {
+            type: 'session',                        // coach_turn과 구분
             session_id: currentSession.id,
             started_at: currentSession.startedAt,
             ended_at: currentSession.endedAt,
@@ -2074,14 +2075,47 @@
         if (coachRes.demo) badge.innerHTML = '<span class="demo-badge">DEMO</span>';
 
 
-        // 세션에 누적 (🛑 종료 시 일괄 저장). 세션이 없으면 경고만.
+        // 세션에 누적 + Supabase 즉시 중간 저장 (방식 A)
         const qSaved = data.last_patient_utterance || manualQ || '';
         if (currentSession) {
+          const turnIndex = currentSession.coachResults.length + 1;
           currentSession.coachResults.push({ at: Date.now(), question: qSaved, data });
           updateSessionMeta();
-          showToast('코칭 스크립트 생성 · 세션에 누적됨', 'success');
+
+          // Supabase에 즉시 저장 (coach_turn)
+          if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+            try {
+              const turnsSnapshot = currentSession.turns.map(t => (
+                (t.speaker === 'staff' ? '[실장] ' : t.speaker === 'patient' ? '[환자] ' : '') + t.text
+              )).join('\n');
+              await SupabaseDB.saveConsultLog({
+                patientId: currentSession.patientId,
+                engine: 'consult',
+                input: qSaved,
+                output: (Array.isArray(data.recommended_reply) ? data.recommended_reply.join(' / ') : data.recommended_reply) || '',
+                metadata: {
+                  type: 'coach_turn',
+                  session_id: currentSession.id,
+                  turn_index: turnIndex,
+                  at: Date.now(),
+                  turns_snapshot: turnsSnapshot,
+                  turns_count_at_turn: currentSession.turns.length,
+                  patient_name: currentSession.patientName,
+                  author: currentSession.author,
+                  clinic: currentSession.clinic,
+                  coach: data
+                }
+              });
+              showToast(`코칭 #${turnIndex} 생성 · Supabase 저장 완료`, 'success');
+            } catch (e) {
+              console.warn('중간 저장 실패', e);
+              showToast('코칭 생성됨 · ⚠️ DB 저장 실패 (종료 시 재시도됩니다)', 'warning');
+            }
+          } else {
+            showToast('코칭 생성됨 · Supabase 미연결 (종료 전 유실 위험)', 'warning');
+          }
         } else {
-          showToast('🎙 상담을 시작한 뒤 전송하면 세션에 누적됩니다', 'info');
+          showToast('🎙 상담을 시작한 뒤 전송하면 세션에 누적·저장됩니다', 'info');
         }
 
         renderHistory();

@@ -152,7 +152,8 @@ const SupabaseDB = {
     const { data, error } = await query;
     if (error) throw error;
     return (data || [])
-      .filter(row => row.metadata && row.metadata.session_id)
+      // type='session' 세션 요약만 (coach_turn 중간 저장은 제외)
+      .filter(row => row.metadata && row.metadata.session_id && (row.metadata.type === 'session' || !row.metadata.type))
       .map(row => ({
         id: row.metadata.session_id,
         row_id: row.id,
@@ -321,7 +322,9 @@ const SupabaseDB = {
     ]);
 
     const patients = patientsRes.data || [];
-    const logs = consultLogsRes.data || [];
+    const allLogs = consultLogsRes.data || [];
+    // 세션 요약(1 행/세션)만 집계 — coach_turn 중간 저장은 제외
+    const logs = allLogs.filter(l => !l.metadata?.type || l.metadata.type === 'session');
     const convs = convRes.data || [];
 
     // === 환자 상태별 퍼널 ===
