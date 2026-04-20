@@ -162,6 +162,13 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
 
 .nav-item-icon { font-size: 1.15rem; width: 24px; text-align: center; }
 
+.nav-subitem {
+  padding-left: 40px;
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.5);
+}
+.nav-subitem .nav-item-icon { font-size: 0.95rem; }
+
 .sidebar-footer {
   padding: 16px 12px;
   border-top: 1px solid rgba(255,255,255,0.08);

@@ -367,6 +367,12 @@ function renderSidebar(activePage) {
       <a href="review.html" class="nav-item ${activePage === 'review' ? 'active' : ''}">
         <span class="nav-item-icon">📋</span> 상담 리뷰
       </a>
+      <a href="consult_review_wide.html" class="nav-item nav-subitem ${activePage === 'review-wide' ? 'active' : ''}">
+        <span class="nav-item-icon">📑</span> · Wide
+      </a>
+      <a href="consult_review_tab.html" class="nav-item nav-subitem ${activePage === 'review-tab' ? 'active' : ''}">
+        <span class="nav-item-icon">📋</span> · Tab
+      </a>
       <a href="conversion.html" class="nav-item ${activePage === 'conversion' ? 'active' : ''}">
         <span class="nav-item-icon">🎯</span> 전환 전략
       </a>
