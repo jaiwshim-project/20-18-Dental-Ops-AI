@@ -182,14 +182,18 @@ const SupabaseDB = {
       .eq('engine', 'consult');
     if (error) throw error;
     const counts = {};
-    const lastDate = {}; // 최근 상담일
+    const lastDate = {}; // 최근 상담일 (epoch ms 통일)
     (data || []).forEach(r => {
       if (!r.patient_id) return;
       if (r.metadata?.type === 'session' || (r.metadata?.session_id && !r.metadata?.type)) {
         counts[r.patient_id] = (counts[r.patient_id] || 0) + 1;
-        const d = r.metadata?.ended_at || r.metadata?.started_at;
-        if (d && (!lastDate[r.patient_id] || d > lastDate[r.patient_id])) {
-          lastDate[r.patient_id] = d;
+        const raw = r.metadata?.ended_at || r.metadata?.started_at || r.created_at;
+        if (raw != null) {
+          // 숫자(ms) or ISO 문자열 → ms로 통일
+          const ts = typeof raw === 'number' ? raw : new Date(raw).getTime();
+          if (!isNaN(ts) && (!lastDate[r.patient_id] || ts > lastDate[r.patient_id])) {
+            lastDate[r.patient_id] = ts;
+          }
         }
       }
     });
