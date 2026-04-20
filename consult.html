@@ -2400,9 +2400,11 @@
       btn.innerHTML = '<span class="spinner-inline"></span> 분석 중...';
       area.classList.remove('empty');
       area.style.display = 'block';
-      area.innerHTML = '<span class="spinner-inline"></span> 환자 의도 분석 + 스킬·하네스로 코칭 스크립트를 생성 중입니다...';
-      coachArea.innerHTML = '';
+      area.innerHTML = '<span class="spinner-inline"></span> ⚡ 즉시 코칭 생성 중 (1~2초)...';
+      coachArea.innerHTML = '<div style="padding:12px; color:var(--text-tertiary); font-size:0.875rem;"><span class="spinner-inline"></span> 상세 분석은 3~5초 후 업데이트됩니다...</div>';
       badge.innerHTML = '';
+
+      let quickData = null;
 
       try {
         // 이전 세션 요약 (Supabase에서만 조회)
@@ -2413,11 +2415,33 @@
           ? turns.map(t => ({ text: t.text, at: t.at }))
           : [{ text: manualQ, at: Date.now() }];
 
-        const coachRes = await ConsultEngine.coachReply({
-          patient,
-          utterances,
-          history: hist
-        });
+        // ⚡ 투-스테이지 병렬 호출 (Phase 2)
+        const quickPromise = ConsultEngine.coachReplyQuick({ patient, utterances });
+        const fullPromise = ConsultEngine.coachReply({ patient, utterances, history: hist });
+
+        // 1단계: 빠른 응답 먼저 UI 표시
+        const quickRes = await quickPromise;
+        quickData = quickRes.data;
+        area.innerHTML = '';
+        const quickBox = document.createElement('div');
+        quickBox.style.cssText = 'padding:14px 16px; background:var(--primary-bg); border-left:4px solid var(--primary); border-radius:var(--radius-sm); font-size:0.9375rem; line-height:1.7;';
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size:0.75rem; color:var(--primary); font-weight:700; margin-bottom:8px; letter-spacing:0.02em;';
+        label.textContent = `⚡ 즉시 응답 · ${quickData.intent || ''}`;
+        quickBox.appendChild(label);
+        const subEl = document.createElement('div');
+        subEl.style.cssText = 'margin-bottom:8px; color:var(--text-secondary);';
+        subEl.innerHTML = '<strong style="color:var(--text-primary);">속마음:</strong> ';
+        subEl.appendChild(document.createTextNode(quickData.subtext || ''));
+        quickBox.appendChild(subEl);
+        const replyEl = document.createElement('div');
+        replyEl.innerHTML = '<strong>말할 문장:</strong> ';
+        replyEl.appendChild(document.createTextNode(quickData.recommended_reply || ''));
+        quickBox.appendChild(replyEl);
+        area.appendChild(quickBox);
+
+        // 2단계: 상세 응답
+        const coachRes = await fullPromise;
         const data = coachRes.data;
 
         // ① AI가 분리한 화자 라벨을 대화창에 반영
@@ -2459,7 +2483,8 @@
                   patient_name: currentSession.patientName,
                   author: currentSession.author,
                   clinic: currentSession.clinic,
-                  coach: data
+                  coach: data,
+                  quick: quickData
                 }
               });
               showToast(`코칭 #${turnIndex} 생성 · Supabase 저장 완료`, 'success');

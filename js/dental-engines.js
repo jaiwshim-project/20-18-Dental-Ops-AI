@@ -216,6 +216,41 @@ JSON으로만 출력:
     return await safeGeminiJson(prompt, fallback);
   },
 
+  // ⚡ 빠른 즉시 응답 (Phase 2 — 실시간 상담 맥 유지용)
+  // 1~1.5초 내 응답을 목표로 최소 3필드만 반환
+  async coachReplyQuick({ patient, utterances, transcript }) {
+    const hasLabeled = Array.isArray(transcript) && transcript.length &&
+                       transcript.every(t => t.speaker === 'patient' || t.speaker === 'staff');
+    const raw = !hasLabeled ? (utterances || transcript || []) : [];
+
+    const block = hasLabeled
+      ? transcript.slice(-8).map(t => (t.speaker === 'staff' ? '[실장] ' : '[환자] ') + t.text).join('\n')
+      : raw.slice(-8).map((u, i) => `[${i + 1}] "${u.text}"`).join('\n');
+
+    const ctx = patient ? `환자: ${patient.name} (${patient.age || '?'}세, 관심: ${patient.treatment || '미정'})` : '';
+
+    const prompt = `⚡ 실시간 즉시 코칭 (1초 이내 필수). 핵심 3필드만, 장문 금지.
+
+${ctx}
+녹취(최근):
+${block}
+
+JSON만 출력 (마크다운/설명 금지):
+{
+  "intent": "환자 주 의도 1~2단어 (예: 라미네이트 / 비용 걱정 / 정보 확인)",
+  "subtext": "환자 속마음 관찰 1줄 (판단 없이)",
+  "recommended_reply": "상담실장이 바로 말할 문장 1~2줄 (공감→질문 순, 압박·설득·판매 어휘 금지)"
+}`;
+
+    const fallback = {
+      intent: '정보수집',
+      subtext: '환자가 충분한 정보를 얻지 못한 상태일 수 있음',
+      recommended_reply: '말씀해주셔서 감사합니다. 조금 더 여쭤봐도 될까요?'
+    };
+
+    return await safeGeminiJson(prompt, fallback);
+  },
+
   // 세션 전체 평가 + 상담사 피드백
   // session: { turns[], coachResults[], startedAt, endedAt, patientName, author, durationSec }
   // history: 동일 환자의 과거 세션 요약 배열 (선택)
