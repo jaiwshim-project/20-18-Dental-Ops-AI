@@ -6,7 +6,7 @@
   <meta name="description" content="상담 리뷰 — 전체 상담 세션을 필터·정렬해 조회하고, 상세 대화·코칭·평가를 확인합니다.">
   <title>상담 리뷰 | Dental Ops AI</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
-  <meta name="theme-color" content="#0066FF">
+  <meta name="theme-color" content="var(--primary)">
   <link rel="stylesheet" href="css/common.css">
   <style>
     .summary-row {
@@ -86,8 +86,8 @@
       font-size: 0.78rem;
       color: var(--text-secondary);
     }
-    .readiness-delta .up   { color: #10B981; font-weight: 800; }
-    .readiness-delta .down { color: #EF4444; font-weight: 800; }
+    .readiness-delta .up   { color: var(--success); font-weight: 800; }
+    .readiness-delta .down { color: var(--danger); font-weight: 800; }
 
     .staff-chart {
       background: var(--surface);
@@ -169,12 +169,12 @@
       line-height: 1.5;
       max-width: 85%;
     }
-    .dlog-bubble.patient { align-self: flex-start; background: #EBF3FF; color: #1E3A8A; border-bottom-left-radius: 4px; }
+    .dlog-bubble.patient { align-self: flex-start; background: var(--primary-bg); color: #1E3A8A; border-bottom-left-radius: 4px; }
     .dlog-bubble.staff { align-self: flex-end; background: #DCFCE7; color: #14532D; border-bottom-right-radius: 4px; }
     .dlog-bubble .meta { font-size: 0.64rem; font-weight: 800; opacity: 0.6; margin-bottom: 2px; text-transform: uppercase; }
 
     .dlog-coach {
-      background: linear-gradient(135deg, #EBF3FF, #F0FDF4);
+      background: linear-gradient(135deg, var(--primary-bg), #F0FDF4);
       border: 1px solid #BFDBFE;
       border-radius: var(--radius-md);
       padding: 12px 14px;

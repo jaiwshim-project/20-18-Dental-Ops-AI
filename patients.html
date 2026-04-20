@@ -6,7 +6,7 @@
   <meta name="description" content="환자 관리 — 상담·치료 상태를 통합 관리하고 상담 로그를 추적합니다.">
   <title>환자 관리 | Dental Ops AI</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
-  <meta name="theme-color" content="#0066FF">
+  <meta name="theme-color" content="var(--primary)">
   <link rel="stylesheet" href="css/common.css">
   <style>
     .patients-toolbar {
@@ -145,7 +145,7 @@
       position: absolute;
       left: 6px; top: 8px; bottom: 8px;
       width: 2px;
-      background: linear-gradient(180deg, var(--primary), #E2E8F0);
+      background: linear-gradient(180deg, var(--primary), var(--gray-200));
     }
     .timeline-item {
       position: relative;
@@ -365,10 +365,10 @@
     let activeFilter = 'all';
     let usingSupabase = false;
 
-    const avatarColors = ['#0066FF', '#00D4AA', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
+    const avatarColors = ['var(--primary)', 'var(--accent)', '#8B5CF6', 'var(--warning)', 'var(--danger)', '#EC4899', '#14B8A6'];
     const statusConfig = {
-      '상담대기': { bg: '#F1F5F9', color: '#475569' },
-      '상담중':   { bg: '#EBF3FF', color: '#0066FF' },
+      '상담대기': { bg: 'var(--gray-100)', color: 'var(--gray-600)' },
+      '상담중':   { bg: 'var(--primary-bg)', color: 'var(--primary)' },
       '계약완료': { bg: 'var(--success-bg)', color: 'var(--success-text)' },
       '치료중':   { bg: 'var(--warning-bg)', color: 'var(--warning-text)' },
       '치료완료': { bg: '#CCFBF1', color: '#0F766E' },
@@ -498,7 +498,7 @@
             <div class="detail-info-item"><label>관심 치료</label><div>${escapeHTML(p.treatment || '-')}</div></div>
             <div class="detail-info-item"><label>최근 방문</label><div>${p.lastVisit || p.created_at?.substring(0,10) || '-'}</div></div>
           </div>
-          ${p.memo ? `<div style="margin-top:12px; padding:10px 14px; background:var(--warning-bg); border-left:3px solid #F59E0B; border-radius:6px; font-size:0.85rem; color:#78350F; white-space:pre-wrap;">${escapeHTML(p.memo)}</div>` : ''}
+          ${p.memo ? `<div style="margin-top:12px; padding:10px 14px; background:var(--warning-bg); border-left:3px solid var(--warning); border-radius:6px; font-size:0.85rem; color:#78350F; white-space:pre-wrap;">${escapeHTML(p.memo)}</div>` : ''}
         </div>
         <div id="reportArea">
           <div style="padding:32px; text-align:center; color:var(--text-tertiary); font-size:0.8125rem;">
@@ -672,10 +672,10 @@
                   v: t.value, d: t.date
                 }));
                 const path = pts.map((p, i) => (i===0?'M':'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
-                const dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#0066FF" stroke="#FFF" stroke-width="2"><title>${p.d}: ${p.v}%</title></circle>`).join('');
+                const dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="var(--primary)" stroke="#FFF" stroke-width="2"><title>${p.d}: ${p.v}%</title></circle>`).join('');
                 return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:110px;">
-                  <line x1="${pad}" y1="${pad+innerH/2}" x2="${W-pad}" y2="${pad+innerH/2}" stroke="#E2E8F0" stroke-dasharray="3,3"/>
-                  <path d="${path}" fill="none" stroke="#0066FF" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="${pad}" y1="${pad+innerH/2}" x2="${W-pad}" y2="${pad+innerH/2}" stroke="var(--gray-200)" stroke-dasharray="3,3"/>
+                  <path d="${path}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round"/>
                   ${dots}
                 </svg>`;
               })()}
@@ -739,7 +739,7 @@
 
         <!-- 최종 권장 액션 -->
         ${latest?.coachResults?.slice(-1)[0]?.data?.next_action ? `
-          <div class="detail-section" style="background:linear-gradient(135deg, #DCFCE7, #BBF7D0); padding:16px 18px; border-radius:10px; border-left:4px solid #10B981;">
+          <div class="detail-section" style="background:linear-gradient(135deg, #DCFCE7, #BBF7D0); padding:16px 18px; border-radius:10px; border-left:4px solid var(--success);">
             <h4 style="margin-bottom:8px; color:#14532D;">🤝 다음 상담 시 권장 액션</h4>
             <div style="font-size:0.88rem; color:#14532D; line-height:1.6;">
               ${safe(latest.coachResults.slice(-1)[0].data.next_action)}

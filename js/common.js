@@ -410,7 +410,7 @@ function updateSessionUI() {
     // 🎖 회원 등급 배지 (tier / is_admin)
     const tier = (s.tier || 'free').toLowerCase();
     const tierMap = {
-      free: { label: 'Free',  bg: '#F1F5F9', fg: '#475569' },
+      free: { label: 'Free',  bg: 'var(--gray-100)', fg: 'var(--gray-600)' },
       pro:  { label: 'Pro',   bg: 'var(--warning-bg)', fg: 'var(--warning-text)' },
       max:  { label: 'Max',   bg: 'var(--info-bg)', fg: '#1D4ED8' }
     };
@@ -865,11 +865,11 @@ const SampleData = {
     { date: '04/16', revenue: 3420, patients: 16, consult: 24, contracts: 14 },
   ],
   treatmentMix: [
-    { name: '임플란트', value: 38, color: '#0066FF' },
-    { name: '라미네이트', value: 22, color: '#00D4AA' },
-    { name: '교정', value: 18, color: '#F59E0B' },
+    { name: '임플란트', value: 38, color: 'var(--primary)' },
+    { name: '라미네이트', value: 22, color: 'var(--accent)' },
+    { name: '교정', value: 18, color: 'var(--warning)' },
     { name: '보철', value: 14, color: '#8B5CF6' },
-    { name: '치아미백', value: 8, color: '#EF4444' },
+    { name: '치아미백', value: 8, color: 'var(--danger)' },
   ],
   kpi: {
     conversionRate: 68,      // 상담 → 치료 전환율 (%)

@@ -16,3 +16,8 @@ image-removebg-preview.png
 
 # 임시 스크린샷
 vercel-screen*.png
+
+# 로컬 전용 소개 자료
+brochure.md
+
+.vercel

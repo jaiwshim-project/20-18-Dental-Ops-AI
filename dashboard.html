@@ -6,7 +6,7 @@
   <meta name="description" content="KPI 대시보드 — 전환율, 상담 시간, 재방문율, 매출을 실시간 모니터링합니다.">
   <title>KPI 대시보드 | Dental Ops AI</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
-  <meta name="theme-color" content="#0066FF">
+  <meta name="theme-color" content="var(--primary)">
   <link rel="stylesheet" href="css/common.css">
   <style>
     .kpi-card-icon {
@@ -176,7 +176,7 @@
     // ============================================================
     // 데이터 상태 — SampleData로 초기화 후 Supabase로 덮어쓰기
     // ============================================================
-    const MIX_COLORS = ['#0066FF', '#00D4AA', '#F59E0B', '#8B5CF6', '#EF4444', '#0F766E', '#64748B'];
+    const MIX_COLORS = ['var(--primary)', 'var(--accent)', 'var(--warning)', '#8B5CF6', 'var(--danger)', '#0F766E', 'var(--gray-500)'];
     let currentData = buildFromSample();
 
     function buildFromSample() {
@@ -276,26 +276,26 @@
       for (let i = 0; i <= 4; i++) {
         const val = Math.round(minV + (maxV - minV) * (i / 4));
         const y = pad + innerH - (i / 4) * innerH;
-        yTicks.push(`<line x1="${pad}" y1="${y}" x2="${W - pad}" y2="${y}" stroke="#F1F5F9" stroke-width="1"/>
-                     <text x="${pad - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94A3B8">${val}</text>`);
+        yTicks.push(`<line x1="${pad}" y1="${y}" x2="${W - pad}" y2="${y}" stroke="var(--gray-100)" stroke-width="1"/>
+                     <text x="${pad - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--gray-400)">${val}</text>`);
       }
 
-      const xLabels = points.map(p => `<text x="${p.x}" y="${H - 12}" text-anchor="middle" font-size="10" fill="#94A3B8">${p.date}</text>`).join('');
+      const xLabels = points.map(p => `<text x="${p.x}" y="${H - 12}" text-anchor="middle" font-size="10" fill="var(--gray-400)">${p.date}</text>`).join('');
       const dots = points.map(p => `
-        <circle cx="${p.x}" cy="${p.y}" r="5" fill="#0066FF" stroke="#FFF" stroke-width="2">
+        <circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--primary)" stroke="#FFF" stroke-width="2">
           <title>${p.date}: ${p.revenue}만원</title>
         </circle>`).join('');
 
       wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
         ${yTicks.join('')}
         <path d="${area}" fill="url(#revGrad)" opacity="0.2"/>
-        <path d="${path}" fill="none" stroke="#0066FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${path}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}
         ${xLabels}
         <defs>
           <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0066FF" stop-opacity="0.4"/>
-            <stop offset="100%" stop-color="#0066FF" stop-opacity="0"/>
+            <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
           </linearGradient>
         </defs>
       </svg>`;
@@ -332,8 +332,8 @@
 
       wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
         ${segments}
-        <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="13" fill="#64748B">총합</text>
-        <text x="${cx}" y="${cy + 18}" text-anchor="middle" font-size="22" font-weight="800" fill="#0F172A">${total}%</text>
+        <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="13" fill="var(--gray-500)">총합</text>
+        <text x="${cx}" y="${cy + 18}" text-anchor="middle" font-size="22" font-weight="800" fill="var(--gray-900)">${total}%</text>
       </svg>`;
 
       document.getElementById('mixLegend').innerHTML = mix.map(m => `
@@ -349,10 +349,10 @@
     function renderFunnel() {
       const patients = currentData.patients;
       const funnelData = [
-        { label: '상담대기', count: patients.filter(p => p.status === '상담대기').length, color: '#94A3B8' },
-        { label: '상담중',   count: patients.filter(p => p.status === '상담중').length, color: '#0066FF' },
-        { label: '계약완료', count: patients.filter(p => p.status === '계약완료').length, color: '#00D4AA' },
-        { label: '치료중',   count: patients.filter(p => p.status === '치료중').length, color: '#F59E0B' },
+        { label: '상담대기', count: patients.filter(p => p.status === '상담대기').length, color: 'var(--gray-400)' },
+        { label: '상담중',   count: patients.filter(p => p.status === '상담중').length, color: 'var(--primary)' },
+        { label: '계약완료', count: patients.filter(p => p.status === '계약완료').length, color: 'var(--accent)' },
+        { label: '치료중',   count: patients.filter(p => p.status === '치료중').length, color: 'var(--warning)' },
         { label: '치료완료', count: patients.filter(p => p.status === '치료완료').length, color: '#0F766E' },
       ];
       const maxCount = Math.max(...funnelData.map(f => f.count), 1);
@@ -420,7 +420,7 @@
       if (currentData.isLive) {
         badge.style.background = '#DCFCE7';
         badge.style.color = '#14532D';
-        badge.innerHTML = '<span style="width:8px; height:8px; border-radius:50%; background:#10B981; display:inline-block; animation:pulse 1.6s infinite;"></span> 🔴 LIVE · Supabase';
+        badge.innerHTML = '<span style="width:8px; height:8px; border-radius:50%; background:var(--success); display:inline-block; animation:pulse 1.6s infinite;"></span> 🔴 LIVE · Supabase';
       } else {
         badge.style.background = 'var(--warning-bg)';
         badge.style.color = 'var(--warning-text)';
