@@ -173,42 +173,94 @@
   <script>
     document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('dashboard'));
 
-    const kpi = SampleData.kpi;
-    const patients = SampleData.patients;
-    const daily = SampleData.dailyRevenue;
-    const mix = SampleData.treatmentMix;
+    // ============================================================
+    // 데이터 상태 — SampleData로 초기화 후 Supabase로 덮어쓰기
+    // ============================================================
+    const MIX_COLORS = ['#0066FF', '#00D4AA', '#F59E0B', '#8B5CF6', '#EF4444', '#0F766E', '#64748B'];
+    let currentData = buildFromSample();
+
+    function buildFromSample() {
+      return {
+        kpi: SampleData.kpi,
+        patients: SampleData.patients.slice(),
+        daily: SampleData.dailyRevenue.slice(),
+        mix: SampleData.treatmentMix.slice(),
+        isLive: false
+      };
+    }
+
+    function buildFromLive(agg, delta) {
+      const k = agg.kpi;
+      const funnel = agg.funnel || {};
+      // funnel을 SampleData.patients 형태의 status 배열로 변환 (렌더 호환)
+      const virtualPatients = [];
+      Object.entries(funnel).forEach(([status, count]) => {
+        for (let i = 0; i < count; i++) virtualPatients.push({ status });
+      });
+      const mixSum = (agg.treatmentMix || []).reduce((s, m) => s + (m.value || 0), 0) || 1;
+      const mixWithColor = (agg.treatmentMix || []).map((m, i) => ({
+        name: m.name,
+        value: Math.round(m.value / mixSum * 100),
+        color: MIX_COLORS[i % MIX_COLORS.length]
+      }));
+      return {
+        kpi: {
+          conversionRate: k.conversionRate,
+          conversionRateDelta: delta.conversionRate || 0,
+          avgConsultMin: k.avgConsultMin,
+          avgConsultMinDelta: delta.avgConsultMin || 0,
+          revisitRate: k.revisitRate,
+          revisitRateDelta: delta.revisitRate || 0,
+          aiUsageRate: k.aiUsageRate,
+          aiUsageRateDelta: delta.aiUsageRate || 0,
+          monthlyRevenue: k.monthlyRevenue,
+          monthlyRevenueDelta: delta.monthlyRevenue || 0,
+          todayConsults: k.todayConsults
+        },
+        patients: virtualPatients,
+        daily: agg.dailyRevenue,
+        mix: mixWithColor.length ? mixWithColor : SampleData.treatmentMix,
+        isLive: true
+      };
+    }
 
     // ---- KPI ----
     function setDelta(id, delta, isLower = false, suffix = '%') {
       const el = document.getElementById(id);
       if (!el) return;
       const good = isLower ? delta < 0 : delta > 0;
-      el.className = 'kpi-change ' + (good ? 'up' : 'down');
+      el.className = 'kpi-change ' + (delta === 0 ? '' : (good ? 'up' : 'down'));
       const arrow = delta > 0 ? '&#8593;' : (delta < 0 ? '&#8595;' : '&#8594;');
       el.innerHTML = `${arrow} ${Math.abs(delta)}${suffix} vs 지난주`;
     }
 
-    document.getElementById('kpiConv').textContent = kpi.conversionRate + '%';
-    setDelta('kpiConvDelta', kpi.conversionRateDelta, false);
-    document.getElementById('kpiTime').textContent = kpi.avgConsultMin + '분';
-    setDelta('kpiTimeDelta', kpi.avgConsultMinDelta, true, '분');
-    document.getElementById('kpiRevisit').textContent = kpi.revisitRate + '%';
-    setDelta('kpiRevisitDelta', kpi.revisitRateDelta, false);
-    document.getElementById('kpiAI').textContent = kpi.aiUsageRate + '%';
-    setDelta('kpiAIDelta', kpi.aiUsageRateDelta, false);
-    document.getElementById('kpiRevenue').textContent = formatCurrency(kpi.monthlyRevenue);
-    setDelta('kpiRevenueDelta', kpi.monthlyRevenueDelta, false);
-    document.getElementById('kpiToday').textContent =
-      patients.filter(p => p.status === '상담대기' || p.status === '상담중').length;
+    function renderKPIs(data) {
+      const kpi = data.kpi, patients = data.patients;
+      document.getElementById('kpiConv').textContent = kpi.conversionRate + '%';
+      setDelta('kpiConvDelta', kpi.conversionRateDelta, false);
+      document.getElementById('kpiTime').textContent = kpi.avgConsultMin + '분';
+      setDelta('kpiTimeDelta', kpi.avgConsultMinDelta, true, '분');
+      document.getElementById('kpiRevisit').textContent = kpi.revisitRate + '%';
+      setDelta('kpiRevisitDelta', kpi.revisitRateDelta, false);
+      document.getElementById('kpiAI').textContent = kpi.aiUsageRate + '%';
+      setDelta('kpiAIDelta', kpi.aiUsageRateDelta, false);
+      document.getElementById('kpiRevenue').textContent = formatCurrency(kpi.monthlyRevenue);
+      setDelta('kpiRevenueDelta', kpi.monthlyRevenueDelta, false);
+      document.getElementById('kpiToday').textContent = kpi.todayConsults != null
+        ? kpi.todayConsults
+        : patients.filter(p => p.status === '상담대기' || p.status === '상담중').length;
+    }
 
     // ---- Line Chart (Revenue) ----
     function drawLineChart() {
+      const daily = currentData.daily;
+      if (!daily || !daily.length) return;
       const wrap = document.getElementById('revenueChartWrap');
       const W = 600, H = 260, pad = 40;
       const innerW = W - pad * 2, innerH = H - pad * 2;
-      const maxV = Math.max(...daily.map(d => d.revenue));
+      const maxV = Math.max(...daily.map(d => d.revenue), 1);
       const minV = 0;
-      const xStep = innerW / (daily.length - 1);
+      const xStep = innerW / Math.max(daily.length - 1, 1);
 
       const points = daily.map((d, i) => {
         const x = pad + i * xStep;
@@ -251,10 +303,12 @@
 
     // ---- Pie/Donut Chart (Treatment Mix) ----
     function drawPieChart() {
+      const mix = currentData.mix;
       const wrap = document.getElementById('mixChartWrap');
+      if (!mix || !mix.length) { wrap.innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-tertiary); font-size:0.85rem;">데이터 없음</div>'; return; }
       const W = 240, H = 240;
       const cx = W / 2, cy = H / 2, r = 90, ir = 55;
-      const total = mix.reduce((s, m) => s + m.value, 0);
+      const total = mix.reduce((s, m) => s + m.value, 0) || 1;
       let angle = -Math.PI / 2;
 
       const segments = mix.map(m => {
@@ -292,67 +346,134 @@
     }
 
     // ---- Funnel ----
-    const funnelData = [
-      { label: '상담대기', count: patients.filter(p => p.status === '상담대기').length, color: '#94A3B8' },
-      { label: '상담중',   count: patients.filter(p => p.status === '상담중').length, color: '#0066FF' },
-      { label: '계약완료', count: patients.filter(p => p.status === '계약완료').length, color: '#00D4AA' },
-      { label: '치료중',   count: patients.filter(p => p.status === '치료중').length, color: '#F59E0B' },
-      { label: '치료완료', count: patients.filter(p => p.status === '치료완료').length, color: '#0F766E' },
-    ];
-    // 최소 1로 보정해서 바가 보이게
-    const maxCount = Math.max(...funnelData.map(f => f.count), 1);
-    const total = funnelData.reduce((s, f) => s + f.count, 0) || 1;
-    document.getElementById('funnel').innerHTML = funnelData.map(f => `
-      <div class="funnel-step">
-        <div class="funnel-label">${f.label}</div>
-        <div class="funnel-bar" style="width:${Math.max((f.count / maxCount) * 100, 10)}%; background:${f.color};">${f.count}명</div>
-        <div class="funnel-count">${Math.round((f.count / total) * 100)}%</div>
-      </div>
-    `).join('');
+    function renderFunnel() {
+      const patients = currentData.patients;
+      const funnelData = [
+        { label: '상담대기', count: patients.filter(p => p.status === '상담대기').length, color: '#94A3B8' },
+        { label: '상담중',   count: patients.filter(p => p.status === '상담중').length, color: '#0066FF' },
+        { label: '계약완료', count: patients.filter(p => p.status === '계약완료').length, color: '#00D4AA' },
+        { label: '치료중',   count: patients.filter(p => p.status === '치료중').length, color: '#F59E0B' },
+        { label: '치료완료', count: patients.filter(p => p.status === '치료완료').length, color: '#0F766E' },
+      ];
+      const maxCount = Math.max(...funnelData.map(f => f.count), 1);
+      const total = funnelData.reduce((s, f) => s + f.count, 0) || 1;
+      document.getElementById('funnel').innerHTML = funnelData.map(f => `
+        <div class="funnel-step">
+          <div class="funnel-label">${f.label}</div>
+          <div class="funnel-bar" style="width:${Math.max((f.count / maxCount) * 100, 10)}%; background:${f.color};">${f.count}명</div>
+          <div class="funnel-count">${Math.round((f.count / total) * 100)}%</div>
+        </div>
+      `).join('');
+    }
 
     // ---- Benchmark ----
-    const bm = KPIEngine.benchmark(kpi);
-    const bmLabels = {
-      conversionRate: '전환율',
-      avgConsultMin: '평균 상담시간',
-      revisitRate: '재방문율',
-      aiUsageRate: 'AI 활용률'
-    };
-    const bmUnits = { conversionRate: '%', avgConsultMin: '분', revisitRate: '%', aiUsageRate: '%' };
-    document.getElementById('benchmark').innerHTML = Object.keys(bm).map(k => {
-      const item = bm[k];
-      const unit = bmUnits[k];
-      const color = item.met ? 'var(--success)' : 'var(--danger)';
-      const icon = item.met ? '&#10003;' : '&#10005;';
-      return `<div class="benchmark-row">
-        <div>
-          <div class="bm-label">${bmLabels[k]}</div>
-          <div class="bm-values">현재 <strong style="color:${color};">${item.current}${unit}</strong> / 목표 ${item.target}${unit}</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="font-size:0.8125rem; color:${color}; font-weight:700;">${item.delta > 0 ? '+' : ''}${item.delta}${unit}</span>
-          <span class="bm-check" style="background:${color};">${icon}</span>
-        </div>
-      </div>`;
-    }).join('');
+    function renderBenchmark() {
+      const bm = KPIEngine.benchmark(currentData.kpi);
+      const bmLabels = { conversionRate: '전환율', avgConsultMin: '평균 상담시간', revisitRate: '재방문율', aiUsageRate: 'AI 활용률' };
+      const bmUnits = { conversionRate: '%', avgConsultMin: '분', revisitRate: '%', aiUsageRate: '%' };
+      document.getElementById('benchmark').innerHTML = Object.keys(bm).map(k => {
+        const item = bm[k];
+        const unit = bmUnits[k];
+        const color = item.met ? 'var(--success)' : 'var(--danger)';
+        const icon = item.met ? '&#10003;' : '&#10005;';
+        return `<div class="benchmark-row">
+          <div>
+            <div class="bm-label">${bmLabels[k]}</div>
+            <div class="bm-values">현재 <strong style="color:${color};">${item.current}${unit}</strong> / 목표 ${item.target}${unit}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:0.8125rem; color:${color}; font-weight:700;">${item.delta > 0 ? '+' : ''}${item.delta}${unit}</span>
+            <span class="bm-check" style="background:${color};">${icon}</span>
+          </div>
+        </div>`;
+      }).join('');
+    }
 
     // ---- Insights ----
-    const insights = [
-      { icon: '&#x1F4C8;', title: '매출 상승 추세', desc: '최근 7일 매출이 평균 대비 24% 상승했습니다. 임플란트 상담 증가가 주 원인입니다.', color: 'var(--success)' },
-      { icon: '&#x1F3AF;', title: '전환율 개선 기회', desc: `AI 활용 상담의 계약 성공률이 비활용 대비 ${Math.round(kpi.aiUsageRate / 35)}배 높습니다.`, color: 'var(--primary)' },
-      { icon: '&#x26A0;', title: '주의: 고가치료 이탈', desc: '임플란트 상담 중 2회차 미도달 환자 3명. 자동화 리마인더 발송을 추천합니다.', color: 'var(--warning)' },
-    ];
-    document.getElementById('insights').innerHTML = insights.map(i => `
-      <div style="padding:18px; background:var(--gray-50); border-radius:var(--radius-md); border-left:4px solid ${i.color};">
-        <div style="font-size:1.4rem; margin-bottom:6px;">${i.icon}</div>
-        <h4 style="margin-bottom:6px; color:var(--text-primary);">${i.title}</h4>
-        <p style="font-size:0.8125rem;">${i.desc}</p>
-      </div>
-    `).join('');
+    function renderInsights() {
+      const kpi = currentData.kpi;
+      const insights = currentData.isLive ? [
+        { icon: '📈', title: '실데이터 연결됨', desc: `Supabase에서 실시간으로 집계 중입니다. 7일 매출·치료믹스·퍼널·6대 KPI 모두 DB 기반.`, color: 'var(--success)' },
+        { icon: '🎯', title: '전환율', desc: `현재 ${kpi.conversionRate}% — 목표 70% 대비 ${kpi.conversionRate >= 70 ? '달성' : (70 - kpi.conversionRate) + '%p 여유'}.`, color: 'var(--primary)' },
+        { icon: '⚠️', title: 'AI 활용률', desc: `${kpi.aiUsageRate}% — 상담 로그에 코칭 결과가 남은 세션 비중.`, color: 'var(--warning)' },
+      ] : [
+        { icon: '📈', title: '매출 상승 추세', desc: '최근 7일 매출이 평균 대비 24% 상승했습니다. 임플란트 상담 증가가 주 원인입니다.', color: 'var(--success)' },
+        { icon: '🎯', title: '전환율 개선 기회', desc: `AI 활용 상담의 계약 성공률이 비활용 대비 ${Math.max(1, Math.round((kpi.aiUsageRate || 0) / 35))}배 높습니다.`, color: 'var(--primary)' },
+        { icon: '⚠️', title: '주의: 고가치료 이탈', desc: '임플란트 상담 중 2회차 미도달 환자 3명. 자동화 리마인더 발송을 추천합니다.', color: 'var(--warning)' },
+      ];
+      document.getElementById('insights').innerHTML = insights.map(i => `
+        <div style="padding:18px; background:var(--gray-50); border-radius:var(--radius-md); border-left:4px solid ${i.color};">
+          <div style="font-size:1.4rem; margin-bottom:6px;">${i.icon}</div>
+          <h4 style="margin-bottom:6px; color:var(--text-primary);">${i.title}</h4>
+          <p style="font-size:0.8125rem;">${i.desc}</p>
+        </div>
+      `).join('');
+    }
 
-    drawLineChart();
-    drawPieChart();
+    // ---- 상단 데이터 소스 배지 ----
+    function renderSourceBadge() {
+      const existing = document.getElementById('dataSourceBadge');
+      if (existing) existing.remove();
+      const badge = document.createElement('div');
+      badge.id = 'dataSourceBadge';
+      badge.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:var(--radius-full); font-size:0.72rem; font-weight:800; letter-spacing:0.04em; margin-bottom:14px;';
+      if (currentData.isLive) {
+        badge.style.background = '#DCFCE7';
+        badge.style.color = '#14532D';
+        badge.innerHTML = '<span style="width:8px; height:8px; border-radius:50%; background:#10B981; display:inline-block; animation:pulse 1.6s infinite;"></span> 🔴 LIVE · Supabase';
+      } else {
+        badge.style.background = '#FEF3C7';
+        badge.style.color = '#92400E';
+        badge.textContent = '📊 DEMO · SampleData';
+      }
+      const content = document.querySelector('.content');
+      if (content) content.insertBefore(badge, content.firstChild);
+    }
+
+    // ---- 오케스트레이터 ----
+    function renderAll() {
+      renderKPIs(currentData);
+      renderFunnel();
+      renderBenchmark();
+      renderInsights();
+      drawLineChart();
+      drawPieChart();
+      renderSourceBadge();
+    }
+    renderAll();
     window.addEventListener('resize', () => { drawLineChart(); drawPieChart(); });
+
+    // ---- Supabase 실데이터 로드 (있을 때) ----
+    (async () => {
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) return;
+      try {
+        const [agg, prevSnaps] = await Promise.all([
+          SupabaseDB.getDashboardAggregates(),
+          SupabaseDB.getKPIs({ limit: 7 }).catch(() => [])
+        ]);
+        // 어제 스냅샷(있으면) vs 오늘 집계 delta 계산
+        const yesterday = (prevSnaps || [])[0];
+        const delta = {};
+        if (yesterday) {
+          delta.conversionRate = Math.round((agg.kpi.conversionRate - (yesterday.conversion_rate || 0)) * 10) / 10;
+          delta.avgConsultMin = Math.round((agg.kpi.avgConsultMin - (yesterday.avg_consult_min || 0)) * 10) / 10;
+          delta.revisitRate = Math.round((agg.kpi.revisitRate - (yesterday.revisit_rate || 0)) * 10) / 10;
+          delta.aiUsageRate = Math.round((agg.kpi.aiUsageRate - (yesterday.ai_usage_rate || 0)) * 10) / 10;
+          delta.monthlyRevenue = Math.round(((agg.kpi.monthlyRevenue - (yesterday.revenue || 0)) / Math.max(yesterday.revenue || 1, 1)) * 100);
+        }
+        // 데이터 없으면 SampleData 유지 (Supabase에 환자 0명이면 혼란)
+        const hasAnyData = agg.kpi.totalPatients > 0 || agg.kpi.totalConsults > 0 || (agg.dailyRevenue || []).some(d => d.revenue > 0);
+        if (!hasAnyData) {
+          showToast('Supabase 연결됨 (데이터 없음) — SampleData로 표시합니다', 'info');
+          return;
+        }
+        currentData = buildFromLive(agg, delta);
+        renderAll();
+        showToast('🔴 LIVE — Supabase 실데이터 반영', 'success');
+      } catch (e) {
+        console.warn('대시보드 실데이터 로드 실패', e);
+      }
+    })();
   </script>
 </body>
 </html>

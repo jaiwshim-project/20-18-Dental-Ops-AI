@@ -201,6 +201,25 @@ const SupabaseDB = {
     return data;
   },
 
+  // 오늘 날짜 기준 일일 스냅샷 — 있으면 업데이트, 없으면 insert
+  async upsertDailyKPI(snapshot) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const today = new Date().toISOString().split('T')[0];
+    const period = snapshot.period || 'daily';
+    const { data: existing } = await this.client.from('kpi_snapshots')
+      .select('id').eq('period', period).eq('snapshot_date', today).maybeSingle();
+    if (existing) {
+      const { data, error } = await this.client.from('kpi_snapshots')
+        .update({ ...snapshot, snapshot_date: today, period }).eq('id', existing.id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    const { data, error } = await this.client.from('kpi_snapshots')
+      .insert([{ ...snapshot, snapshot_date: today, period }]).select().single();
+    if (error) throw error;
+    return data;
+  },
+
   // ============================================================
   // 대시보드 통계
   // ============================================================
@@ -221,6 +240,94 @@ const SupabaseDB = {
       totalRevenue,
       contractCount,
       conversionRate: convs.length > 0 ? Math.round(contractCount / convs.length * 100) : 0,
+    };
+  },
+
+  // 대시보드용 종합 집계 — 7일 매출 추이·치료 믹스·퍼널·KPI 핵심 6개를 한 번에
+  async getDashboardAggregates() {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [patientsRes, consultLogsRes, convRes] = await Promise.all([
+      this.client.from('patients').select('id, status, treatment, created_at'),
+      this.client.from('consult_logs').select('engine, metadata, created_at').gte('created_at', weekAgo),
+      this.client.from('conversions').select('status, estimate, treatment_type, created_at, updated_at').gte('updated_at', monthStart),
+    ]);
+
+    const patients = patientsRes.data || [];
+    const logs = consultLogsRes.data || [];
+    const convs = convRes.data || [];
+
+    // === 환자 상태별 퍼널 ===
+    const funnel = { '상담대기': 0, '상담중': 0, '계약완료': 0, '치료중': 0, '치료완료': 0, '이탈': 0 };
+    patients.forEach(p => { if (funnel[p.status] != null) funnel[p.status]++; });
+
+    // === 치료 믹스 (환자 기준) ===
+    const treatmentMix = {};
+    patients.forEach(p => { if (p.treatment) treatmentMix[p.treatment] = (treatmentMix[p.treatment] || 0) + 1; });
+
+    // === 7일 매출 추이 (conversions) ===
+    const dailyRevenue = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const key = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+      dailyRevenue[key] = { date: key, revenue: 0, patients: 0, consult: 0, contracts: 0 };
+    }
+    convs.forEach(c => {
+      const d = new Date(c.updated_at || c.created_at);
+      const key = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+      if (!dailyRevenue[key]) return;
+      if (c.status === '계약완료' || c.status === '치료완료') {
+        dailyRevenue[key].revenue += (c.estimate || 0);
+        dailyRevenue[key].contracts += 1;
+      }
+    });
+    logs.forEach(l => {
+      const d = new Date(l.created_at);
+      const key = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+      if (dailyRevenue[key]) dailyRevenue[key].consult += 1;
+    });
+
+    // === KPI 6종 ===
+    const totalConsults = logs.length;
+    const contractCount = convs.filter(c => c.status === '계약완료' || c.status === '치료완료').length;
+    const conversionRate = convs.length ? Math.round(contractCount / convs.length * 100) : 0;
+    const monthlyRevenue = convs.filter(c => c.status === '계약완료' || c.status === '치료완료')
+      .reduce((s, c) => s + (c.estimate || 0), 0);
+    // 평균 상담 시간 (분) — consult_logs의 metadata.duration_sec 기반
+    const durations = logs
+      .filter(l => l.engine === 'consult' && l.metadata && typeof l.metadata.duration_sec === 'number')
+      .map(l => l.metadata.duration_sec);
+    const avgConsultMin = durations.length
+      ? Math.round((durations.reduce((s, x) => s + x, 0) / durations.length / 60) * 10) / 10
+      : 0;
+    // 재방문율 — 환자가 상태가 치료중 또는 치료완료면 재방문 가정
+    const revisitCount = patients.filter(p => p.status === '치료중' || p.status === '치료완료').length;
+    const revisitRate = patients.length ? Math.round(revisitCount / patients.length * 100) : 0;
+    // AI 활용률 — consult_logs 중 coachResults가 있는 세션 비중
+    const aiUsedCount = logs.filter(l => l.metadata && (l.metadata.coach_snapshots || l.metadata.evaluation)).length;
+    const aiUsageRate = logs.length ? Math.round(aiUsedCount / logs.length * 100) : 0;
+    // 오늘 상담
+    const todayStr = now.toISOString().split('T')[0];
+    const todayConsults = logs.filter(l => (l.created_at || '').startsWith(todayStr)).length;
+
+    return {
+      kpi: {
+        conversionRate,
+        avgConsultMin,
+        revisitRate,
+        aiUsageRate,
+        monthlyRevenue,
+        todayConsults,
+        totalPatients: patients.length,
+        totalConsults,
+        contractCount
+      },
+      funnel,
+      treatmentMix: Object.entries(treatmentMix).map(([name, value]) => ({ name, value })),
+      dailyRevenue: Object.values(dailyRevenue)
     };
   },
 };

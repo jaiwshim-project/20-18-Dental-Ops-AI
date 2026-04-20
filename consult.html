@@ -1576,6 +1576,23 @@
         }
       }
 
+      // 2.5) 당일 KPI 스냅샷 자동 수집 (Supabase 연결 시만)
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        try {
+          const agg = await SupabaseDB.getDashboardAggregates();
+          await SupabaseDB.upsertDailyKPI({
+            conversion_rate: agg.kpi.conversionRate,
+            avg_consult_min: agg.kpi.avgConsultMin,
+            revisit_rate: agg.kpi.revisitRate,
+            ai_usage_rate: agg.kpi.aiUsageRate,
+            revenue: agg.kpi.monthlyRevenue,
+            patient_count: agg.kpi.totalPatients,
+            contract_count: agg.kpi.contractCount,
+            raw: { funnel: agg.funnel, treatmentMix: agg.treatmentMix }
+          });
+        } catch (e) { console.warn('KPI 스냅샷 저장 실패', e); }
+      }
+
       showToast(`상담 세션 저장 완료 (${saved}) · ${Math.round(currentSession.durationSec / 60)}분 · 대화 ${currentSession.turns.length}회`, 'success');
 
       const savedPatientId = currentSession.patientId;
