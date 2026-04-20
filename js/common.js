@@ -171,7 +171,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 데모 로그인 (index.html 모달에서 호출) — Supabase users 테이블과 동기화
+// ============================================================
+// Supabase Auth 매직링크 로그인 — Phase 3
+// ============================================================
+// 흐름:
+//   1) 사용자가 이름·병원·이메일·역할 입력 → "매직링크 받기"
+//   2) 입력값을 pending_login에 임시 저장
+//   3) supabase.auth.signInWithOtp({email}) 호출 — 이메일 발송
+//   4) 사용자가 이메일 링크 클릭 → /index.html#access_token=... 로 복귀
+//   5) onAuthStateChange 리스너가 SIGNED_IN 이벤트 받음
+//   6) pending_login 읽어 public.users upsert + Session.login
+//   7) redirect 쿼리 있으면 해당 페이지로 이동
 async function demoLogin() {
   const name = (document.getElementById('loginName')?.value || '').trim();
   const clinic = (document.getElementById('loginClinic')?.value || '').trim();
@@ -185,32 +195,100 @@ async function demoLogin() {
   if (!email) { showToast('이메일을 입력하세요', 'warning'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('이메일 형식이 올바르지 않습니다', 'warning'); return; }
 
-  // Supabase users 테이블 upsert — 성공 시 실제 DB userId 사용
-  let userId = 'u_' + Date.now(); // fallback (Supabase 미연결 시)
-  if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
-    try {
-      const row = await SupabaseDB.upsertUser({ email, name, clinic, role });
-      userId = row.id;
-      showToast(`${name}님 (${clinic}) · Supabase 동기화 완료`, 'success');
-    } catch (e) {
-      console.warn('Supabase 사용자 upsert 실패', e);
-      showToast(`${name}님 환영합니다 (오프라인 세션)`, 'warning');
-    }
-  } else {
-    showToast(`${name}님 환영합니다 (Supabase 미연결)`, 'warning');
+  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+    showToast('Supabase 미연결 — 로그인 불가', 'error');
+    return;
   }
 
+  // pending 저장 (링크 클릭 후 돌아왔을 때 쓰기 위함)
+  Store.set('pending_login', { name, clinic, email, role, requestedAt: Date.now() });
+
+  const btn = document.querySelector('#loginModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '📤 발송 중...'; }
+
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+  const emailRedirectTo = location.origin + '/index.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
+
+  try {
+    const { error } = await SupabaseDB.client.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo, shouldCreateUser: true }
+    });
+    if (error) throw error;
+    closeModal('loginModal');
+    showToast(`✉️ ${email} 로 매직링크를 보냈습니다. 이메일을 확인하고 링크를 클릭하세요.`, 'success', 6000);
+    // 모달 내용을 "이메일 확인" 안내로 바꿀 수도 있지만 일단 토스트로 충분
+  } catch (e) {
+    console.error('매직링크 발송 실패', e);
+    showToast('매직링크 발송 실패: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✉️ 매직링크 받기'; }
+  }
+}
+
+// 페이지 로드 시 Supabase Auth 세션 복구 + pending upsert
+async function initAuthBridge() {
+  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+  const authClient = SupabaseDB.client.auth;
+  if (!authClient) return;
+
+  // 현재 auth 세션 확인
+  try {
+    const { data: { session } } = await authClient.getSession();
+    if (session && session.user) {
+      await applyAuthSession(session);
+    }
+  } catch (e) { console.warn('getSession 실패', e); }
+
+  // 이후 로그인/로그아웃 이벤트 구독
+  authClient.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      await applyAuthSession(session);
+      // URL 해시 정리
+      if (location.hash && location.hash.includes('access_token')) {
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+      updateSessionUI();
+      // redirect 쿼리 있으면 이동
+      const params = new URLSearchParams(location.search);
+      const redirect = params.get('redirect');
+      if (redirect) {
+        const safePath = /^[a-z0-9_-]+\.html$/i.test(redirect) ? redirect : 'index.html';
+        setTimeout(() => { location.href = safePath; }, 300);
+      }
+    }
+    if (event === 'SIGNED_OUT') {
+      Session.logout();
+      updateSessionUI();
+    }
+  });
+}
+
+async function applyAuthSession(authSession) {
+  const authUser = authSession.user;
+  const email = authUser.email;
+  if (!email) return;
+
+  // pending_login에서 입력 정보 복구 (매직링크 발송 당시 저장한 값)
+  const pending = Store.get('pending_login', null);
+  let name = pending?.name || email.split('@')[0];
+  let clinic = pending?.clinic || '';
+  let role = pending?.role || 'staff';
+
+  // public.users 테이블에 upsert
+  let userId = authUser.id;
+  try {
+    const row = await SupabaseDB.upsertUser({ email, name, clinic, role });
+    if (row?.id) userId = row.id;
+    name = row?.name || name;
+    clinic = row?.clinic || clinic;
+    role = row?.role || role;
+  } catch (e) { console.warn('users upsert 실패', e); }
+
   Session.login({ userId, name, role, clinic, email });
-  closeModal('loginModal');
-  const urlParams = new URLSearchParams(window.location.search);
-  const redirect = urlParams.get('redirect');
-  setTimeout(() => {
-    if (redirect) {
-      // 화이트리스트된 내부 경로만 허용 (open redirect 방지)
-      const safePath = /^[a-z0-9_-]+\.html$/i.test(redirect) ? redirect : 'index.html';
-      window.location.href = safePath;
-    } else updateSessionUI();
-  }, 600);
+  Store.remove('pending_login');
+  showToast(`${name}님 환영합니다 (${clinic})`, 'success');
 }
 
 // Enter 키로 로그인 제출
@@ -224,7 +302,12 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-function logoutAndRefresh() {
+async function logoutAndRefresh() {
+  try {
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client?.auth) {
+      await SupabaseDB.client.auth.signOut();
+    }
+  } catch (e) { console.warn('auth.signOut 실패', e); }
   Session.logout();
   showToast('로그아웃되었습니다', 'info');
   setTimeout(() => window.location.href = 'index.html', 500);
@@ -415,13 +498,13 @@ function renderSidebar(activePage) {
     <div class="modal" style="max-width:420px;">
       <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h3 style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:1.25rem;">🔐</span> 로그인
+          <span style="font-size:1.25rem;">✉️</span> 매직링크 로그인
         </h3>
         <button class="btn btn-sm btn-secondary" onclick="closeModal('loginModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
       </div>
       <div class="modal-body">
         <div style="padding:14px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:20px;">
-          <p style="font-size:0.8125rem; color:var(--primary); font-weight:600;">🎯 8대 엔진 접근에 로그인이 필요합니다</p>
+          <p style="font-size:0.8125rem; color:var(--primary); font-weight:600; line-height:1.55;">📧 입력하신 이메일로 <strong>1회용 로그인 링크</strong>를 보내드립니다.<br>링크 클릭 시 자동 로그인됩니다. 비밀번호 불필요.</p>
         </div>
         <div class="form-group">
           <label class="form-label">이름 <span style="color:var(--danger);">*</span></label>
@@ -448,7 +531,7 @@ function renderSidebar(activePage) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
-        <button class="btn btn-primary" onclick="demoLogin()">🚀 로그인</button>
+        <button class="btn btn-primary" onclick="demoLogin()">✉️ 매직링크 받기</button>
       </div>
     </div>
   </div>`;
@@ -681,6 +764,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updateSidebarApiState();
   updateSidebarDbState();
   renderConnectionBanner();
+  // Supabase Auth 세션 복원 + onAuthStateChange 구독
+  // SupabaseDB.init()이 DOMContentLoaded에서 실행되므로 약간의 딜레이
+  setTimeout(() => { initAuthBridge().catch(e => console.warn('authBridge init 실패', e)); }, 100);
 });
 
 // --- 연결 상태 배너 (엔진 페이지 한정) ---
