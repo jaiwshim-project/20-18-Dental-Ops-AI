@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="환자별 상담 이력 리뷰 — 특정 환자의 모든 세션을 한 화면에서 조회·비교합니다.">
+  <title>환자 상담 리뷰 | Dental Ops AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0066FF">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .pr-header {
+      background: linear-gradient(135deg, #0F172A, #1E3A5F);
+      color: #FFF;
+      padding: 20px 28px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .pr-header h1 { color: #FFF; font-size: 1.35rem; margin-bottom: 6px; }
+    .pr-meta { font-size: 0.82rem; opacity: 0.78; }
+    .pr-meta strong { color: #FFF; }
+
+    .review-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 960px) { .review-layout { grid-template-columns: 1fr; } }
+
+    .session-list {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+      position: sticky;
+      top: 84px;
+    }
+    @media (max-width: 960px) { .session-list { position: relative; top: 0; max-height: none; } }
+
+    .session-list-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      padding: 4px 8px 10px;
+      border-bottom: 1px solid var(--gray-100);
+      margin-bottom: 10px;
+    }
+    .session-card {
+      padding: 10px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all var(--duration) var(--ease);
+      background: var(--surface);
+    }
+    .session-card:hover { border-color: var(--primary); transform: translateX(2px); }
+    .session-card.active {
+      background: linear-gradient(135deg, #0066FF, #0044CC);
+      color: #FFF;
+      border-color: #0044CC;
+      box-shadow: 0 4px 14px rgba(0,102,255,0.3);
+    }
+    .session-card.active * { color: #FFF !important; }
+    .sc-title { font-size: 0.88rem; font-weight: 800; color: var(--text-primary); margin-bottom: 3px; }
+    .sc-date { font-size: 0.7rem; color: var(--text-tertiary); margin-bottom: 4px; }
+    .sc-score-row {
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+      font-size: 0.72rem;
+    }
+    .sc-pill {
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-weight: 800;
+    }
+    .sc-pill.high { background: #D1FAE5; color: #065F46; }
+    .sc-pill.mid  { background: #FEF3C7; color: #92400E; }
+    .sc-pill.low  { background: #FEE2E2; color: #991B1B; }
+    .sc-pill.none { background: var(--gray-100); color: var(--text-tertiary); }
+
+    .detail-area {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 24px 26px;
+      min-height: 400px;
+    }
+    .detail-area .section { margin-bottom: 28px; }
+    .detail-area .section h3 {
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      color: var(--gray-800);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid var(--gray-100);
+    }
+
+    /* 대화 버블 */
+    .turn-log {
+      display: flex; flex-direction: column; gap: 8px;
+      background: var(--gray-50);
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .turn-bubble {
+      max-width: 85%;
+      padding: 9px 13px;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+    .turn-bubble.patient { align-self: flex-start; background: #EBF3FF; color: #1E3A8A; border-bottom-left-radius: 4px; }
+    .turn-bubble.staff { align-self: flex-end; background: #DCFCE7; color: #14532D; border-bottom-right-radius: 4px; }
+    .turn-bubble .meta { font-size: 0.66rem; font-weight: 800; opacity: 0.6; margin-bottom: 2px; text-transform: uppercase; }
+
+    /* 코칭 카드 */
+    .coach-card {
+      background: linear-gradient(135deg, #EBF3FF, #F0FDF4);
+      border: 1.5px solid #BFDBFE;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .coach-head {
+      display: flex; gap: 10px; align-items: center;
+      font-size: 0.82rem; font-weight: 800; color: var(--primary);
+      margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .coach-head .turn-num {
+      background: var(--primary); color: #FFF;
+      padding: 3px 10px; border-radius: var(--radius-full);
+      font-size: 0.72rem;
+    }
+    .coach-subtext {
+      font-size: 0.82rem; color: #78350F;
+      background: #FEF3C7;
+      border-left: 3px solid #F59E0B;
+      padding: 8px 12px; border-radius: 0 6px 6px 0;
+      margin-bottom: 8px;
+      line-height: 1.55;
+    }
+    .coach-reply {
+      background: var(--surface);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem; line-height: 1.7;
+      color: var(--gray-800);
+      white-space: pre-wrap;
+    }
+    .coach-meta {
+      display: flex; gap: 10px; font-size: 0.74rem;
+      color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap;
+    }
+
+    /* 평가 */
+    .eval-overall {
+      background: linear-gradient(135deg, #0F172A, #1E3A5F);
+      color: #FFF;
+      padding: 18px 22px;
+      border-radius: var(--radius-md);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .eval-overall .score {
+      font-size: 2.25rem; font-weight: 800; line-height: 1;
+    }
+    .eval-overall .label {
+      font-size: 0.7rem; opacity: 0.7; margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .eval-overall .note { font-size: 0.8rem; margin-top: 10px; opacity: 0.9; }
+
+    .score-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+    }
+    .score-cell {
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 0.8rem;
+    }
+    .score-cell strong { color: var(--primary); }
+
+    .kv-list { margin: 6px 0 0; padding-left: 18px; font-size: 0.85rem; line-height: 1.6; }
+    .kv-block { margin-bottom: 10px; }
+    .kv-block strong { font-size: 0.78rem; letter-spacing: 0.03em; }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-tertiary);
+      font-size: 0.9rem;
+    }
+    .empty .emoji { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.7; }
+
+    .btn-back {
+      color: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.15); }
+  </style>
+</head>
+<body>
+  <div class="layout" id="app">
+    <div class="main">
+      <header class="header">
+        <div class="flex items-center gap-12">
+          <button class="hamburger" onclick="toggleSidebar()">☰</button>
+          <span class="header-title">📚 환자 상담 리뷰</span>
+        </div>
+        <div class="header-actions">
+          <span id="sessionBadge"></span>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- 환자 프로필 헤더 -->
+        <div class="pr-header" id="prHeader">
+          <div>
+            <h1 id="prName">환자 로딩 중…</h1>
+            <div class="pr-meta" id="prMeta">—</div>
+          </div>
+          <a href="consult.html" class="btn-back">← 상담 페이지로</a>
+        </div>
+
+        <!-- 메인 레이아웃 -->
+        <div class="review-layout">
+          <!-- 세션 목록 (좌) -->
+          <aside class="session-list">
+            <div class="session-list-title">📋 세션 목록</div>
+            <div id="sessionCards">
+              <div class="empty">
+                <div class="spinner" style="margin:0 auto;"></div>
+                <p style="margin-top:10px; font-size:0.82rem;">불러오는 중…</p>
+              </div>
+            </div>
+          </aside>
+
+          <!-- 세션 상세 (우) -->
+          <main class="detail-area" id="detailArea">
+            <div class="empty">
+              <span class="emoji">👈</span>
+              왼쪽에서 세션을 선택하세요
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/qlrcq-framework.js"></script>
+  <script src="js/dental-engines.js"></script>
+  <script>
+    document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('consult'));
+
+    const params = new URLSearchParams(location.search);
+    const patientId = params.get('patient');
+    let patient = null;
+    let sessions = [];
+
+    async function init() {
+      if (!patientId) {
+        document.getElementById('detailArea').innerHTML = `
+          <div class="empty">
+            <span class="emoji">⚠️</span>
+            환자 ID가 지정되지 않았습니다.<br>
+            <a href="consult.html" style="color:var(--primary);">상담 페이지</a>로 돌아가 환자를 선택한 후 📂 불러오기를 눌러주세요.
+          </div>`;
+        return;
+      }
+
+      if (!SupabaseDB || !SupabaseDB.isReady()) {
+        if (typeof supabase !== 'undefined') { try { SupabaseDB.init(); } catch {} }
+      }
+      if (!SupabaseDB || !SupabaseDB.isReady()) {
+        document.getElementById('detailArea').innerHTML = `<div class="empty">Supabase 연결 필요</div>`;
+        return;
+      }
+
+      // 환자 프로필 + 세션 병렬 로딩
+      try {
+        const [pList, sList] = await Promise.all([
+          SupabaseDB.getPatients({ limit: 500 }),
+          SupabaseDB.getPatientSessions(patientId, 100)
+        ]);
+        patient = (pList || []).find(p => p.id === patientId) || null;
+        sessions = sList || [];
+      } catch (e) {
+        console.warn(e);
+        document.getElementById('detailArea').innerHTML = `<div class="empty" style="color:var(--danger);">조회 실패: ${escapeHTML(e.message)}</div>`;
+        return;
+      }
+
+      renderHeader();
+      renderSessionList();
+      // URL에 ?session=... 있으면 해당 세션 자동 열기, 없으면 최신 세션
+      const preselect = params.get('session');
+      const target = sessions.find(s => s.id === preselect) || sessions[0];
+      if (target) selectSession(target.id);
+    }
+
+    function renderHeader() {
+      const nameEl = document.getElementById('prName');
+      const metaEl = document.getElementById('prMeta');
+      if (!patient) {
+        nameEl.textContent = '환자 정보를 찾을 수 없습니다';
+        metaEl.textContent = '—';
+        return;
+      }
+      nameEl.textContent = `📚 ${patient.name}님 상담 리뷰`;
+      const ageTxt = patient.age ? `${patient.age}세` : '';
+      const totalMins = Math.round(sessions.reduce((s, x) => s + (x.durationSec || 0), 0) / 60);
+      const scored = sessions.filter(s => s.evaluation?.overall_score != null);
+      const avgScore = scored.length ? Math.round(scored.reduce((s, x) => s + x.evaluation.overall_score, 0) / scored.length) : null;
+      const parts = [
+        [ageTxt, patient.gender].filter(Boolean).join(' '),
+        patient.treatment ? `관심: ${patient.treatment}` : '',
+        `총 ${sessions.length}회 상담`,
+        totalMins ? `누적 ${totalMins}분` : '',
+        avgScore != null ? `평균 ${avgScore}점` : ''
+      ].filter(Boolean);
+      metaEl.innerHTML = parts.map(p => `<strong>${escapeHTML(p)}</strong>`).join(' · ');
+    }
+
+    function renderSessionList() {
+      const el = document.getElementById('sessionCards');
+      if (!sessions.length) {
+        el.innerHTML = `
+          <div class="empty" style="padding:28px 12px;">
+            <span class="emoji">📭</span>
+            <p style="font-size:0.82rem;">아직 저장된 상담이 없습니다.</p>
+            <a href="consult.html" style="color:var(--primary); font-size:0.82rem;">첫 상담 시작하기 →</a>
+          </div>`;
+        return;
+      }
+      el.innerHTML = sessions.map((s, i) => {
+        const t = typeof s.startedAt === 'number' ? new Date(s.startedAt) : new Date(s.startedAt);
+        const dt = isNaN(t) ? '-' : t.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const mins = Math.max(1, Math.round((s.durationSec || 0) / 60));
+        const sc = s.evaluation?.overall_score;
+        const cls = sc == null ? 'none' : sc >= 80 ? 'high' : sc >= 60 ? 'mid' : 'low';
+        const scText = sc == null ? '미평가' : sc + '점';
+        const n = sessions.length - i;
+        return `
+          <div class="session-card" id="sc-${s.id}" onclick="selectSession('${s.id}')">
+            <div class="sc-title">#${n}회차</div>
+            <div class="sc-date">${escapeHTML(dt)} · ${mins}분</div>
+            <div class="sc-score-row">
+              <span class="sc-pill ${cls}">${scText}</span>
+              <span>대화 ${s.turns?.length || 0}</span>
+              <span>코칭 ${s.coachResults?.length || 0}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function selectSession(id) {
+      document.querySelectorAll('.session-card.active').forEach(c => c.classList.remove('active'));
+      const card = document.getElementById('sc-' + id);
+      if (card) card.classList.add('active');
+      // URL에 반영 (뒤로가기 시 해당 세션 유지)
+      const u = new URL(location);
+      u.searchParams.set('session', id);
+      history.replaceState(null, '', u.toString());
+      // 렌더
+      const s = sessions.find(x => x.id === id);
+      if (!s) return;
+      renderSessionDetail(s);
+    }
+
+    function renderSessionDetail(s) {
+      const area = document.getElementById('detailArea');
+      const t = typeof s.startedAt === 'number' ? new Date(s.startedAt) : new Date(s.startedAt);
+      const mins = Math.max(1, Math.round((s.durationSec || 0) / 60));
+      const turns = s.turns || [];
+      const coaches = s.coachResults || [];
+      const ev = s.evaluation || {};
+      const safe = escapeHTML;
+
+      let html = `
+        <div style="margin-bottom:20px; padding-bottom:14px; border-bottom:2px solid var(--gray-100);">
+          <h2 style="font-size:1.15rem; margin-bottom:4px;">${isNaN(t) ? '-' : t.toLocaleString('ko-KR')}</h2>
+          <div style="font-size:0.82rem; color:var(--text-tertiary);">
+            ${mins}분 · 대화 ${turns.length}턴 · 코칭 ${coaches.length}건 · 상담사 ${safe(s.author || '-')}${s.clinic ? ' · ' + safe(s.clinic) : ''}
+          </div>
+        </div>`;
+
+      // 대화
+      if (turns.length) {
+        html += `<div class="section">
+          <h3>🗣 대화 녹취 (${turns.length}턴)</h3>
+          <div class="turn-log">
+            ${turns.map(t => {
+              const cls = t.speaker === 'staff' ? 'staff' : 'patient';
+              const label = t.speaker === 'staff' ? '🧑‍⚕️ 실장' : t.speaker === 'patient' ? '👤 환자' : '🗣 발화';
+              return `<div class="turn-bubble ${cls}"><div class="meta">${label}</div>${safe(t.text || '')}</div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }
+
+      // 코칭 카드
+      if (coaches.length) {
+        html += `<div class="section"><h3>🧑‍⚕️ 상담실장 코칭 답변 (${coaches.length}턴)</h3>`;
+        coaches.forEach((c, i) => {
+          const d = c.data || c || {};
+          const reply = Array.isArray(d.recommended_reply) ? d.recommended_reply.join('\n') : (d.recommended_reply || '');
+          const sub = Array.isArray(d.subtext) ? d.subtext.join(' / ') : (d.subtext || '');
+          const keyPts = Array.isArray(d.key_points) ? d.key_points : [];
+          const opts = Array.isArray(d.treatment_options) ? d.treatment_options : [];
+          html += `
+            <div class="coach-card">
+              <div class="coach-head">
+                <span class="turn-num">📤 #${i+1}</span>
+                <span>의도: ${safe(d.intent_primary || '-')}</span>
+                <span>준비도 ${d.readiness ?? '-'}%</span>
+                ${d.qlrcq_position ? `<span>위치: ${safe(d.qlrcq_position)}</span>` : ''}
+                ${d.principle_alignment ? `<span>원칙: ${safe(d.principle_alignment)}</span>` : ''}
+              </div>
+              ${sub ? `<div class="coach-subtext"><strong>🔎 SUBTEXT</strong><br>${safe(sub)}</div>` : ''}
+              ${reply ? `<div class="coach-reply">${safe(reply)}</div>` : ''}
+              ${keyPts.length ? `<div class="coach-meta"><strong>🎯 포인트:</strong> ${keyPts.map(x => safe(x)).join(' · ')}</div>` : ''}
+              ${opts.length ? `<div class="coach-meta"><strong>🧭 옵션:</strong> ${opts.map(o => safe(o.name || '')).join(' | ')}</div>` : ''}
+              ${d.next_action ? `<div class="coach-meta" style="color:#065F46;"><strong>🤝 다음:</strong> ${safe(d.next_action)}</div>` : ''}
+            </div>`;
+        });
+        html += `</div>`;
+      }
+
+      // 세션 평가
+      if (ev && Object.keys(ev).length) {
+        const scores = ev.scores || {};
+        const LABEL = {
+          empathy_completion:'공감 완결도', understanding_depth:'이해 깊이',
+          choice_respect:'선택권 존중', value_clarity:'가치 전달', trust_depth:'신뢰 구축',
+          empathy:'공감', autonomy:'자율성', information_balance:'정보균형',
+          no_pressure:'비강요', silence_allowance:'침묵 허용'
+        };
+        html += `<div class="section"><h3>📋 세션 평가</h3>`;
+        if (ev.overall_score != null) {
+          html += `<div class="eval-overall">
+            <div class="score">${ev.overall_score}</div>
+            <div class="label">Overall Score</div>
+            ${ev.readiness_trajectory ? `<div class="note">준비도 ${ev.readiness_trajectory.start ?? '-'} → ${ev.readiness_trajectory.end ?? '-'} · ${safe(ev.readiness_trajectory.note || '')}</div>` : ''}
+          </div>`;
+        }
+        const scoreEntries = Object.keys(LABEL).filter(k => scores[k] != null);
+        if (scoreEntries.length) {
+          html += `<div class="score-grid">${scoreEntries.map(k => `
+            <div class="score-cell">${LABEL[k]}: <strong>${scores[k]}/20</strong></div>
+          `).join('')}</div>`;
+        }
+        if (ev.qlrcq_cycle_completion != null) {
+          html += `<div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:10px;">🧭 QLRCQ 사이클 완주율: <strong style="color:var(--primary);">${ev.qlrcq_cycle_completion}%</strong> · 최고 단계 ${ev.max_reached_stage || '-'}/5</div>`;
+        }
+        if (Array.isArray(ev.summary) && ev.summary.length) {
+          html += `<div class="kv-block"><strong>📝 요약</strong>
+            <ul class="kv-list">${ev.summary.map(x => `<li>${safe(x)}</li>`).join('')}</ul></div>`;
+        }
+        if (Array.isArray(ev.patient_concerns) && ev.patient_concerns.length) {
+          html += `<div class="kv-block"><strong style="color:#92400E;">🎐 환자 우려</strong>
+            <ul class="kv-list">${ev.patient_concerns.map(x => `<li>${safe(x)}</li>`).join('')}</ul></div>`;
+        }
+        if (Array.isArray(ev.staff_strengths) && ev.staff_strengths.length) {
+          html += `<div class="kv-block"><strong style="color:#065F46;">✅ 잘한 점</strong>
+            <ul class="kv-list">${ev.staff_strengths.map(x => `<li>${safe(x)}</li>`).join('')}</ul></div>`;
+        }
+        if (Array.isArray(ev.staff_improvements) && ev.staff_improvements.length) {
+          html += `<div class="kv-block"><strong style="color:#92400E;">🔧 개선 기회</strong>
+            <ul class="kv-list">${ev.staff_improvements.map(x => `<li>${safe(x)}</li>`).join('')}</ul></div>`;
+        }
+        if (Array.isArray(ev.principle_violations) && ev.principle_violations.length) {
+          html += `<div class="kv-block"><strong style="color:#991B1B;">⚠️ 원칙 위반 감지</strong>
+            <ul class="kv-list">${ev.principle_violations.map(v => `<li>${safe(v.principle || '')} · "${safe(v.quote || '')}" → ${safe(v.suggestion || '')}</li>`).join('')}</ul></div>`;
+        }
+        if (Array.isArray(ev.suggested_followup) && ev.suggested_followup.length) {
+          html += `<div class="kv-block"><strong style="color:var(--primary);">🤝 후속 조치</strong>
+            <ul class="kv-list">${ev.suggested_followup.map(x => `<li>${safe(x)}</li>`).join('')}</ul></div>`;
+        }
+        html += `</div>`;
+      }
+
+      area.innerHTML = html || `<div class="empty"><span class="emoji">📭</span>이 세션에 표시할 데이터가 없습니다.</div>`;
+    }
+
+    // 초기 실행
+    setTimeout(init, 200);
+  </script>
+</body>
+</html>

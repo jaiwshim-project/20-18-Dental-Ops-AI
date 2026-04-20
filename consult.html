@@ -1354,7 +1354,16 @@
     // ============================================================
     let viewingPastSession = null; // 읽기 전용 모드 중인 세션
 
-    async function openPastSessionsModal() {
+    function openPastSessionsModal() {
+      const patient = getSelectedPatient();
+      if (!patient) { showToast('환자를 먼저 선택하세요', 'warning'); return; }
+      if (currentSession) { showToast('진행 중인 상담을 먼저 종료해주세요', 'warning'); return; }
+      // 모달 대신 독립 페이지로 이동
+      window.location.href = 'consult_review.html?patient=' + encodeURIComponent(patient.id);
+    }
+
+    // (사용 안 함 — 과거 모달 방식, 참조 호환용으로 남겨둠)
+    async function openPastSessionsModal_legacy() {
       const patient = getSelectedPatient();
       if (!patient) { showToast('환자를 먼저 선택하세요', 'warning'); return; }
       if (currentSession) { showToast('진행 중인 상담을 먼저 종료해주세요', 'warning'); return; }
