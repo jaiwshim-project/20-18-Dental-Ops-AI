@@ -364,6 +364,9 @@ function renderSidebar(activePage) {
       <a href="consult.html" class="nav-item ${activePage === 'consult' ? 'active' : ''}">
         <span class="nav-item-icon">💬</span> 상담 AI
       </a>
+      <a href="review.html" class="nav-item ${activePage === 'review' ? 'active' : ''}">
+        <span class="nav-item-icon">📋</span> 상담 리뷰
+      </a>
       <a href="conversion.html" class="nav-item ${activePage === 'conversion' ? 'active' : ''}">
         <span class="nav-item-icon">🎯</span> 전환 전략
       </a>
