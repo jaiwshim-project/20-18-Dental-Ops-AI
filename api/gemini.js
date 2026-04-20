@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({
       ok: !!process.env.GEMINI_API_KEY,
-      model: 'gemini-2.0-flash'
+      model: 'gemini-2.5-flash'
     });
   }
 
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     parts.push({ text: prompt });
 
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
