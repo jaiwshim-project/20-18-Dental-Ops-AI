@@ -174,6 +174,28 @@ const SupabaseDB = {
     return this.getPatientSessions(null, limit);
   },
 
+  // 환자별 세션 수 집계 — { patient_id: count } 반환
+  async getPatientSessionCounts() {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('consult_logs')
+      .select('patient_id, metadata')
+      .eq('engine', 'consult');
+    if (error) throw error;
+    const counts = {};
+    const lastDate = {}; // 최근 상담일
+    (data || []).forEach(r => {
+      if (!r.patient_id) return;
+      if (r.metadata?.type === 'session' || (r.metadata?.session_id && !r.metadata?.type)) {
+        counts[r.patient_id] = (counts[r.patient_id] || 0) + 1;
+        const d = r.metadata?.ended_at || r.metadata?.started_at;
+        if (d && (!lastDate[r.patient_id] || d > lastDate[r.patient_id])) {
+          lastDate[r.patient_id] = d;
+        }
+      }
+    });
+    return { counts, lastDate };
+  },
+
   // ============================================================
   // 전환 (Conversions)
   // ============================================================
