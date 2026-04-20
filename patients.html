@@ -520,15 +520,32 @@
     // ============================================================
     async function renderPatientReport(p) {
       const area = document.getElementById('reportArea');
+      try {
+        await _renderPatientReportCore(p, area);
+      } catch (e) {
+        console.error('환자 리포트 렌더 실패:', e);
+        area.innerHTML = `<div style="padding:20px; color:var(--danger); font-size:0.85rem;">
+          ⚠️ 리포트 렌더 중 오류: ${escapeHTML(e.message)}<br>
+          <span style="font-size:0.72rem; color:var(--text-tertiary);">F12 콘솔에서 자세한 스택을 확인해주세요.</span>
+        </div>`;
+      }
+    }
+
+    async function _renderPatientReportCore(p, area) {
       if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
         area.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-tertiary); font-size:0.8125rem;">Supabase 연결 필요</div>`;
+        return;
+      }
+      if (!p || !p.id) {
+        area.innerHTML = `<div style="padding:20px; color:var(--danger); font-size:0.8125rem;">환자 ID가 없습니다 (p=${JSON.stringify(p)})</div>`;
         return;
       }
 
       let sessions = [];
       try { sessions = await SupabaseDB.getPatientSessions(p.id, 50); }
       catch (e) {
-        area.innerHTML = `<div style="padding:20px; color:var(--danger); font-size:0.8125rem;">조회 실패: ${escapeHTML(e.message)}</div>`;
+        console.warn('getPatientSessions 실패', e);
+        area.innerHTML = `<div style="padding:20px; color:var(--danger); font-size:0.8125rem;">세션 조회 실패: ${escapeHTML(e.message)}</div>`;
         return;
       }
 
