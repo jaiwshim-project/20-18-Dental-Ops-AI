@@ -1050,34 +1050,52 @@
           } catch { return ''; }
         };
 
-        if (withHistory.length) {
+        // 📚 이력 있음 그룹 — 비어있어도 항상 표시 (UX 명확성)
+        {
           const og = document.createElement('optgroup');
           og.label = `📚 상담 이력 있음 (${withHistory.length}명)`;
-          withHistory.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            const ageTxt = p.age ? `${p.age}세` : '';
-            const treat = p.treatment || '미정';
-            const cnt = patientCountsCache[p.id];
-            const last = fmtLast(patientLastDateCache[p.id]);
-            const metaParts = [ageTxt, treat].filter(Boolean).join(', ');
-            opt.textContent = `${p.name} (${metaParts}) · ${cnt}회${last ? ' · ' + last : ''}`;
-            og.appendChild(opt);
-          });
+          if (withHistory.length === 0) {
+            const info = document.createElement('option');
+            info.disabled = true;
+            info.value = '';
+            info.textContent = '— 아직 저장된 상담 세션이 없습니다 —';
+            og.appendChild(info);
+          } else {
+            withHistory.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.id;
+              const ageTxt = p.age ? `${p.age}세` : '';
+              const treat = p.treatment || '미정';
+              const cnt = patientCountsCache[p.id];
+              const last = fmtLast(patientLastDateCache[p.id]);
+              const metaParts = [ageTxt, treat].filter(Boolean).join(', ');
+              opt.textContent = `${p.name} (${metaParts}) · ${cnt}회${last ? ' · ' + last : ''}`;
+              og.appendChild(opt);
+            });
+          }
           sel.appendChild(og);
         }
-        if (newbies.length) {
+        // 🆕 신규 그룹 — 비어있어도 표시
+        {
           const og = document.createElement('optgroup');
           og.label = `🆕 신규 (상담 이력 없음, ${newbies.length}명)`;
-          newbies.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            const ageTxt = p.age ? `${p.age}세` : '';
-            const treat = p.treatment || '미정';
-            const metaParts = [ageTxt, treat].filter(Boolean).join(', ');
-            opt.textContent = `${p.name} (${metaParts})`;
-            og.appendChild(opt);
-          });
+          if (newbies.length === 0) {
+            const info = document.createElement('option');
+            info.disabled = true;
+            info.value = '';
+            info.textContent = '— 신규 환자가 없습니다. ➕ 버튼으로 추가하세요 —';
+            og.appendChild(info);
+          } else {
+            newbies.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.id;
+              const ageTxt = p.age ? `${p.age}세` : '';
+              const treat = p.treatment || '미정';
+              const metaParts = [ageTxt, treat].filter(Boolean).join(', ');
+              opt.textContent = `${p.name} (${metaParts})`;
+              og.appendChild(opt);
+            });
+          }
           sel.appendChild(og);
         }
       } catch (e) {
