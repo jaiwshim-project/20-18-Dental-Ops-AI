@@ -447,6 +447,79 @@
     }
     .next-action-box strong { display: block; font-size: 0.72rem; opacity: 0.9; letter-spacing: 0.08em; margin-bottom: 4px; }
 
+    /* ===== 코칭 카드 누적(Accordion) ===== */
+    .coach-card-wrap {
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: all var(--duration) var(--ease);
+      background: var(--surface);
+    }
+    .coach-card-wrap.active {
+      border-color: var(--primary);
+      box-shadow: 0 4px 14px rgba(0,102,255,0.18);
+    }
+    .coach-card-wrap.collapsed { background: var(--gray-50); }
+    .coach-card-header {
+      padding: 10px 14px;
+      background: linear-gradient(90deg, #EBF3FF, #F0FDF4);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .coach-card-header:hover { filter: brightness(0.96); }
+    .coach-card-wrap.collapsed .coach-card-header {
+      background: var(--gray-50);
+    }
+    .coach-card-wrap.collapsed .coach-card-body { display: none; }
+    .coach-card-body { padding: 14px 16px; }
+    .coach-turn-pill {
+      background: var(--primary);
+      color: #FFF;
+      padding: 3px 11px;
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+    }
+    .coach-card-wrap.collapsed .coach-turn-pill { background: var(--gray-400); }
+    .coach-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      flex: 1;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .coach-header-intent {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.76rem;
+    }
+    .coach-card-wrap.collapsed .coach-header-intent { color: var(--text-tertiary); }
+    .coach-header-readiness {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--gray-100);
+      color: var(--text-secondary);
+    }
+    .coach-toggle-icon {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+      transition: transform var(--duration) var(--ease);
+    }
+    .coach-card-wrap:not(.collapsed) .coach-toggle-icon { transform: rotate(90deg); }
+
     /* QLRCQ 5단계 트래커 */
     .qlrcq-tracker {
       background: var(--surface);
@@ -1240,13 +1313,14 @@
       turns = (s.turns || []).map(t => ({ ...t }));
       renderTurns();
 
-      // 2) 최종 코칭 재렌더 (가장 마지막 coachResult)
-      const lastCoach = (s.coachResults || []).slice(-1)[0]?.data;
+      // 2) 모든 코칭 카드 재렌더 (불러오기 시 이전 카드 초기화 후 순차 렌더)
+      document.getElementById('coachArea').innerHTML = '';
+      const coachList = (s.coachResults || []).map(c => c.data).filter(Boolean);
       const area = document.getElementById('replyArea');
-      if (lastCoach) {
+      if (coachList.length) {
         area.style.display = 'none';
-        renderQlrcqTracker(lastCoach);
-        renderCoach(lastCoach, false);
+        coachList.forEach(c => renderCoach(c, false));
+        renderQlrcqTracker(coachList[coachList.length - 1]);
       } else {
         area.style.display = 'block';
         area.classList.add('empty');
@@ -2034,11 +2108,22 @@
       el.style.display = 'block';
     }
 
+    // 코칭 카드 토글 (헤더 클릭)
+    function toggleCoachCard(card) {
+      card.classList.toggle('collapsed');
+    }
+
     function renderCoach(d, isDemo) {
       const area = document.getElementById('replyArea');
       const wrap = document.getElementById('coachArea');
       area.classList.add('empty');
       area.style.display = 'none';
+
+      // 기존 카드들을 모두 접힘 + active 제거
+      wrap.querySelectorAll('.coach-card-wrap').forEach(c => {
+        c.classList.add('collapsed');
+        c.classList.remove('active');
+      });
 
       // readiness(신규) 우선, 없으면 conversion_probability(구버전 호환)
       const prob = Math.max(0, Math.min(100, (d.readiness != null ? d.readiness : d.conversion_probability) || 0));
@@ -2062,7 +2147,33 @@
       // 모두 escapeHTML 처리 (사용자 입력 유래)
       const safe = (v) => escapeHTML(String(v == null ? '' : v));
 
-      wrap.innerHTML = `
+      // 턴 번호·시간
+      const turnNum = (currentSession?.coachResults?.length) || (wrap.querySelectorAll('.coach-card-wrap').length + 1);
+      const nowTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      const intentLabelForHeader = INTENT_LABEL[intentPrimary] || intentPrimary || '—';
+
+      // 새 카드 wrap 만들어서 append (최신은 하단에 쌓임 — 시간 순 읽기 자연스러움)
+      const card = document.createElement('div');
+      card.className = 'coach-card-wrap active';
+
+      const header = document.createElement('div');
+      header.className = 'coach-card-header';
+      header.innerHTML = `
+        <span class="coach-turn-pill">📤 #${turnNum}</span>
+        <div class="coach-header-meta">
+          <span>${nowTime}</span>
+          <span class="coach-header-intent">· ${safe(intentLabelForHeader)}</span>
+          ${prob != null ? `<span class="coach-header-readiness">준비도 ${prob}%</span>` : ''}
+          ${isDemo ? '<span class="demo-badge">DEMO</span>' : ''}
+        </div>
+        <span class="coach-toggle-icon">▸</span>
+      `;
+      header.addEventListener('click', () => toggleCoachCard(card));
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'coach-card-body';
+      body.innerHTML = `
         <div class="coach-header">
           <span class="coach-header-icon">🧑‍⚕️</span>
           <div class="coach-header-text">
@@ -2145,6 +2256,11 @@
             ${safe(d.next_action)}
           </div>` : ''}
       `;
+
+      card.appendChild(body);
+      wrap.appendChild(card);
+      // 최신 카드로 스크롤
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function copyReply() {
