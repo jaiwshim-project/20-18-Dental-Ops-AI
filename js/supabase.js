@@ -6,21 +6,35 @@ const SupabaseDB = {
   client: null,
   bucket: 'dental-ops',
 
-  // 기본 설정 (프로젝트 전용 — anon key는 브라우저 공개 키)
-  DEFAULT_URL: 'https://grgppaammbccuddwthfo.supabase.co',
-  DEFAULT_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3BwYWFtbWJjY3VkZHd0aGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NTE1NTYsImV4cCI6MjA5MjIyNzU1Nn0.Na-87Hcx8JgX4RztvPci90tJreEOj1x9B79SgqI8DH4',
-
+  // 초기화: localStorage 우선, 없으면 /api/config (서버 환경변수)에서 공급.
+  // 하드코딩 키 제거됨.
   init() {
-    let url = Store.get('supabase_url', '') || this.DEFAULT_URL;
-    let key = Store.get('supabase_key', '') || this.DEFAULT_KEY;
-    if (!url || !key) return false;
     if (typeof supabase === 'undefined') return false;
-    this.client = supabase.createClient(url, key);
-    if (!Store.get('supabase_url', '')) {
-      Store.set('supabase_url', url);
-      Store.set('supabase_key', key);
+    const url = Store.get('supabase_url', '');
+    const key = Store.get('supabase_key', '');
+    if (url && key) {
+      this.client = supabase.createClient(url, key);
+      return true;
     }
-    return true;
+    this.initAsync();
+    return false;
+  },
+
+  async initAsync() {
+    if (typeof supabase === 'undefined') return false;
+    try {
+      const r = await fetch('/api/config');
+      if (!r.ok) return false;
+      const c = await r.json();
+      if (c.supabase_url && c.supabase_anon_key) {
+        Store.set('supabase_url', c.supabase_url);
+        Store.set('supabase_key', c.supabase_anon_key);
+        this.client = supabase.createClient(c.supabase_url, c.supabase_anon_key);
+        if (typeof updateSidebarDbState === 'function') updateSidebarDbState();
+        return true;
+      }
+    } catch (e) { console.warn('/api/config 로드 실패', e); }
+    return false;
   },
 
   isReady() { return !!this.client; },

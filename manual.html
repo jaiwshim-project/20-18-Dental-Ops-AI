@@ -507,6 +507,45 @@
               </div>
             </section>
 
+            <!-- SaaS 신규 기능 섹션 (Step B + Phase 2) -->
+            <section class="manual-section">
+              <h2>&#x1F195; SaaS 신규 기능 (2026-04)</h2>
+
+              <h3>&#x1F680; 간편 로그인</h3>
+              <p>이메일 한 번 가입한 사용자는 <strong>이메일만 입력</strong>하면 즉시 로그인됩니다. 신규는 가입 정보(이름·병원·역할) 입력 후 매직링크 발송.</p>
+
+              <h3>&#x1F4CA; 요금제 (Tier)</h3>
+              <table class="tbl">
+                <thead><tr><th>등급</th><th>월 상담 AI 사용</th><th>비고</th></tr></thead>
+                <tbody>
+                  <tr><td>&#x1F193; Free</td><td>3회</td><td>데모/체험</td></tr>
+                  <tr><td>&#x2B50; Pro</td><td>20회</td><td>소규모 병원</td></tr>
+                  <tr><td>&#x1F680; Max</td><td>60회</td><td>중대형 병원</td></tr>
+                </tbody>
+              </table>
+              <p style="font-size:0.9375rem; color:var(--text-secondary);">등급은 <strong>본사 관리자</strong>가 회원 관리에서 변경. 초과 시 429 (월 초기화).</p>
+
+              <h3>&#x1F6E0; 관리자 대시보드 (본사 전용)</h3>
+              <p>푸터 하단 <strong>&#x1F6E0; 관리자 대시보드</strong> 링크 → 비밀번호 <code>9633</code> 입력. KPI 4카드 + 회원 관리(tier 드롭다운 변경) + 최근 API 호출 로그 50건.</p>
+
+              <h3>&#x26A1; 투-스테이지 상담 코칭 (Phase 2 A+D)</h3>
+              <p>전송 버튼 클릭 시 두 단계로 응답:</p>
+              <ul>
+                <li><strong>1단계 즉시 응답 (~1~1.5초)</strong>: 상단 ⚡ 박스에 <em>속마음 + 말할 문장</em> 3필드만 먼저 표시</li>
+                <li><strong>2단계 상세 분석 (~3~5초, 백그라운드)</strong>: 하단 상세 코칭 카드 (QLRCQ 위치, 준비도, 다음 행동 등) 업데이트</li>
+              </ul>
+              <p style="font-size:0.9375rem;">실제 환자 앞에서 상담이 끊기지 않도록 빠른 응답 우선 설계. 기본 모델 <code>gemini-2.5-flash-lite</code>.</p>
+
+              <h3>&#x1F4C5; 상담 회차 선택</h3>
+              <p>환자가 여러 번 상담한 경우, 환자 드롭다운 바로 아래에 <strong>📅 상담 회차 선택</strong> 드롭다운이 자동 표시됩니다. <code>#3회차 · 26/04/20 14:30 · 12턴 · 15분</code> 형식으로 목록에서 원하는 회차 선택.</p>
+
+              <h3>&#x1F512; 서버 프록시 (SaaS 보안)</h3>
+              <p>Gemini API 키는 <strong>본사 서버에만 보관</strong>되며 브라우저에 노출되지 않습니다. 모든 AI 호출은 <code>/api/gemini</code> Edge Function을 경유(Cold Start &lt;100ms). Supabase Auth 토큰 또는 이메일로 사용자 확인 후 처리.</p>
+
+              <h3>&#x1F4C8; 호출 로그 & 과금 추적</h3>
+              <p>Gemini 호출마다 <code>api_call_logs</code> 테이블에 <em>user, model, prompt/response 길이, 지연, 상태</em> 자동 기록. 본사는 관리자 대시보드에서 병원별 사용량·예상 과금을 모니터링.</p>
+            </section>
+
           </main>
         </div>
       </div>
