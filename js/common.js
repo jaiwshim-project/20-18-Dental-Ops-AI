@@ -406,6 +406,20 @@ function updateSessionUI() {
     metaEl.style.cssText = 'font-weight:500; color:var(--text-tertiary);';
     metaEl.textContent = `· ${s.clinic || ''} · ${s.role}`;
     badge.appendChild(metaEl);
+
+    // 🎖 회원 등급 배지 (tier / is_admin)
+    const tier = (s.tier || 'free').toLowerCase();
+    const tierMap = {
+      free: { label: 'Free',  bg: '#F1F5F9', fg: '#475569' },
+      pro:  { label: 'Pro',   bg: '#FEF3C7', fg: '#92400E' },
+      max:  { label: 'Max',   bg: '#DBEAFE', fg: '#1D4ED8' }
+    };
+    const tm = tierMap[tier] || tierMap.free;
+    const tierEl = document.createElement('span');
+    tierEl.style.cssText = `padding:2px 8px; background:${tm.bg}; color:${tm.fg}; border-radius:var(--radius-full); font-size:0.6875rem; font-weight:700; letter-spacing:0.03em;`;
+    tierEl.textContent = s.is_admin ? `${tm.label} · ADMIN` : tm.label;
+    badge.appendChild(tierEl);
+
     const out = document.createElement('a');
     out.href = '#';
     out.style.cssText = 'color:var(--danger); text-decoration:none;';
@@ -621,6 +635,7 @@ function renderFooter() {
           <span class="footer-badge">Gemini AI</span>
           <span class="footer-badge">Supabase</span>
           <span class="footer-badge">8-Engine</span>
+          <a href="admin-dashboard.html" class="footer-badge" style="background:rgba(0,102,255,0.15); border-color:rgba(0,102,255,0.4); color:#60A5FA; text-decoration:none; cursor:pointer;">🛠 관리자 대시보드</a>
         </div>
       </div>
     </div>

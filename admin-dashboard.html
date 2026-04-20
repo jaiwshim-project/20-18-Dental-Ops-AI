@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SaaS 본사 관리자 대시보드 — 회원·사용량·호출 로그 모니터링">
+  <title>관리자 대시보드 | Dental Ops AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🛠%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0066FF">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .auth-lock {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .auth-lock .auth-card {
+      max-width: 400px; width: 90%;
+      background: #FFF;
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .auth-lock h2 { margin-bottom: 8px; }
+    .auth-lock .subtitle { color: var(--text-tertiary); margin-bottom: 24px; font-size: 0.875rem; }
+    .auth-lock input {
+      letter-spacing: 0.3em;
+      font-size: 1.25rem;
+      text-align: center;
+    }
+
+    .dash-kpi-card {
+      padding: 20px;
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gray-200);
+    }
+    .dash-kpi-card .label { font-size: 0.75rem; color: var(--text-tertiary); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dash-kpi-card .value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
+    .dash-kpi-card .hint { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 4px; }
+
+    .dash-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    table th, table td { padding: 10px 12px; }
+    table th { background: var(--gray-50); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <!-- 🔒 비밀번호 잠금 화면 -->
+  <div id="authLock" class="auth-lock">
+    <div class="auth-card">
+      <div style="font-size:3rem; margin-bottom:12px;">🔒</div>
+      <h2>관리자 대시보드</h2>
+      <p class="subtitle">SaaS 본사 전용 · 비밀번호 입력</p>
+      <div class="form-group" style="margin-bottom:16px;">
+        <input type="password" id="authPass" class="form-input" placeholder="••••" maxlength="20" autocomplete="off">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <a href="index.html" class="btn btn-secondary" style="flex:1;">취소</a>
+        <button class="btn btn-primary" onclick="checkAdminPass()" style="flex:2;">🔓 확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인증 완료 후 표시 -->
+  <div id="authedContent" style="display:none;">
+    <div class="layout" id="app">
+      <div class="main">
+        <header class="header">
+          <div class="flex items-center gap-12">
+            <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+            <span class="header-title">🛠 관리자 대시보드 (SaaS 본사)</span>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-sm btn-secondary" onclick="lockDash()">🔒 잠금</button>
+            <span id="sessionBadge"></span>
+          </div>
+        </header>
+
+        <div class="content">
+          <!-- KPI 카드 -->
+          <div class="dash-kpi-grid" id="dashKpi"></div>
+
+          <!-- 회원 관리 -->
+          <div class="card">
+            <div class="card-header flex justify-between items-center">
+              <h3>👥 회원 관리</h3>
+              <button class="btn btn-secondary btn-sm" onclick="renderMembersTable()">🔄 새로고침</button>
+            </div>
+            <div class="card-body">
+              <div id="membersSummary"></div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>이메일</th>
+                      <th>이름</th>
+                      <th>병원</th>
+                      <th>역할</th>
+                      <th>요금제</th>
+                      <th>이번달</th>
+                      <th>본사</th>
+                      <th>가입일</th>
+                    </tr>
+                  </thead>
+                  <tbody id="membersTable">
+                    <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 최근 API 호출 로그 -->
+          <div class="card mt-24">
+            <div class="card-header flex justify-between items-center">
+              <h3>📊 최근 API 호출 로그 (최근 50건)</h3>
+              <button class="btn btn-secondary btn-sm" onclick="renderRecentLogs()">🔄 새로고침</button>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>시각</th>
+                      <th>이메일</th>
+                      <th>병원</th>
+                      <th>모델</th>
+                      <th>Engine</th>
+                      <th style="text-align:right;">프롬프트</th>
+                      <th style="text-align:right;">응답</th>
+                      <th style="text-align:right;">지연</th>
+                      <th>상태</th>
+                    </tr>
+                  </thead>
+                  <tbody id="logsTable">
+                    <tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/supabase.js"></script>
+  <script>
+    const ADMIN_DASH_PASS = '9633';
+    const AUTH_KEY = 'admin_dash_auth_v1';
+
+    function checkAdminPass() {
+      const v = (document.getElementById('authPass').value || '').trim();
+      if (v === ADMIN_DASH_PASS) {
+        sessionStorage.setItem(AUTH_KEY, '1');
+        unlockDash();
+      } else {
+        showToast('비밀번호가 올바르지 않습니다', 'error');
+        const inp = document.getElementById('authPass');
+        inp.value = '';
+        inp.focus();
+      }
+    }
+
+    function unlockDash() {
+      document.getElementById('authLock').style.display = 'none';
+      document.getElementById('authedContent').style.display = 'block';
+      document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar(''));
+      updateSessionUI && updateSessionUI();
+      loadDashData();
+    }
+
+    function lockDash() {
+      sessionStorage.removeItem(AUTH_KEY);
+      location.reload();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const lock = document.getElementById('authLock');
+        if (lock && lock.style.display !== 'none') {
+          e.preventDefault();
+          checkAdminPass();
+        }
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 이미 인증된 세션이면 바로 해제
+      if (sessionStorage.getItem(AUTH_KEY) === '1') {
+        unlockDash();
+      } else {
+        setTimeout(() => document.getElementById('authPass')?.focus(), 100);
+      }
+    });
+
+    async function loadDashData() {
+      await renderKpi();
+      await renderMembersTable();
+      await renderRecentLogs();
+    }
+
+    async function renderKpi() {
+      const el = document.getElementById('dashKpi');
+      try {
+        const [users, usage] = await Promise.all([
+          SupabaseDB.listUsers(),
+          SupabaseDB.getAllMonthlyUsage()
+        ]);
+        const totalUsers = users.length;
+        const totalCalls = Object.values(usage).reduce((a, b) => a + b, 0);
+        const tierLimits = { free: 3, pro: 20, max: 60 };
+        const counts = { free: 0, pro: 0, max: 0 };
+        let overCount = 0;
+        users.forEach(u => {
+          const tier = u.tier || 'free';
+          counts[tier] = (counts[tier] || 0) + 1;
+          if (!u.is_admin) {
+            const used = usage[u.id] || 0;
+            if (used >= tierLimits[tier]) overCount++;
+          }
+        });
+
+        el.innerHTML = `
+          <div class="dash-kpi-card">
+            <div class="label">총 회원</div>
+            <div class="value">${totalUsers}</div>
+            <div class="hint">🆓 ${counts.free} · ⭐ ${counts.pro} · 🚀 ${counts.max}</div>
+          </div>
+          <div class="dash-kpi-card">
+            <div class="label">이번달 API 호출</div>
+            <div class="value">${totalCalls.toLocaleString()}</div>
+            <div class="hint">성공+실패 전체 집계</div>
+          </div>
+          <div class="dash-kpi-card">
+            <div class="label">한도 초과 회원</div>
+            <div class="value" style="color:${overCount ? 'var(--danger)' : 'var(--success)'};">${overCount}</div>
+            <div class="hint">${overCount ? '업그레이드 권유 대상' : '정상 사용 중'}</div>
+          </div>
+          <div class="dash-kpi-card">
+            <div class="label">Gemini 모델</div>
+            <div class="value" style="font-size:1.125rem;">2.5 Flash Lite</div>
+            <div class="hint">Tier 1 · dental-ops-ai</div>
+          </div>
+        `;
+      } catch (e) {
+        el.innerHTML = `<div style="color:var(--danger); padding:20px; grid-column:1/-1;">KPI 조회 실패: ${e.message}</div>`;
+      }
+    }
+
+    function safe(x) { return String(x || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]); }
+
+    async function renderMembersTable() {
+      const tbody = document.getElementById('membersTable');
+      const summary = document.getElementById('membersSummary');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
+
+      try {
+        const [users, usage] = await Promise.all([
+          SupabaseDB.listUsers(),
+          SupabaseDB.getAllMonthlyUsage()
+        ]);
+        const tierLimits = { free: 3, pro: 20, max: 60 };
+        let free = 0, pro = 0, max = 0;
+
+        const rows = users.map(u => {
+          const used = usage[u.id] || 0;
+          const tier = u.tier || 'free';
+          const limit = tierLimits[tier];
+          const ratio = limit ? used / limit : 0;
+          const isOver = !u.is_admin && used >= limit;
+          const isNear = !u.is_admin && !isOver && ratio >= 0.8;
+          const color = isOver ? 'var(--danger)' : isNear ? '#F59E0B' : 'var(--text-primary)';
+          const weight = (isOver || isNear) ? '700' : '500';
+          const icon = isOver ? ' 🔴' : isNear ? ' ⚠️' : '';
+
+          if (tier === 'free') free++;
+          else if (tier === 'pro') pro++;
+          else if (tier === 'max') max++;
+
+          return `
+            <tr>
+              <td style="font-family:monospace; font-size:0.8125rem;">${safe(u.email)}</td>
+              <td>${safe(u.name)}</td>
+              <td>${safe(u.clinic)}</td>
+              <td style="font-size:0.8125rem;">${safe(u.role)}</td>
+              <td>
+                <select onchange="changeTier('${u.id}', this.value)" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
+                  <option value="free" ${tier === 'free' ? 'selected' : ''}>🆓 Free (3)</option>
+                  <option value="pro" ${tier === 'pro' ? 'selected' : ''}>⭐ Pro (20)</option>
+                  <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60)</option>
+                </select>
+              </td>
+              <td style="color:${color}; font-weight:${weight};">${used} / ${u.is_admin ? '∞' : limit}${icon}</td>
+              <td>${u.is_admin ? '✅' : '—'}</td>
+              <td style="font-size:0.75rem; color:var(--text-tertiary);">${(u.created_at || '').slice(0, 10)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.innerHTML = rows || '<tr><td colspan="8" style="text-align:center; padding:20px;">회원 없음</td></tr>';
+
+        if (summary) {
+          summary.innerHTML = `
+            <div style="display:flex; gap:20px; padding:12px 16px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:16px; font-size:0.875rem; flex-wrap:wrap;">
+              <span><strong>전체:</strong> ${users.length}명</span>
+              <span>🆓 Free <strong>${free}</strong></span>
+              <span>⭐ Pro <strong>${pro}</strong></span>
+              <span>🚀 Max <strong>${max}</strong></span>
+            </div>
+          `;
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger); padding:20px;">조회 실패: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function changeTier(userId, tier) {
+      try {
+        await SupabaseDB.updateUserTier(userId, tier);
+        showToast('요금제 변경 완료', 'success');
+        await renderMembersTable();
+        await renderKpi();
+      } catch (e) {
+        showToast('변경 실패: ' + e.message, 'error');
+      }
+    }
+
+    async function renderRecentLogs() {
+      const tbody = document.getElementById('logsTable');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
+      try {
+        const { data, error } = await SupabaseDB.client.from('api_call_logs')
+          .select('*').order('created_at', { ascending: false }).limit(50);
+        if (error) throw error;
+        const rows = (data || []).map(r => {
+          const t = new Date(r.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const engine = (r.metadata && r.metadata.engine) || '-';
+          const statusColor = r.status_code >= 400 ? 'var(--danger)' : 'var(--success)';
+          return `
+            <tr>
+              <td style="font-size:0.75rem; font-family:monospace; white-space:nowrap;">${t}</td>
+              <td style="font-size:0.75rem;">${safe(r.email)}</td>
+              <td style="font-size:0.75rem;">${safe(r.clinic)}</td>
+              <td style="font-size:0.75rem;">${safe(r.model)}</td>
+              <td style="font-size:0.75rem;">${safe(engine)}</td>
+              <td style="font-size:0.75rem; text-align:right; font-family:monospace;">${r.prompt_chars || 0}</td>
+              <td style="font-size:0.75rem; text-align:right; font-family:monospace;">${r.response_chars || 0}</td>
+              <td style="font-size:0.75rem; text-align:right; font-family:monospace;">${r.latency_ms || 0}ms</td>
+              <td style="font-size:0.75rem; color:${statusColor}; font-weight:700;">${r.status_code}</td>
+            </tr>
+          `;
+        }).join('');
+        tbody.innerHTML = rows || '<tr><td colspan="9" style="text-align:center; padding:20px;">로그 없음</td></tr>';
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="9" style="color:var(--danger); padding:20px;">조회 실패: ${e.message}</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>
