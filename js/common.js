@@ -672,13 +672,31 @@ const GeminiAPI = {
   // 호환성용: 항상 true (서버가 키를 보유한다고 가정)
   getKey() { return 'server-managed'; },
 
-  async chat(prompt, imageBase64 = null, model = null) {
+  async chat(prompt, imageBase64 = null, model = null, engine = null) {
     const body = { prompt, imageBase64 };
     if (model) body.model = model;
+    if (engine) body.engine = engine;
+
+    // 로그인 세션에서 이메일 첨부 (간편 로그인 사용자)
+    try {
+      const s = typeof Session !== 'undefined' ? Session.get() : null;
+      if (s?.email) body.user_email = s.email;
+    } catch {}
+
+    const headers = { 'Content-Type': 'application/json' };
+
+    // Supabase Auth 세션 있으면 Bearer 토큰도 전달
+    try {
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client?.auth) {
+        const { data } = await SupabaseDB.client.auth.getSession();
+        if (data?.session?.access_token) {
+          headers.Authorization = 'Bearer ' + data.session.access_token;
+        }
+      }
+    } catch {}
+
     const res = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      method: 'POST', headers, body: JSON.stringify(body)
     });
     if (!res.ok) {
       let msg = 'Gemini API 오류';
@@ -686,11 +704,15 @@ const GeminiAPI = {
       throw new Error(msg);
     }
     const data = await res.json();
+    // usage 정보를 전역 저장 (UI에서 배지 표시용, 선택)
+    if (data.usage && typeof window !== 'undefined') {
+      window.__lastGeminiUsage = data.usage;
+    }
     return data.text || '';
   },
 
-  async json(prompt, model = null) {
-    const text = await this.chat(prompt + '\n\n반드시 유효한 JSON만 출력하라. 설명이나 마크다운 코드 블록 없이.', null, model);
+  async json(prompt, model = null, engine = null) {
+    const text = await this.chat(prompt + '\n\n반드시 유효한 JSON만 출력하라. 설명이나 마크다운 코드 블록 없이.', null, model, engine);
     const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
     try { return JSON.parse(cleaned); }
     catch { const m = cleaned.match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); throw new Error('JSON 파싱 실패'); }

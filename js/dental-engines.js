@@ -15,9 +15,9 @@ async function safeGemini(prompt, fallbackText) {
   }
 }
 
-async function safeGeminiJson(prompt, fallback, model = null) {
+async function safeGeminiJson(prompt, fallback, model = null, engine = null) {
   try {
-    const data = await GeminiAPI.json(prompt, model);
+    const data = await GeminiAPI.json(prompt, model, engine);
     return { demo: false, data };
   } catch (e) {
     console.warn('Gemini JSON 호출 실패', e);
@@ -213,7 +213,7 @@ JSON으로만 출력:
       ],
       risk_level: 'medium'
     };
-    return await safeGeminiJson(prompt, fallback);
+    return await safeGeminiJson(prompt, fallback, null, 'consult_coach');
   },
 
   // ⚡ 빠른 즉시 응답 (Phase 2 — 실시간 상담 맥 유지용)
@@ -248,7 +248,7 @@ JSON만 출력 (마크다운/설명 금지):
       recommended_reply: '말씀해주셔서 감사합니다. 조금 더 여쭤봐도 될까요?'
     };
 
-    return await safeGeminiJson(prompt, fallback);
+    return await safeGeminiJson(prompt, fallback, null, 'consult_quick');
   },
 
   // 세션 전체 평가 + 상담사 피드백
