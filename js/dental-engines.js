@@ -15,9 +15,9 @@ async function safeGemini(prompt, fallbackText) {
   }
 }
 
-async function safeGeminiJson(prompt, fallback) {
+async function safeGeminiJson(prompt, fallback, model = null) {
   try {
-    const data = await GeminiAPI.json(prompt);
+    const data = await GeminiAPI.json(prompt, model);
     return { demo: false, data };
   } catch (e) {
     console.warn('Gemini JSON 호출 실패', e);
@@ -85,7 +85,13 @@ ${ctx}
       ? (transcript.filter(t => t.speaker === 'patient').slice(-1)[0]?.text || question || '')
       : (question || '');
 
-    const prompt = `당신은 15년 경력의 **환자 중심(patient-centered)** 치과 상담 코치다. 상담실장이 방금 환자와 실제 대화를 나눴다.
+    const prompt = `⚠️ 실시간 상담 도중 코칭이다. 2~3초 내 응답이 절대적으로 중요.
+- 핵심 필드(subtext, recommended_reply, next_action)만 충실히 채움
+- 나머지 필드(key_points, treatment_options, cautions, avoidance_violations 등)는 빈 배열 또는 1줄로 간결히
+- 불필요한 중복·장문 설명 금지
+- JSON 외 텍스트 절대 금지
+
+당신은 15년 경력의 **환자 중심(patient-centered)** 치과 상담 코치다. 상담실장이 방금 환자와 실제 대화를 나눴다.
 아래 녹취 전체를 읽고 **대화의 결**과 **환자의 불안·두려움·속마음**을 이해한 뒤, 상담실장이 이어서 말할 답변을 준비하라.
 
 ${ctx}${hist}${rawBlock}${labeledBlock}

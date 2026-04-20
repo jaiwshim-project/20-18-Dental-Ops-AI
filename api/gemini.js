@@ -1,14 +1,25 @@
-// Vercel Serverless Function — Gemini 2.0 Flash 프록시
+// Vercel Serverless Function — Gemini 프록시
 // 본사 GEMINI_API_KEY를 서버에서만 보관하고 모든 치과 병원이 공동으로 사용
 //
 // GET  /api/gemini        → 키 등록 여부만 반환 (진단용)
-// POST /api/gemini        → { prompt, imageBase64? } 받아 Gemini 호출 후 { text } 반환
+// POST /api/gemini        → { prompt, imageBase64?, model? } 받아 Gemini 호출 후 { text } 반환
+//
+// model 기본값: gemini-2.5-flash-lite (빠른 응답 최우선 — 실시간 상담 코칭용)
+// 더 정확한 분석이 필요한 호출은 model="gemini-2.5-flash" 로 명시 가능
+
+const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
+const ALLOWED_MODELS = new Set([
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro'
+]);
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({
       ok: !!process.env.GEMINI_API_KEY,
-      model: 'gemini-2.5-flash'
+      default_model: DEFAULT_MODEL,
+      allowed_models: Array.from(ALLOWED_MODELS)
     });
   }
 
@@ -24,10 +35,12 @@ export default async function handler(req, res) {
     });
   }
 
-  const { prompt, imageBase64 } = req.body || {};
+  const { prompt, imageBase64, model } = req.body || {};
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt 필드가 필요합니다' });
   }
+
+  const MODEL = model && ALLOWED_MODELS.has(model) ? model : DEFAULT_MODEL;
 
   try {
     const parts = [];
@@ -38,7 +51,7 @@ export default async function handler(req, res) {
     parts.push({ text: prompt });
 
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,12 +65,12 @@ export default async function handler(req, res) {
         const errBody = await r.json();
         errMsg = errBody.error?.message || errMsg;
       } catch {}
-      return res.status(r.status).json({ error: errMsg });
+      return res.status(r.status).json({ error: errMsg, model: MODEL });
     }
 
     const data = await r.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return res.status(200).json({ text });
+    return res.status(200).json({ text, model: MODEL });
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Gemini 프록시 실패' });
   }

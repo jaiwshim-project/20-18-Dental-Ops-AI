@@ -589,11 +589,13 @@ const GeminiAPI = {
   // 호환성용: 항상 true (서버가 키를 보유한다고 가정)
   getKey() { return 'server-managed'; },
 
-  async chat(prompt, imageBase64 = null) {
+  async chat(prompt, imageBase64 = null, model = null) {
+    const body = { prompt, imageBase64 };
+    if (model) body.model = model;
     const res = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, imageBase64 })
+      body: JSON.stringify(body)
     });
     if (!res.ok) {
       let msg = 'Gemini API 오류';
@@ -604,8 +606,8 @@ const GeminiAPI = {
     return data.text || '';
   },
 
-  async json(prompt) {
-    const text = await this.chat(prompt + '\n\n반드시 유효한 JSON만 출력하라. 설명이나 마크다운 코드 블록 없이.');
+  async json(prompt, model = null) {
+    const text = await this.chat(prompt + '\n\n반드시 유효한 JSON만 출력하라. 설명이나 마크다운 코드 블록 없이.', null, model);
     const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
     try { return JSON.parse(cleaned); }
     catch { const m = cleaned.match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); throw new Error('JSON 파싱 실패'); }
