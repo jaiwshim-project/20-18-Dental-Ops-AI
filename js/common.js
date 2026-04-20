@@ -338,7 +338,9 @@ async function smartLogin() {
         name: existing.name || email.split('@')[0],
         role: existing.role || '상담실장',
         clinic: existing.clinic || '',
-        email: existing.email
+        email: existing.email,
+        tier: existing.tier || 'free',
+        is_admin: existing.is_admin === true
       });
       closeModal('loginModal');
       showToast(`${existing.name}님 환영합니다 (${existing.clinic || ''})`, 'success');

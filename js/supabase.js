@@ -67,6 +67,40 @@ const SupabaseDB = {
   },
 
   // ============================================================
+  // 회원 관리 (SaaS 본사 전용 — Step B)
+  // ============================================================
+  async listUsers() {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('users')
+      .select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async updateUserTier(userId, tier) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('users')
+      .update({ tier }).eq('id', userId).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async getAllMonthlyUsage() {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const { data, error } = await this.client.from('api_call_logs')
+      .select('user_id').gte('created_at', monthStart.toISOString());
+    if (error) throw error;
+    const counts = {};
+    (data || []).forEach(row => {
+      if (row.user_id) counts[row.user_id] = (counts[row.user_id] || 0) + 1;
+    });
+    return counts;
+  },
+
+  // ============================================================
   // 환자 (Patients)
   // ============================================================
   async createPatient({ name, phone, age, gender, treatment, memo }) {

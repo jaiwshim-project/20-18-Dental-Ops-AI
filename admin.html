@@ -243,10 +243,136 @@
             </div>
           </div>
         </div>
+
+        ${isSuperAdmin() ? `
+        <!-- 👥 회원 관리 (SaaS 본사 전용) -->
+        <div class="card mt-24">
+          <div class="card-header flex justify-between items-center">
+            <h3>👥 회원 관리 (SaaS 본사 전용)</h3>
+            <button class="btn btn-secondary btn-sm" onclick="renderMembersTable()">🔄 새로고침</button>
+          </div>
+          <div class="card-body">
+            <div id="membersSummary"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>이메일</th>
+                    <th>이름</th>
+                    <th>병원</th>
+                    <th>역할</th>
+                    <th>요금제</th>
+                    <th>이번달 사용</th>
+                    <th>본사 관리자</th>
+                    <th>가입일</th>
+                  </tr>
+                </thead>
+                <tbody id="membersTable">
+                  <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        ` : ''}
       `;
 
       drawOntology();
       renderTeam();
+      if (isSuperAdmin()) renderMembersTable();
+    }
+
+    // ---- 본사 관리자(SaaS) 권한 확인 ----
+    function isSuperAdmin() {
+      const s = Session.get();
+      return s && s.is_admin === true;
+    }
+
+    // ---- 회원 관리 테이블 렌더 ----
+    async function renderMembersTable() {
+      const tbody = document.getElementById('membersTable');
+      const summary = document.getElementById('membersSummary');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
+
+      try {
+        const [users, usage] = await Promise.all([
+          SupabaseDB.listUsers(),
+          SupabaseDB.getAllMonthlyUsage()
+        ]);
+
+        const tierLimits = { free: 3, pro: 20, max: 60 };
+        let free = 0, pro = 0, max = 0;
+
+        const rows = users.map(u => {
+          const used = usage[u.id] || 0;
+          const tier = u.tier || 'free';
+          const limit = tierLimits[tier];
+          const ratio = limit ? used / limit : 0;
+          const isOver = !u.is_admin && used >= limit;
+          const isNear = !u.is_admin && !isOver && ratio >= 0.8;
+          const usageColor = isOver ? 'var(--danger)' : isNear ? '#F59E0B' : 'var(--text-primary)';
+          const usageWeight = (isOver || isNear) ? '700' : '500';
+          const usageIcon = isOver ? ' 🔴' : isNear ? ' ⚠️' : '';
+
+          if (tier === 'free') free++;
+          else if (tier === 'pro') pro++;
+          else if (tier === 'max') max++;
+
+          const safeEmail = (u.email || '').replace(/</g, '&lt;');
+          const safeName = (u.name || '').replace(/</g, '&lt;');
+          const safeClinic = (u.clinic || '').replace(/</g, '&lt;');
+          const safeRole = (u.role || '').replace(/</g, '&lt;');
+
+          return `
+            <tr>
+              <td style="font-family:monospace; font-size:0.8125rem;">${safeEmail}</td>
+              <td>${safeName}</td>
+              <td>${safeClinic}</td>
+              <td style="font-size:0.8125rem;">${safeRole}</td>
+              <td>
+                <select onchange="changeTier('${u.id}', this.value)" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
+                  <option value="free" ${tier === 'free' ? 'selected' : ''}>🆓 Free (3/월)</option>
+                  <option value="pro" ${tier === 'pro' ? 'selected' : ''}>⭐ Pro (20/월)</option>
+                  <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60/월)</option>
+                </select>
+              </td>
+              <td style="color:${usageColor}; font-weight:${usageWeight};">
+                ${used} / ${u.is_admin ? '∞' : limit}${usageIcon}
+              </td>
+              <td>${u.is_admin ? '✅' : '—'}</td>
+              <td style="font-size:0.75rem; color:var(--text-tertiary);">${(u.created_at || '').slice(0, 10)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.innerHTML = rows || '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">등록된 회원이 없습니다</td></tr>';
+
+        if (summary) {
+          summary.innerHTML = `
+            <div style="display:flex; gap:20px; padding:12px 16px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:16px; font-size:0.875rem; flex-wrap:wrap;">
+              <span><strong>전체:</strong> ${users.length}명</span>
+              <span>🆓 Free <strong>${free}</strong></span>
+              <span>⭐ Pro <strong>${pro}</strong></span>
+              <span>🚀 Max <strong>${max}</strong></span>
+            </div>
+          `;
+        }
+      } catch (e) {
+        console.error('회원 조회 실패', e);
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px; color:var(--danger);">회원 조회 실패: ${e.message}</td></tr>`;
+      }
+    }
+
+    // ---- tier 변경 ----
+    async function changeTier(userId, tier) {
+      try {
+        await SupabaseDB.updateUserTier(userId, tier);
+        showToast('요금제 변경 완료', 'success');
+        renderMembersTable();
+      } catch (e) {
+        showToast('변경 실패: ' + e.message, 'error');
+      }
     }
 
     // ---- Ontology SVG ----
