@@ -297,10 +297,85 @@ document.addEventListener('keydown', (e) => {
     const loginModal = document.getElementById('loginModal');
     if (loginModal && loginModal.classList.contains('active')) {
       e.preventDefault();
-      demoLogin();
+      smartLogin();
     }
   }
 });
+
+// 신규 가입 필드 토글
+function toggleSignupFields(e) {
+  if (e) e.preventDefault();
+  const fields = document.getElementById('signupFields');
+  const link = document.getElementById('toggleSignupLink');
+  if (!fields) return;
+  const hidden = fields.style.display === 'none';
+  fields.style.display = hidden ? 'block' : 'none';
+  if (link) link.textContent = hidden ? '가입 정보 숨기기 ▴' : '처음이신가요? 가입 정보 입력 ▾';
+}
+
+// 스마트 로그인 — 등록된 이메일이면 즉시, 신규면 매직링크
+async function smartLogin() {
+  const email = (document.getElementById('loginEmail')?.value || '').trim();
+  if (!email) { showToast('이메일을 입력하세요', 'warning'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('이메일 형식이 올바르지 않습니다', 'warning'); return; }
+
+  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+    showToast('Supabase 미연결 — 로그인 불가', 'error');
+    return;
+  }
+
+  const signupVisible = document.getElementById('signupFields')?.style.display !== 'none';
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '확인 중...'; }
+
+  try {
+    const existing = await SupabaseDB.getUserByEmail(email);
+
+    // 기존 사용자 + 신규 가입 폼 안 열린 상태 → 즉시 로그인
+    if (existing && !signupVisible) {
+      Session.login({
+        userId: existing.id,
+        name: existing.name || email.split('@')[0],
+        role: existing.role || '상담실장',
+        clinic: existing.clinic || '',
+        email: existing.email
+      });
+      closeModal('loginModal');
+      showToast(`${existing.name}님 환영합니다 (${existing.clinic || ''})`, 'success');
+      updateSessionUI();
+
+      const params = new URLSearchParams(location.search);
+      const redirect = params.get('redirect');
+      if (redirect) {
+        const safePath = /^[a-z0-9_-]+\.html$/i.test(redirect) ? redirect : 'index.html';
+        setTimeout(() => { location.href = safePath; }, 300);
+      }
+      return;
+    }
+
+    // 기존 사용자 + 신규 폼 열린 상태 → 간편 로그인 안내
+    if (existing && signupVisible) {
+      showToast('이미 가입된 이메일입니다. 가입 폼 닫고 즉시 로그인됩니다.', 'info');
+      toggleSignupFields();
+      return;
+    }
+
+    // 미등록 이메일 + 신규 폼 안 열린 상태 → 가입 폼 펼치기
+    if (!existing && !signupVisible) {
+      showToast('처음 사용하시는 이메일입니다. 가입 정보를 입력하세요.', 'info');
+      toggleSignupFields();
+      return;
+    }
+
+    // 미등록 이메일 + 신규 폼 열린 상태 → 매직링크 발송 (기존 demoLogin 재사용)
+    await demoLogin();
+  } catch (e) {
+    console.error('로그인 확인 실패', e);
+    showToast('로그인 확인 실패: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 로그인'; }
+  }
+}
 
 async function logoutAndRefresh() {
   try {
@@ -459,40 +534,48 @@ function renderSidebar(activePage) {
     <div class="modal" style="max-width:420px;">
       <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h3 style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:1.25rem;">✉️</span> 매직링크 로그인
+          <span style="font-size:1.25rem;">🚀</span> 로그인
         </h3>
         <button class="btn btn-sm btn-secondary" onclick="closeModal('loginModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
       </div>
       <div class="modal-body">
         <div style="padding:14px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:20px;">
-          <p style="font-size:0.8125rem; color:var(--primary); font-weight:600; line-height:1.55;">📧 입력하신 이메일로 <strong>1회용 로그인 링크</strong>를 보내드립니다.<br>링크 클릭 시 자동 로그인됩니다. 비밀번호 불필요.</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">이름 <span style="color:var(--danger);">*</span></label>
-          <input type="text" class="form-input" id="loginName" placeholder="홍길동" autocomplete="name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
-          <input type="text" class="form-input" id="loginClinic" placeholder="예: 스마일치과" autocomplete="organization">
+          <p style="font-size:0.8125rem; color:var(--primary); font-weight:600; line-height:1.55;">✨ <strong>이전에 가입한 이메일이면 즉시 로그인</strong>됩니다.<br>처음이시면 하단 '가입 정보 입력'을 펼쳐 매직링크를 받으세요.</p>
         </div>
         <div class="form-group">
           <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
           <input type="email" class="form-input" id="loginEmail" placeholder="you@clinic.co.kr" autocomplete="email">
         </div>
-        <div class="form-group">
-          <label class="form-label">역할</label>
-          <select class="form-input" id="loginRole">
-            <option value="상담실장">상담실장</option>
-            <option value="원장">원장</option>
-            <option value="코디네이터">코디네이터</option>
-            <option value="치위생사">치위생사</option>
-            <option value="관리자">관리자 (CEO)</option>
-          </select>
+
+        <div id="signupFields" style="display:none; border-top:1px solid var(--gray-200); margin-top:16px; padding-top:16px;">
+          <div style="font-size:0.8125rem; color:var(--text-secondary); font-weight:600; margin-bottom:10px;">신규 가입 정보 (매직링크 발송용)</div>
+          <div class="form-group">
+            <label class="form-label">이름 <span style="color:var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="loginName" placeholder="홍길동" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="loginClinic" placeholder="예: 스마일치과" autocomplete="organization">
+          </div>
+          <div class="form-group">
+            <label class="form-label">역할</label>
+            <select class="form-input" id="loginRole">
+              <option value="상담실장">상담실장</option>
+              <option value="원장">원장</option>
+              <option value="코디네이터">코디네이터</option>
+              <option value="치위생사">치위생사</option>
+              <option value="관리자">관리자 (CEO)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <a href="#" id="toggleSignupLink" onclick="toggleSignupFields(event)" style="font-size:0.8125rem; color:var(--primary); font-weight:600; text-decoration:none;">처음이신가요? 가입 정보 입력 ▾</a>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
-        <button class="btn btn-primary" onclick="demoLogin()">✉️ 매직링크 받기</button>
+        <button class="btn btn-primary" id="loginBtn" onclick="smartLogin()">🚀 로그인</button>
       </div>
     </div>
   </div>`;
