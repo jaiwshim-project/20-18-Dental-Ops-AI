@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="환자 상담 리뷰 — 과거 상담 세션을 대화·코칭·평가 3단 레이아웃으로 읽기 전용 복원">
-  <title>환자 상담 리뷰 | Dental Ops AI</title>
+  <meta name="description" content="환자 상담 리뷰 (Tab) — 대화·코칭·평가를 탭으로 전환하며 좁은 화면·모바일에 최적화">
+  <title>환자 상담 리뷰 · Tab | Dental Ops AI</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
   <meta name="theme-color" content="#0066FF">
   <link rel="stylesheet" href="css/common.css">
@@ -127,6 +127,41 @@
     @media (max-width: 1024px) {
       .consult-layout { grid-template-columns: 1fr; }
     }
+
+    /* ===== Tab 전환 UI (리뷰 전용) ===== */
+    .review-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--gray-50);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      border: 1px solid var(--gray-200);
+    }
+    .review-tab {
+      flex: 1;
+      padding: 10px 14px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all var(--duration) var(--ease);
+    }
+    .review-tab:hover { color: var(--text-primary); }
+    .review-tab.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    /* 탭 모드일 때 consult-layout을 1열로 바꾸고 숨김 토글 */
+    body.tab-mode .consult-layout {
+      grid-template-columns: 1fr;
+    }
+    body.tab-mode .consult-layout > .panel { display: none; }
+    body.tab-mode .consult-layout > .panel.tab-active { display: flex; }
 
     /* ============ 음성 인식 / 상담실장 코칭 ============ */
     .mic-block {
@@ -791,7 +826,7 @@
       <header class="header">
         <div class="flex items-center gap-12">
           <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
-          <span class="header-title">📚 환자 상담 리뷰 (읽기 전용)</span>
+          <span class="header-title">📚 환자 상담 리뷰 · Tab (읽기 전용)</span>
         </div>
         <div class="header-actions">
           <span id="sessionBadge"></span>
@@ -800,9 +835,14 @@
 
       <div class="content">
         <div id="envDiag" style="display:none; margin-bottom:16px; padding:14px 18px; border-radius:var(--radius-md); font-size:0.88rem; line-height:1.55;"></div>
+        <div class="review-tabs" id="reviewTabs">
+          <button class="review-tab active" data-tab="input" onclick="switchTab('input')">📝 상담 녹취·입력</button>
+          <button class="review-tab" data-tab="coach" onclick="switchTab('coach')">🧑‍⚕️ 상담실장 코칭 답변</button>
+          <button class="review-tab" data-tab="eval" onclick="switchTab('eval')">📋 상담결과 분석·피드백</button>
+        </div>
         <div class="consult-layout">
           <!-- LEFT: 입력 -->
-          <div class="panel">
+          <div class="panel tab-active" data-tab="input">
             <div class="panel-header">🎙 상담 녹취 · 입력</div>
             <div class="panel-body">
               <div class="form-group">
@@ -857,7 +897,7 @@
           </div>
 
           <!-- CENTER: 응답 -->
-          <div class="panel">
+          <div class="panel" data-tab="coach">
             <div class="panel-header">
               🧑‍⚕️ 상담실장 코칭 답변
               <span id="replyBadge"></span>
@@ -880,7 +920,7 @@
           </div>
 
           <!-- RIGHT: 세션 평가 -->
-          <div class="panel">
+          <div class="panel" data-tab="eval">
             <div class="panel-header">
               📋 상담결과 분석 및 AI 피드백
             </div>
@@ -1107,6 +1147,19 @@
       }
     }
     populatePatients();
+
+    // ============================================================
+    // Tab 모드 — body에 클래스 부여 + 탭 전환 함수
+    // ============================================================
+    document.body.classList.add('tab-mode');
+    function switchTab(name) {
+      document.querySelectorAll('.review-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === name);
+      });
+      document.querySelectorAll('.consult-layout > .panel').forEach(p => {
+        p.classList.toggle('tab-active', p.dataset.tab === name);
+      });
+    }
 
     // ============================================================
     // 리뷰 모드 — URL 파라미터 ?patient=<id>&session=<sid> 자동 진입

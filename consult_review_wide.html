@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="상담 AI 엔진 — 환자 질문에 AI 상담실장이 실시간 답변, Triage로 치료·비용·기간 추천">
-  <title>상담 AI | Dental Ops AI</title>
+  <meta name="description" content="환자 상담 리뷰 (Wide) — 대화·코칭·평가 3단 화면을 모두 펼쳐 동시에 조회">
+  <title>환자 상담 리뷰 · Wide | Dental Ops AI</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
   <meta name="theme-color" content="#0066FF">
   <link rel="stylesheet" href="css/common.css">
@@ -791,7 +791,7 @@
       <header class="header">
         <div class="flex items-center gap-12">
           <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
-          <span class="header-title">💬 상담 AI</span>
+          <span class="header-title">📚 환자 상담 리뷰 · Wide (읽기 전용)</span>
         </div>
         <div class="header-actions">
           <span id="sessionBadge"></span>
@@ -1108,6 +1108,37 @@
     }
     populatePatients();
 
+    // ============================================================
+    // 리뷰 모드 — URL 파라미터 ?patient=<id>&session=<sid> 자동 진입
+    // ============================================================
+    (async function autoLoadReviewMode() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const pid = urlParams.get('patient');
+      if (!pid) return;
+      // populatePatients가 끝나기를 기다림 (최대 5초)
+      const waitStart = Date.now();
+      while (patientCache.length === 0 && Date.now() - waitStart < 5000) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+      if (!patientCache.find(p => p.id === pid)) {
+        showToast('해당 환자를 찾을 수 없습니다', 'warning');
+        return;
+      }
+      // 환자 선택
+      const sel = document.getElementById('patientSelect');
+      sel.value = pid;
+      // 세션 목록 가져오기
+      const sessions = await getPatientSessions(pid);
+      if (!sessions.length) {
+        showToast('이 환자의 저장된 상담이 없습니다', 'info');
+        refreshPatientHistoryBadge();
+        return;
+      }
+      // URL에 session 지정되어 있으면 그 세션, 없으면 최신
+      const sessionId = urlParams.get('session') || sessions[0].id;
+      // loadPastSession은 기존에 구현되어 있음 — 3단 화면 그대로 복원
+      await loadPastSession(sessionId);
+    })();
 
     // ============================================================
     // 데모 시드 — 제거됨 (Supabase 전용 운영)
@@ -1344,10 +1375,7 @@
               최근: ${lastDate} · ${mins}분 · 대화 ${last.turns?.length || 0}${lastScore != null ? ` · 점수 ${lastScore}` : ''}
             </span>
           </div>
-          <div style="display:flex; gap:4px; flex-shrink:0;">
-            <button onclick="openReviewPage('${patient.id}', 'wide')" class="btn btn-sm btn-primary" style="font-size:0.72rem; padding:5px 10px;" title="3단 화면 모두 펼쳐 보기">📑 Wide</button>
-            <button onclick="openReviewPage('${patient.id}', 'tab')" class="btn btn-sm btn-outline" style="font-size:0.72rem; padding:5px 10px;" title="탭으로 전환하며 보기">📋 Tab</button>
-          </div>
+          <button onclick="openPastSessionsModal()" class="btn btn-sm btn-primary" style="flex-shrink:0; font-size:0.72rem; padding:5px 10px;">📂 불러오기</button>
         </div>
       </div>`;
     }
@@ -1361,13 +1389,8 @@
       const patient = getSelectedPatient();
       if (!patient) { showToast('환자를 먼저 선택하세요', 'warning'); return; }
       if (currentSession) { showToast('진행 중인 상담을 먼저 종료해주세요', 'warning'); return; }
-      // 기본: Wide 뷰로 이동. Shift+클릭은 Tab 뷰로
-      openReviewPage(patient.id, 'wide');
-    }
-
-    function openReviewPage(patientId, viewType) {
-      const file = viewType === 'tab' ? 'consult_review_tab.html' : 'consult_review_wide.html';
-      window.location.href = file + '?patient=' + encodeURIComponent(patientId);
+      // 모달 대신 독립 페이지로 이동
+      window.location.href = 'consult_review.html?patient=' + encodeURIComponent(patient.id);
     }
 
     // (사용 안 함 — 과거 모달 방식, 참조 호환용으로 남겨둠)
