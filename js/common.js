@@ -404,14 +404,7 @@ function renderSidebar(activePage) {
       </a>
     </nav>
     <div class="sidebar-footer">
-      <button class="sidebar-api-btn" onclick="openApiKeyModal()">
-        <span class="sidebar-api-icon" id="sidebarApiIcon">🔑</span>
-        <span class="sidebar-api-text">
-          <span id="sidebarApiLabel">Gemini API 키 설정</span>
-          <span class="sidebar-api-status" id="sidebarApiStatus"></span>
-        </span>
-      </button>
-      <button class="sidebar-api-btn" onclick="openModal('supabaseModal')" style="margin-top:6px;" id="sidebarSupabaseBtn">
+      <button class="sidebar-api-btn" onclick="openModal('supabaseModal')" id="sidebarSupabaseBtn">
         <span class="sidebar-api-icon" id="sidebarDbIcon">🗄️</span>
         <span class="sidebar-api-text">
           <span id="sidebarDbLabel">Supabase DB 연결</span>
@@ -421,47 +414,6 @@ function renderSidebar(activePage) {
       <div style="font-size:0.7rem; color:rgba(255,255,255,0.25); margin-top:10px;">Dental Ops AI v1.0</div>
     </div>
   </aside>
-  <!-- Gemini API Key Modal -->
-  <div class="modal-overlay" id="geminiApiModal">
-    <div class="modal">
-      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:1.25rem;">🔑</span> Gemini API 키 설정
-        </h3>
-        <button class="btn btn-sm btn-secondary" onclick="closeModal('geminiApiModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
-      </div>
-      <div class="modal-body">
-        <div style="padding:16px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:20px;">
-          <p style="font-size:0.8125rem; color:var(--primary); font-weight:600; margin-bottom:6px;">AI 기능 사용에 필요합니다</p>
-          <p style="font-size:0.8125rem; color:var(--text-tertiary);">상담 AI, 전환 전략, 교육 평가 등 모든 엔진이 Gemini API를 사용합니다.</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">API Key</label>
-          <div style="position:relative;">
-            <input type="password" class="form-input" id="geminiKeyInput" placeholder="AIza..." style="padding-right:44px;">
-            <button onclick="toggleKeyVisibility()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:1.1rem; color:var(--text-tertiary);" id="toggleKeyBtn">👁</button>
-          </div>
-        </div>
-        <div id="geminiKeyStatus" style="margin-top:8px;"></div>
-        <div style="margin-top:16px; padding:12px 16px; background:var(--gray-50); border-radius:var(--radius-sm); border:1px solid var(--gray-200);">
-          <p style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">API 키 발급 방법</p>
-          <ol style="font-size:0.75rem; color:var(--text-tertiary); padding-left:16px; line-height:1.8;">
-            <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600;">Google AI Studio</a> 접속 → "Get API Key"</li>
-            <li>"Create API Key" 버튼으로 키 생성</li>
-            <li>생성된 키를 위 입력란에 붙여넣기</li>
-          </ol>
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:8px 16px; background:var(--primary); color:#FFF; font-size:0.75rem; font-weight:600; border-radius:var(--radius-full); text-decoration:none;">🔗 Google AI Studio에서 API 키 발급받기</a>
-        </div>
-        <p style="font-size:0.6875rem; color:var(--text-disabled); margin-top:12px;">🔒 API 키는 이 브라우저의 로컬 스토리지에만 저장됩니다.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="removeApiKey()">키 삭제</button>
-        <div style="flex:1;"></div>
-        <button class="btn btn-secondary" onclick="closeModal('geminiApiModal')">취소</button>
-        <button class="btn btn-primary" onclick="saveGeminiKey()">🔑 저장</button>
-      </div>
-    </div>
-  </div>
   <!-- Supabase 모달 -->
   <div class="modal-overlay" id="supabaseModal">
     <div class="modal" style="max-width:520px;">
@@ -631,121 +583,47 @@ function removeSupabaseConfig() {
 }
 
 // --- Gemini API ---
+// SaaS 방식: 본사 서버(/api/gemini)가 GEMINI_API_KEY를 보관하고 모든 치과가 공동 사용
+// 브라우저는 키를 알 필요 없음. 프록시에만 prompt를 전송.
 const GeminiAPI = {
-  apiKey: '',
-  setKey(key) { this.apiKey = key; Store.set('gemini_key', key); },
-  getKey() {
-    if (!this.apiKey) this.apiKey = Store.get('gemini_key', '');
-    return this.apiKey;
-  },
+  // 호환성용: 항상 true (서버가 키를 보유한다고 가정)
+  getKey() { return 'server-managed'; },
+
   async chat(prompt, imageBase64 = null) {
-    const key = this.getKey();
-    if (!key) throw new Error('Gemini API 키가 설정되지 않았습니다.');
-    const parts = [];
-    if (imageBase64) {
-      const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
-      parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64Data } });
-    }
-    parts.push({ text: prompt });
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts }] })
-      }
-    );
+    const res = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, imageBase64 })
+    });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || 'Gemini API 오류');
+      let msg = 'Gemini API 오류';
+      try { const err = await res.json(); msg = err.error || msg; } catch {}
+      throw new Error(msg);
     }
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return data.text || '';
   },
+
   async json(prompt) {
     const text = await this.chat(prompt + '\n\n반드시 유효한 JSON만 출력하라. 설명이나 마크다운 코드 블록 없이.');
     const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
     try { return JSON.parse(cleaned); }
     catch { const m = cleaned.match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); throw new Error('JSON 파싱 실패'); }
+  },
+
+  // 서버 키 등록 여부 진단용 (선택)
+  async checkServerStatus() {
+    try {
+      const res = await fetch('/api/gemini', { method: 'GET' });
+      if (!res.ok) return { ok: false };
+      return await res.json();
+    } catch {
+      return { ok: false };
+    }
   }
 };
 
-// --- Gemini Key Modal ---
-function openApiKeyModal() {
-  const key = GeminiAPI.getKey();
-  const input = document.getElementById('geminiKeyInput');
-  if (input) { input.value = key || ''; input.type = 'password'; }
-  const toggleBtn = document.getElementById('toggleKeyBtn');
-  if (toggleBtn) toggleBtn.innerHTML = '👁';
-  updateGeminiKeyStatus();
-  openModal('geminiApiModal');
-}
-
-function saveGeminiKey() {
-  const input = document.getElementById('geminiKeyInput');
-  const key = input ? input.value.trim() : '';
-  if (!key) { showToast('API 키를 입력하세요', 'warning'); return; }
-  GeminiAPI.setKey(key);
-  updateSidebarApiState();
-  updateGeminiKeyStatus();
-  showToast('Gemini API 키가 저장되었습니다', 'success');
-  closeModal('geminiApiModal');
-}
-
-function removeApiKey() {
-  GeminiAPI.apiKey = '';
-  Store.remove('gemini_key');
-  const input = document.getElementById('geminiKeyInput');
-  if (input) input.value = '';
-  updateSidebarApiState();
-  updateGeminiKeyStatus();
-  showToast('API 키가 삭제되었습니다', 'info');
-}
-
-function toggleKeyVisibility() {
-  const input = document.getElementById('geminiKeyInput');
-  const btn = document.getElementById('toggleKeyBtn');
-  if (!input) return;
-  if (input.type === 'password') { input.type = 'text'; btn.innerHTML = '🙈'; }
-  else { input.type = 'password'; btn.innerHTML = '👁'; }
-}
-
-function updateGeminiKeyStatus() {
-  const el = document.getElementById('geminiKeyStatus');
-  if (!el) return;
-  const key = GeminiAPI.getKey();
-  if (key) {
-    const masked = key.substring(0, 6) + '••••••' + key.substring(key.length - 4);
-    el.innerHTML = `<div style="display:flex; align-items:center; gap:8px; font-size:0.8125rem;">
-      <span style="color:var(--success); font-weight:600;">✓ 연결됨</span>
-      <span style="color:var(--text-tertiary); font-family:monospace; font-size:0.75rem;">${masked}</span>
-    </div>`;
-  } else {
-    el.innerHTML = '<span style="font-size:0.8125rem; color:var(--text-tertiary);">API 키가 설정되지 않았습니다</span>';
-  }
-}
-
-function updateSidebarApiState() {
-  const key = GeminiAPI.getKey();
-  const btn = document.querySelector('.sidebar-api-btn');
-  const icon = document.getElementById('sidebarApiIcon');
-  const label = document.getElementById('sidebarApiLabel');
-  const status = document.getElementById('sidebarApiStatus');
-  if (!btn) return;
-  if (key) {
-    btn.classList.add('connected');
-    icon.innerHTML = '✅';
-    label.textContent = 'Gemini API';
-    status.textContent = '연결됨 — ' + key.substring(0, 6) + '••••';
-    status.className = 'sidebar-api-status on';
-  } else {
-    btn.classList.remove('connected');
-    icon.innerHTML = '🔑';
-    label.textContent = 'Gemini API 키 설정';
-    status.textContent = '키를 설정하세요';
-    status.className = 'sidebar-api-status off';
-  }
-}
+// --- Gemini 키는 서버(/api/gemini)에서 관리되므로 브라우저 UI 불필요 ---
 
 function updateSidebarDbState() {
   const btn = document.getElementById('sidebarSupabaseBtn');
@@ -770,7 +648,6 @@ function updateSidebarDbState() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  updateSidebarApiState();
   updateSidebarDbState();
   renderConnectionBanner();
   // Supabase Auth 세션 복원 + onAuthStateChange 구독
@@ -784,9 +661,8 @@ function renderConnectionBanner() {
   if (PUBLIC_PAGES.includes(path)) return;
   if (Store.get('banner_dismissed', false)) return;
 
-  const hasGemini = !!GeminiAPI.getKey();
   const hasSupabase = !!Store.get('supabase_url', '');
-  if (hasGemini && hasSupabase) return;
+  if (hasSupabase) return;
 
   const content = document.querySelector('.content');
   if (!content) return;
@@ -795,11 +671,7 @@ function renderConnectionBanner() {
   banner.className = 'connection-banner';
   banner.style.cssText = 'background:#FEF3C7; border:1px solid #FCD34D; color:#78350F; padding:12px 16px; border-radius:var(--radius-md); margin-bottom:20px; display:flex; align-items:center; gap:12px; font-size:0.875rem;';
 
-  const msg = !hasGemini && !hasSupabase
-    ? '🔧 데모 모드 — Gemini API 키와 Supabase DB가 미연결 상태입니다. 사이드바 하단에서 설정하면 실제 AI·데이터가 연결됩니다.'
-    : !hasGemini
-    ? '🔑 Gemini API 키가 설정되지 않았습니다. AI 엔진은 데모 응답만 반환합니다.'
-    : '🗄️ Supabase DB가 연결되지 않았습니다. 데이터는 이 브라우저에만 저장됩니다.';
+  const msg = '🗄️ Supabase DB가 연결되지 않았습니다. 데이터는 이 브라우저에만 저장됩니다.';
 
   const msgEl = document.createElement('span');
   msgEl.style.flex = '1';

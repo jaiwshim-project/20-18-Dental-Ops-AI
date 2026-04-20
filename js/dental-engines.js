@@ -4,8 +4,8 @@
    ============================================================ */
 
 // ---------- 공통 응답 보호 ----------
+// 서버(/api/gemini)가 GEMINI_API_KEY를 관리하므로 브라우저에서는 키 체크 불필요
 async function safeGemini(prompt, fallbackText) {
-  if (!GeminiAPI.getKey()) return { demo: true, text: fallbackText };
   try {
     const text = await GeminiAPI.chat(prompt);
     return { demo: false, text };
@@ -16,7 +16,6 @@ async function safeGemini(prompt, fallbackText) {
 }
 
 async function safeGeminiJson(prompt, fallback) {
-  if (!GeminiAPI.getKey()) return { demo: true, data: fallback };
   try {
     const data = await GeminiAPI.json(prompt);
     return { demo: false, data };
