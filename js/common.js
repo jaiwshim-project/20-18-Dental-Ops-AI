@@ -276,19 +276,43 @@ async function applyAuthSession(authSession) {
   let clinic = pending?.clinic || '';
   let role = pending?.role || 'staff';
 
-  // public.users 테이블에 upsert
+  // public.users 테이블에 upsert — 최대 3회 재시도 (exponential backoff)
   let userId = authUser.id;
-  try {
-    const row = await SupabaseDB.upsertUser({ email, name, clinic, role });
-    if (row?.id) userId = row.id;
-    name = row?.name || name;
-    clinic = row?.clinic || clinic;
-    role = row?.role || role;
-  } catch (e) { console.warn('users upsert 실패', e); }
+  let tier = 'free';
+  let is_admin = false;
+  let upsertOk = false;
+  let lastErr = null;
 
-  Session.login({ userId, name, role, clinic, email });
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const row = await SupabaseDB.upsertUser({ email, name, clinic, role });
+      if (row?.id) userId = row.id;
+      name = row?.name || name;
+      clinic = row?.clinic || clinic;
+      role = row?.role || role;
+      tier = row?.tier || 'free';
+      is_admin = row?.is_admin === true;
+      upsertOk = true;
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`users upsert 시도 ${attempt}/3 실패`, e);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt)); // 0.5s, 1s
+    }
+  }
+
+  Session.login({ userId, name, role, clinic, email, tier, is_admin });
   Store.remove('pending_login');
-  showToast(`${name}님 환영합니다 (${clinic})`, 'success');
+
+  if (upsertOk) {
+    showToast(`${name}님 환영합니다 (${clinic})`, 'success');
+  } else {
+    console.error('applyAuthSession: upsertUser 3회 실패', lastErr);
+    showToast(
+      `로그인은 됐지만 프로필 동기화 실패 (${lastErr?.message || '오류'}). 새로고침 후 재시도하세요.`,
+      'error', 8000
+    );
+  }
 }
 
 // Enter 키로 로그인 제출
