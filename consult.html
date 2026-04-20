@@ -734,9 +734,14 @@
             <div class="panel-body">
               <div class="form-group">
                 <label class="form-label">환자 선택</label>
-                <select class="form-input" id="patientSelect" onchange="refreshPatientHistoryBadge()">
-                  <option value="">환자 정보 없이 상담</option>
-                </select>
+                <div style="display:flex; gap:6px;">
+                  <select class="form-input" id="patientSelect" onchange="refreshPatientHistoryBadge()" style="flex:1;">
+                    <option value="">환자 정보 없이 상담</option>
+                  </select>
+                  <button type="button" class="btn btn-primary" onclick="openQuickAddPatient()"
+                    title="빠른 환자 추가" aria-label="빠른 환자 추가"
+                    style="padding:0 14px; font-size:1.1rem; flex-shrink:0;">➕</button>
+                </div>
                 <div id="patientHistBadge"></div>
               </div>
 
@@ -818,6 +823,66 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 빠른 환자 추가 모달 -->
+  <div class="modal-overlay" id="quickPatientModal">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.25rem;">➕</span> 빠른 환자 추가
+        </h3>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('quickPatientModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="padding:10px 14px; background:var(--primary-bg); border-radius:var(--radius-sm); margin-bottom:16px; font-size:0.78rem; color:var(--primary); line-height:1.5;">
+          💡 최소 <strong>이름</strong>만 입력하면 저장됩니다. 저장 후 드롭다운에 자동 반영되어 바로 상담 시작 가능.
+        </div>
+        <div class="form-group">
+          <label class="form-label">이름 <span style="color:var(--danger);">*</span></label>
+          <input type="text" class="form-input" id="quickPatientName" placeholder="예: 김민수" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">전화번호</label>
+          <input type="tel" class="form-input" id="quickPatientPhone" placeholder="010-1234-5678" autocomplete="off">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label class="form-label">나이</label>
+            <input type="number" class="form-input" id="quickPatientAge" placeholder="예: 45" min="0" max="120">
+          </div>
+          <div class="form-group">
+            <label class="form-label">성별</label>
+            <select class="form-input" id="quickPatientGender">
+              <option value="">선택 안 함</option>
+              <option value="남">남</option>
+              <option value="여">여</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">관심 치료</label>
+          <select class="form-input" id="quickPatientTreatment">
+            <option value="">선택 안 함</option>
+            <option value="임플란트">임플란트</option>
+            <option value="라미네이트">라미네이트</option>
+            <option value="교정">교정</option>
+            <option value="치아미백">치아미백</option>
+            <option value="보철">보철</option>
+            <option value="일반검진">일반검진</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">메모 <span style="font-weight:400; color:var(--text-tertiary); font-size:0.72rem;">(알레르기·복용약·전신질환·예산·소개경로 등 자유 기술)</span></label>
+          <textarea class="form-input" id="quickPatientMemo" rows="3" placeholder="예) 혈압약 복용 중 / 페니실린 알레르기 / 배우자와 상의 필요 / 이모 추천" style="resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('quickPatientModal')">취소</button>
+        <button class="btn btn-primary" id="quickPatientSaveBtn" onclick="saveQuickPatient()">💾 저장 · 바로 상담 시작</button>
       </div>
     </div>
   </div>
@@ -993,6 +1058,77 @@
     })();
 
     refreshPatientHistoryBadge();
+
+    // ============================================================
+    // 빠른 환자 추가 (drop-down 옆 ➕ 버튼)
+    // ============================================================
+    function openQuickAddPatient() {
+      if (currentSession) {
+        showToast('진행 중인 상담을 먼저 종료하고 신규 환자를 추가해주세요', 'warning');
+        return;
+      }
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        showToast('Supabase 미연결 — 환자를 저장할 수 없습니다', 'error');
+        return;
+      }
+      // 이전 입력값 초기화
+      ['quickPatientName','quickPatientPhone','quickPatientAge','quickPatientMemo'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('quickPatientGender').value = '';
+      document.getElementById('quickPatientTreatment').value = '';
+      openModal('quickPatientModal');
+      setTimeout(() => document.getElementById('quickPatientName')?.focus(), 100);
+    }
+
+    async function saveQuickPatient() {
+      const name = (document.getElementById('quickPatientName').value || '').trim();
+      const phone = (document.getElementById('quickPatientPhone').value || '').trim();
+      const ageRaw = (document.getElementById('quickPatientAge').value || '').trim();
+      const gender = document.getElementById('quickPatientGender').value || '';
+      const treatment = document.getElementById('quickPatientTreatment').value || '';
+      const memo = (document.getElementById('quickPatientMemo').value || '').trim();
+
+      if (!name) { showToast('이름을 입력해주세요', 'warning'); return; }
+      if (name.length > 30) { showToast('이름은 30자 이내로 입력해주세요', 'warning'); return; }
+
+      const age = ageRaw ? parseInt(ageRaw, 10) : null;
+      if (ageRaw && (isNaN(age) || age < 0 || age > 120)) { showToast('나이는 0~120 사이 숫자로 입력해주세요', 'warning'); return; }
+
+      const btn = document.getElementById('quickPatientSaveBtn');
+      btn.disabled = true;
+      btn.textContent = '💾 저장 중...';
+      try {
+        const row = await SupabaseDB.createPatient({
+          name,
+          phone: phone || null,
+          age,
+          gender: gender || null,
+          treatment: treatment || null,
+          memo: memo || null
+        });
+        // 캐시·드롭다운 반영
+        patientCache.unshift(row);
+        const sel = document.getElementById('patientSelect');
+        const opt = document.createElement('option');
+        opt.value = row.id;
+        const ageTxt = row.age ? `${row.age}세` : '-';
+        opt.textContent = `${row.name} (${ageTxt}, ${row.treatment || '미정'})`;
+        // '환자 정보 없이 상담' 옵션 다음에 삽입
+        if (sel.options.length > 1) sel.insertBefore(opt, sel.options[1]);
+        else sel.appendChild(opt);
+        sel.value = row.id;
+        refreshPatientHistoryBadge();
+        closeModal('quickPatientModal');
+        showToast(`✅ ${row.name}님 등록 완료 · 이제 🎙 상담 시작하세요`, 'success');
+      } catch (e) {
+        console.error(e);
+        showToast('저장 실패: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 저장 · 바로 상담 시작';
+      }
+    }
 
     function getSelectedPatient() {
       const id = document.getElementById('patientSelect').value;
