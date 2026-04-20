@@ -1112,31 +1112,49 @@
     // 리뷰 모드 — URL 파라미터 ?patient=<id>&session=<sid> 자동 진입
     // ============================================================
     (async function autoLoadReviewMode() {
+      const sel = document.getElementById('patientSelect');
+
+      // 리뷰 모드 공용: 환자 선택 시 최신 세션 자동 로드
+      async function autoLoadLatestForSelectedPatient() {
+        const selectedPid = sel.value;
+        if (!selectedPid) return;
+        const sessions = await getPatientSessions(selectedPid);
+        if (!sessions.length) {
+          showToast('이 환자의 저장된 상담이 없습니다', 'info');
+          refreshPatientHistoryBadge();
+          return;
+        }
+        await loadPastSession(sessions[0].id);
+      }
+      sel.addEventListener('change', autoLoadLatestForSelectedPatient);
+
       const urlParams = new URLSearchParams(window.location.search);
       const pid = urlParams.get('patient');
-      if (!pid) return;
+
       // populatePatients가 끝나기를 기다림 (최대 5초)
       const waitStart = Date.now();
       while (patientCache.length === 0 && Date.now() - waitStart < 5000) {
         await new Promise(r => setTimeout(r, 200));
       }
+
+      if (!pid) {
+        // URL 파라미터 없이 진입 (사이드바 Wide 서브메뉴) → 사용자가 환자 선택 시 자동 로드
+        showToast('환자를 선택하면 최근 상담이 자동으로 열립니다', 'info');
+        return;
+      }
+
       if (!patientCache.find(p => p.id === pid)) {
         showToast('해당 환자를 찾을 수 없습니다', 'warning');
         return;
       }
-      // 환자 선택
-      const sel = document.getElementById('patientSelect');
       sel.value = pid;
-      // 세션 목록 가져오기
       const sessions = await getPatientSessions(pid);
       if (!sessions.length) {
         showToast('이 환자의 저장된 상담이 없습니다', 'info');
         refreshPatientHistoryBadge();
         return;
       }
-      // URL에 session 지정되어 있으면 그 세션, 없으면 최신
       const sessionId = urlParams.get('session') || sessions[0].id;
-      // loadPastSession은 기존에 구현되어 있음 — 3단 화면 그대로 복원
       await loadPastSession(sessionId);
     })();
 
