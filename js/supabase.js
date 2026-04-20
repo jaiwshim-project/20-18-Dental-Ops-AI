@@ -6,9 +6,9 @@ const SupabaseDB = {
   client: null,
   bucket: 'dental-ops',
 
-  // 기본 설정 (프로젝트 전용 — 운영 시 교체)
-  DEFAULT_URL: '',
-  DEFAULT_KEY: '',
+  // 기본 설정 (프로젝트 전용 — anon key는 브라우저 공개 키)
+  DEFAULT_URL: 'https://grgppaammbccuddwthfo.supabase.co',
+  DEFAULT_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3BwYWFtbWJjY3VkZHd0aGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NTE1NTYsImV4cCI6MjA5MjIyNzU1Nn0.Na-87Hcx8JgX4RztvPci90tJreEOj1x9B79SgqI8DH4',
 
   init() {
     let url = Store.get('supabase_url', '') || this.DEFAULT_URL;
