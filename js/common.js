@@ -434,6 +434,35 @@ function updateSessionUI() {
 document.addEventListener('DOMContentLoaded', updateSessionUI);
 
 // ============================================================
+// 세션 자동 동기화 — 페이지 로드마다 DB에서 최신 tier/is_admin/role 갱신
+// ============================================================
+async function refreshSessionFromDb() {
+  const s = Session.get();
+  if (!s?.email) return;
+  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) return;
+  try {
+    const u = await SupabaseDB.getUserByEmail(s.email);
+    if (!u) return;
+    Session.login({
+      userId: u.id,
+      name: u.name || s.name,
+      role: u.role || s.role,
+      clinic: u.clinic || s.clinic,
+      email: u.email,
+      tier: u.tier || 'free',
+      is_admin: u.is_admin === true
+    });
+    updateSessionUI();
+  } catch (e) {
+    console.warn('session refresh 실패', e);
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  // SupabaseDB.init()이 DOMContentLoaded에서 실행되므로 약간의 딜레이
+  setTimeout(refreshSessionFromDb, 300);
+});
+
+// ============================================================
 // 사이드바 — 8메뉴 + 홈/매뉴얼/구조도
 // ============================================================
 function renderSidebar(activePage) {
