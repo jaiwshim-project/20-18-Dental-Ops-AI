@@ -91,13 +91,13 @@
             <div class="kpi-change up" id="kpiConvDelta">&#8593; 0%</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-icon" style="background:#FEF3C7; color:#92400E;">&#x23F1;</div>
+            <div class="kpi-card-icon" style="background:var(--warning-bg); color:var(--warning-text);">&#x23F1;</div>
             <div class="kpi-label">평균 상담시간</div>
             <div class="kpi-value" id="kpiTime">0분</div>
             <div class="kpi-change up" id="kpiTimeDelta">&#8595; 0분</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-icon" style="background:#D1FAE5; color:#065F46;">&#x1F501;</div>
+            <div class="kpi-card-icon" style="background:var(--success-bg); color:var(--success-text);">&#x1F501;</div>
             <div class="kpi-label">재방문율</div>
             <div class="kpi-value" id="kpiRevisit">0%</div>
             <div class="kpi-change up" id="kpiRevisitDelta">&#8593; 0%</div>
@@ -115,7 +115,7 @@
             <div class="kpi-change up" id="kpiRevenueDelta">&#8593; 0%</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-icon" style="background:#FEE2E2; color:#991B1B;">&#x1F4C5;</div>
+            <div class="kpi-card-icon" style="background:var(--danger-bg); color:var(--danger-text);">&#x1F4C5;</div>
             <div class="kpi-label">오늘 상담</div>
             <div class="kpi-value" id="kpiToday">0</div>
             <div class="kpi-change up">실시간</div>
@@ -422,8 +422,8 @@
         badge.style.color = '#14532D';
         badge.innerHTML = '<span style="width:8px; height:8px; border-radius:50%; background:#10B981; display:inline-block; animation:pulse 1.6s infinite;"></span> 🔴 LIVE · Supabase';
       } else {
-        badge.style.background = '#FEF3C7';
-        badge.style.color = '#92400E';
+        badge.style.background = 'var(--warning-bg)';
+        badge.style.color = 'var(--warning-text)';
         badge.textContent = '📊 DEMO · SampleData';
       }
       const content = document.querySelector('.content');

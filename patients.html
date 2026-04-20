@@ -173,9 +173,9 @@
       font-size: 0.72rem;
       font-weight: 800;
     }
-    .score-chip.high { background: #D1FAE5; color: #065F46; }
-    .score-chip.mid  { background: #FEF3C7; color: #92400E; }
-    .score-chip.low  { background: #FEE2E2; color: #991B1B; }
+    .score-chip.high { background: var(--success-bg); color: var(--success-text); }
+    .score-chip.mid  { background: var(--warning-bg); color: var(--warning-text); }
+    .score-chip.low  { background: var(--danger-bg); color: var(--danger-text); }
 
     .intent-chip {
       padding: 5px 12px;
@@ -369,10 +369,10 @@
     const statusConfig = {
       '상담대기': { bg: '#F1F5F9', color: '#475569' },
       '상담중':   { bg: '#EBF3FF', color: '#0066FF' },
-      '계약완료': { bg: '#D1FAE5', color: '#065F46' },
-      '치료중':   { bg: '#FEF3C7', color: '#92400E' },
+      '계약완료': { bg: 'var(--success-bg)', color: 'var(--success-text)' },
+      '치료중':   { bg: 'var(--warning-bg)', color: 'var(--warning-text)' },
       '치료완료': { bg: '#CCFBF1', color: '#0F766E' },
-      '이탈':     { bg: '#FEE2E2', color: '#991B1B' },
+      '이탈':     { bg: 'var(--danger-bg)', color: 'var(--danger-text)' },
     };
 
     async function reload() {
@@ -498,7 +498,7 @@
             <div class="detail-info-item"><label>관심 치료</label><div>${escapeHTML(p.treatment || '-')}</div></div>
             <div class="detail-info-item"><label>최근 방문</label><div>${p.lastVisit || p.created_at?.substring(0,10) || '-'}</div></div>
           </div>
-          ${p.memo ? `<div style="margin-top:12px; padding:10px 14px; background:#FEF3C7; border-left:3px solid #F59E0B; border-radius:6px; font-size:0.85rem; color:#78350F; white-space:pre-wrap;">${escapeHTML(p.memo)}</div>` : ''}
+          ${p.memo ? `<div style="margin-top:12px; padding:10px 14px; background:var(--warning-bg); border-left:3px solid #F59E0B; border-radius:6px; font-size:0.85rem; color:#78350F; white-space:pre-wrap;">${escapeHTML(p.memo)}</div>` : ''}
         </div>
         <div id="reportArea">
           <div style="padding:32px; text-align:center; color:var(--text-tertiary); font-size:0.8125rem;">

@@ -77,9 +77,9 @@
       font-weight: 800;
       display: inline-block;
     }
-    .score-pill.high { background: #D1FAE5; color: #065F46; }
-    .score-pill.mid  { background: #FEF3C7; color: #92400E; }
-    .score-pill.low  { background: #FEE2E2; color: #991B1B; }
+    .score-pill.high { background: var(--success-bg); color: var(--success-text); }
+    .score-pill.mid  { background: var(--warning-bg); color: var(--warning-text); }
+    .score-pill.low  { background: var(--danger-bg); color: var(--danger-text); }
     .score-pill.none { background: var(--gray-100); color: var(--text-tertiary); }
 
     .readiness-delta {
@@ -644,10 +644,10 @@
           html += `<div style="background:var(--gray-50); padding:10px 12px; border-radius:6px; font-size:0.82rem; line-height:1.55; margin-bottom:8px;">${ev.summary.map(x => `• ${escapeHTML(x)}`).join('<br>')}</div>`;
         }
         if (Array.isArray(ev.staff_strengths) && ev.staff_strengths.length) {
-          html += `<div style="font-size:0.8rem; margin-bottom:6px;"><strong style="color:#065F46;">✅ 잘한 점</strong><ul style="margin:4px 0 0; padding-left:18px;">${ev.staff_strengths.map(x => `<li>${escapeHTML(x)}</li>`).join('')}</ul></div>`;
+          html += `<div style="font-size:0.8rem; margin-bottom:6px;"><strong style="color:var(--success-text);">✅ 잘한 점</strong><ul style="margin:4px 0 0; padding-left:18px;">${ev.staff_strengths.map(x => `<li>${escapeHTML(x)}</li>`).join('')}</ul></div>`;
         }
         if (Array.isArray(ev.staff_improvements) && ev.staff_improvements.length) {
-          html += `<div style="font-size:0.8rem; margin-bottom:6px;"><strong style="color:#92400E;">🔧 개선 기회</strong><ul style="margin:4px 0 0; padding-left:18px;">${ev.staff_improvements.map(x => `<li>${escapeHTML(x)}</li>`).join('')}</ul></div>`;
+          html += `<div style="font-size:0.8rem; margin-bottom:6px;"><strong style="color:var(--warning-text);">🔧 개선 기회</strong><ul style="margin:4px 0 0; padding-left:18px;">${ev.staff_improvements.map(x => `<li>${escapeHTML(x)}</li>`).join('')}</ul></div>`;
         }
         if (Array.isArray(ev.suggested_followup) && ev.suggested_followup.length) {
           html += `<div style="font-size:0.8rem;"><strong style="color:var(--primary);">🤝 후속 조치</strong><ul style="margin:4px 0 0; padding-left:18px;">${ev.suggested_followup.map(x => `<li>${escapeHTML(x)}</li>`).join('')}</ul></div>`;

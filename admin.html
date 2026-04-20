@@ -60,8 +60,8 @@
     .risk-chip {
       display: inline-block;
       padding: 6px 12px;
-      background: #FEE2E2;
-      color: #991B1B;
+      background: var(--danger-bg);
+      color: var(--danger-text);
       border-radius: var(--radius-full);
       font-size: 0.8125rem;
       font-weight: 600;
@@ -69,7 +69,7 @@
     }
 
     .roi-box {
-      background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+      background: linear-gradient(135deg, var(--success-bg), var(--success-border));
       border-radius: var(--radius-md);
       padding: 20px;
       text-align: center;
@@ -77,7 +77,7 @@
     .roi-value {
       font-size: 1.75rem;
       font-weight: 800;
-      color: #065F46;
+      color: var(--success-text);
     }
 
     .ontology-graph { width: 100%; height: 280px; }
@@ -537,7 +537,7 @@
 
       let html = '';
       if (isDemo) {
-        html += `<div style="padding:10px 14px; background:#FEF3C7; color:#92400E; border-radius:var(--radius-sm); margin-bottom:14px; font-size:0.75rem;">&#x26A0; Gemini API 미연결 — 데모 응답입니다</div>`;
+        html += `<div style="padding:10px 14px; background:var(--warning-bg); color:var(--warning-text); border-radius:var(--radius-sm); margin-bottom:14px; font-size:0.75rem;">&#x26A0; Gemini API 미연결 — 데모 응답입니다</div>`;
       }
 
       html += `<h4 style="margin-bottom:12px;">&#x1F3AF; 우선순위 Top 3 액션</h4>`;
@@ -562,7 +562,7 @@
 
       if (data.roi_estimate) {
         html += `<div class="roi-box mt-16">
-          <div style="font-size:0.75rem; color:#065F46; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">예상 ROI</div>
+          <div style="font-size:0.75rem; color:var(--success-text); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">예상 ROI</div>
           <div class="roi-value mt-8">${data.roi_estimate}</div>
         </div>`;
       }

@@ -29,11 +29,29 @@
   --gray-800: #1E293B;
   --gray-900: #0F172A;
 
-  /* Semantic */
+  /* Semantic base */
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
   --info: #3B82F6;
+
+  /* Semantic text (라이트 배경 위 상태별 어두운 텍스트) */
+  --success-text: #065F46;
+  --warning-text: #92400E;
+  --danger-text: #991B1B;
+  --info-text: #1E40AF;
+
+  /* Semantic bg (라이트 배경, 카드/알럿 배경) */
+  --success-bg: #D1FAE5;
+  --warning-bg: #FEF3C7;
+  --danger-bg: #FEE2E2;
+  --info-bg: #DBEAFE;
+
+  /* Semantic border (라이트 테두리) */
+  --success-border: #A7F3D0;
+  --warning-border: #FCD34D;
+  --danger-border: #FCA5A5;
+  --info-border: #93C5FD;
 
   /* Surface */
   --surface: #FFFFFF;
@@ -47,6 +65,14 @@
   --text-disabled: rgba(15, 23, 42, 0.32);
   --text-on-primary: rgba(255, 255, 255, 0.96);
   --text-on-primary-secondary: rgba(255, 255, 255, 0.72);
+  --text-on-primary-weak: rgba(255, 255, 255, 0.60);
+  --text-on-primary-disabled: rgba(255, 255, 255, 0.40);
+
+  /* Opacity Utilities */
+  --opacity-strong: 0.92;
+  --opacity-medium: 0.68;
+  --opacity-weak: 0.48;
+  --opacity-disabled: 0.32;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);

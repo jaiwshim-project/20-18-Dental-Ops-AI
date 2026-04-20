@@ -44,11 +44,11 @@
     .patient-box {
       padding: 16px 18px;
       border-radius: var(--radius-md);
-      background: linear-gradient(135deg, #FEF3C7, #FEF9C3);
+      background: linear-gradient(135deg, var(--warning-bg), #FEF9C3);
       border: 1px solid #FDE68A;
       margin-bottom: 16px;
     }
-    .patient-label { font-size: 0.7rem; font-weight: 700; color: #92400E; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+    .patient-label { font-size: 0.7rem; font-weight: 700; color: var(--warning-text); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
     .patient-info { font-size: 0.95rem; color: var(--text-primary); font-weight: 600; margin-bottom: 8px; }
     .patient-objection {
       padding: 10px 14px;
@@ -119,8 +119,8 @@
       font-size: 0.8125rem;
       font-weight: 600;
     }
-    .feedback-badge.strength { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
-    .feedback-badge.improve { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+    .feedback-badge.strength { background: var(--success-bg); color: var(--success-text); border: 1px solid #6EE7B7; }
+    .feedback-badge.improve { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
 
     .coach-box {
       margin-top: 16px;
@@ -154,9 +154,9 @@
       font-weight: 700;
       font-size: 0.8rem;
     }
-    .score-pill.high { background: #D1FAE5; color: #065F46; }
-    .score-pill.mid { background: #FEF3C7; color: #92400E; }
-    .score-pill.low { background: #FEE2E2; color: #991B1B; }
+    .score-pill.high { background: var(--success-bg); color: var(--success-text); }
+    .score-pill.mid { background: var(--warning-bg); color: var(--warning-text); }
+    .score-pill.low { background: var(--danger-bg); color: var(--danger-text); }
 
     .empty { text-align: center; padding: 40px 20px; color: var(--text-tertiary); font-size: 0.9rem; }
     .empty-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; opacity: 0.5; }
@@ -214,9 +214,9 @@
       letter-spacing: 0.05em;
       margin-bottom: 6px;
     }
-    .qcard-label.success  { color: #065F46; }
+    .qcard-label.success  { color: var(--success-text); }
     .qcard-label.core     { color: var(--primary); }
-    .qcard-label.avoid    { color: #991B1B; }
+    .qcard-label.avoid    { color: var(--danger-text); }
     .qcard-list { margin: 0; padding: 0; list-style: none; }
     .qcard-list li {
       padding: 4px 0 4px 18px;

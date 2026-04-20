@@ -70,8 +70,8 @@
       display: inline-flex;
       align-items: center;
       padding: 3px 10px;
-      background: #FEF3C7;
-      color: #92400E;
+      background: var(--warning-bg);
+      color: var(--warning-text);
       border-radius: var(--radius-full);
       font-size: 0.6875rem;
       font-weight: 700;
@@ -95,9 +95,9 @@
       font-size: 0.75rem;
       font-weight: 700;
     }
-    .urgency-긴급 { background: #FEE2E2; color: #991B1B; }
-    .urgency-보통 { background: #FEF3C7; color: #92400E; }
-    .urgency-여유 { background: #D1FAE5; color: #065F46; }
+    .urgency-긴급 { background: var(--danger-bg); color: var(--danger-text); }
+    .urgency-보통 { background: var(--warning-bg); color: var(--warning-text); }
+    .urgency-여유 { background: var(--success-bg); color: var(--success-text); }
 
     .history-item {
       padding: 12px 14px;
@@ -165,7 +165,7 @@
       color: rgba(255,255,255,0.72);
       min-height: 1.2em;
     }
-    .mic-status.recording { color: #FCA5A5; font-weight: 600; }
+    .mic-status.recording { color: var(--danger-border); font-weight: 600; }
 
     .transcript {
       background: var(--gray-50);
@@ -275,7 +275,7 @@
       padding: 9px 8px;
       border: 2px solid transparent;
       background: transparent;
-      color: rgba(255,255,255,0.6);
+      color: var(--text-on-primary-weak);
       border-radius: 8px;
       font-size: 0.8rem;
       font-weight: 600;
@@ -320,13 +320,13 @@
 
     .subtext-box {
       padding: 14px 18px;
-      background: #FEF3C7;
+      background: var(--warning-bg);
       border-left: 4px solid #F59E0B;
       border-radius: var(--radius-sm);
       color: #78350F;
       margin-bottom: 14px;
     }
-    .subtext-box strong { color: #92400E; display: block; margin-bottom: 8px; font-size: 0.72rem; letter-spacing: 0.06em; }
+    .subtext-box strong { color: var(--warning-text); display: block; margin-bottom: 8px; font-size: 0.72rem; letter-spacing: 0.06em; }
     .subtext-list { margin: 0; padding: 0; list-style: none; }
     .subtext-list li {
       padding: 6px 0 6px 22px;
@@ -433,7 +433,7 @@
       border-radius: var(--radius-sm);
       margin-bottom: 14px;
     }
-    .caution-box strong { display: block; font-size: 0.72rem; color: #991B1B; margin-bottom: 6px; letter-spacing: 0.06em; }
+    .caution-box strong { display: block; font-size: 0.72rem; color: var(--danger-text); margin-bottom: 6px; letter-spacing: 0.06em; }
     .caution-box ul { margin: 0; padding-left: 16px; font-size: 0.85rem; color: #7F1D1D; line-height: 1.55; }
 
     .next-action-box {
@@ -622,8 +622,8 @@
       margin-right: 6px;
     }
     .qlrcq-meta-pill.ok   { background: #DCFCE7; color: #14532D; }
-    .qlrcq-meta-pill.warn { background: #FEF3C7; color: #92400E; }
-    .qlrcq-meta-pill.bad  { background: #FEE2E2; color: #991B1B; }
+    .qlrcq-meta-pill.warn { background: var(--warning-bg); color: var(--warning-text); }
+    .qlrcq-meta-pill.bad  { background: var(--danger-bg); color: var(--danger-text); }
 
     /* 종료 버튼 — 마이크 블록 내부 배치용 */
     #endSessionBtn:not(:disabled) {
@@ -694,9 +694,9 @@
       margin-bottom: 6px;
       font-size: 0.8rem;
     }
-    .eval-violation-head { color: #991B1B; font-weight: 800; font-size: 0.72rem; margin-bottom: 2px; }
+    .eval-violation-head { color: var(--danger-text); font-weight: 800; font-size: 0.72rem; margin-bottom: 2px; }
     .eval-violation-quote { color: #7F1D1D; font-style: italic; margin: 2px 0; }
-    .eval-violation-suggest { color: #065F46; margin-top: 4px; font-size: 0.78rem; }
+    .eval-violation-suggest { color: var(--success-text); margin-top: 4px; font-size: 0.78rem; }
 
     .score-bars { display: flex; flex-direction: column; gap: 6px; }
     .score-bar {
@@ -831,7 +831,7 @@
                 <button class="mic-btn" id="micBtn" onclick="toggleMic()" aria-label="상담 시작/정지" title="클릭하여 녹음 시작/정지">🎙</button>
                 <div class="mic-status" id="micStatus">상담 시작 버튼을 누르세요</div>
                 <button class="btn w-full" id="endSessionBtn" onclick="endSession()"
-                  style="background:rgba(220,38,38,0.15); color:#FCA5A5; border:1.5px solid rgba(252,165,165,0.35); margin-top:14px; font-size:0.82rem;"
+                  style="background:rgba(220,38,38,0.15); color:var(--danger-border); border:1.5px solid rgba(252,165,165,0.35); margin-top:14px; font-size:0.82rem;"
                   disabled title="🎙 상담 시작 후 활성화됩니다">🛑 상담 종료 및 저장</button>
                 <div style="font-size:0.7rem; color:rgba(255,255,255,0.55); margin-top:12px; line-height:1.5;">
                   🤖 두 사람이 자연스럽게 대화하세요.<br>전송 시 AI가 대화 문맥으로 <strong style="color:#FFF;">환자 / 상담실장</strong>을 자동 분리합니다.
@@ -1440,8 +1440,8 @@
       // 4) 읽기 전용 배지 + 마이크 비활성화
       const card = document.getElementById('sessionCard');
       card.style.display = 'block';
-      card.style.background = '#FEF3C7';
-      card.style.borderColor = '#FCD34D';
+      card.style.background = 'var(--warning-bg)';
+      card.style.borderColor = 'var(--warning-border)';
       card.style.color = '#78350F';
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -2117,7 +2117,7 @@
       const problems = [];
       if (!SpeechRec) {
         problems.push({
-          color: '#FEF3C7', border: '#F59E0B', text: '#78350F',
+          color: 'var(--warning-bg)', border: '#F59E0B', text: '#78350F',
           msg: '⚠️ <strong>이 브라우저는 음성 인식을 지원하지 않습니다.</strong> Chrome 또는 Edge에서 열어주세요. (현재는 수동 입력만 가능합니다)'
         });
       }
@@ -2206,7 +2206,7 @@
           </div>
           ${d.qlrcq_reason ? `<div style="color:var(--text-tertiary); margin-bottom:4px;">왜 여기: ${safe(d.qlrcq_reason)}</div>` : ''}
           ${signals.length ? `<div style="margin-bottom:4px;">✅ 성공 신호: ${signals.map(s => safe(s)).join(' · ')}</div>` : ''}
-          ${violations.length ? `<div style="color:#991B1B; margin-bottom:4px;">❌ 피해야 할 것 감지: ${violations.map(v => safe(v)).join(' · ')}</div>` : ''}
+          ${violations.length ? `<div style="color:var(--danger-text); margin-bottom:4px;">❌ 피해야 할 것 감지: ${violations.map(v => safe(v)).join(' · ')}</div>` : ''}
           ${d.next_stage_gate ? `<div style="color:var(--text-secondary);">🔓 다음 단계 조건: ${safe(d.next_stage_gate)}</div>` : ''}
         </div>`;
       el.style.display = 'block';
@@ -2289,7 +2289,7 @@
         <div class="intent-tags">
           ${intentPrimary ? `<span class="intent-tag primary">주의도 · ${safe(INTENT_LABEL[intentPrimary] || intentPrimary)}</span>` : ''}
           ${intentSecondary.map(t => `<span class="intent-tag secondary">${safe(INTENT_LABEL[t] || t)}</span>`).join('')}
-          <span class="intent-tag" style="background:${d.risk_level === 'high' ? '#FEE2E2' : d.risk_level === 'medium' ? '#FEF3C7' : '#D1FAE5'}; color:${d.risk_level === 'high' ? '#991B1B' : d.risk_level === 'medium' ? '#92400E' : '#065F46'};">리스크 · ${safe(d.risk_level || 'low')}</span>
+          <span class="intent-tag" style="background:${d.risk_level === 'high' ? 'var(--danger-bg)' : d.risk_level === 'medium' ? 'var(--warning-bg)' : 'var(--success-bg)'}; color:${d.risk_level === 'high' ? 'var(--danger-text)' : d.risk_level === 'medium' ? 'var(--warning-text)' : 'var(--success-text)'};">리스크 · ${safe(d.risk_level || 'low')}</span>
         </div>
 
         ${(() => {
@@ -2326,8 +2326,8 @@
               <div class="kv-card" style="border-top:3px solid var(--primary);">
                 <div style="font-size:0.7rem; color:var(--primary); font-weight:800; letter-spacing:0.06em;">옵션 ${i + 1}</div>
                 <div class="kv-value" style="margin:4px 0 8px;">${safe(o.name || '-')}</div>
-                ${o.pros ? `<div style="font-size:0.78rem; color:#065F46; margin-bottom:4px;">✓ ${safe(o.pros)}</div>` : ''}
-                ${o.cons ? `<div style="font-size:0.78rem; color:#92400E; margin-bottom:6px;">△ ${safe(o.cons)}</div>` : ''}
+                ${o.pros ? `<div style="font-size:0.78rem; color:var(--success-text); margin-bottom:4px;">✓ ${safe(o.pros)}</div>` : ''}
+                ${o.cons ? `<div style="font-size:0.78rem; color:var(--warning-text); margin-bottom:6px;">△ ${safe(o.cons)}</div>` : ''}
                 ${o.estimate_range ? `<div style="font-size:0.78rem; color:var(--text-tertiary); border-top:1px dashed var(--gray-200); padding-top:6px; margin-top:6px;">💰 ${safe(o.estimate_range)}</div>` : ''}
               </div>
             `).join('')}

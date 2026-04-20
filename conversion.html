@@ -54,9 +54,9 @@
     }
     .step-label.empathy { background: #FCE7F3; color: #BE185D; }
     .step-label.reframe { background: #EDE9FE; color: #6D28D9; }
-    .step-label.resolve { background: #DBEAFE; color: #1D4ED8; }
-    .step-label.alternative { background: #D1FAE5; color: #065F46; }
-    .step-label.cta { background: #FEF3C7; color: #92400E; }
+    .step-label.resolve { background: var(--info-bg); color: #1D4ED8; }
+    .step-label.alternative { background: var(--success-bg); color: var(--success-text); }
+    .step-label.cta { background: var(--warning-bg); color: var(--warning-text); }
     .step-text { font-size: 0.9rem; color: var(--text-primary); line-height: 1.65; white-space: pre-wrap; }
 
     /* 원형 게이지 */
@@ -86,8 +86,8 @@
       font-size: 0.85rem;
       line-height: 1.5;
     }
-    .signal-item.pos { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-    .signal-item.neg { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .signal-item.pos { background: #ECFDF5; color: var(--success-text); border: 1px solid var(--success-border); }
+    .signal-item.neg { background: #FEF2F2; color: var(--danger-text); border: 1px solid #FECACA; }
     .signal-icon { flex-shrink: 0; font-size: 0.9rem; }
 
     .nba-box {

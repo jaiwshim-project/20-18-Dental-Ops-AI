@@ -131,8 +131,8 @@ const Store = {
 const Session = {
   KEY: 'session',
   TTL_MS: 1000 * 60 * 60 * 24 * 7, // 7일
-  login({ userId, name, role = 'staff', clinic = '', email = '' }) {
-    Store.set(this.KEY, { userId, name, role, clinic, email, loggedAt: Date.now() });
+  login({ userId, name, role = 'staff', clinic = '', email = '', tier = 'free', is_admin = false }) {
+    Store.set(this.KEY, { userId, name, role, clinic, email, tier, is_admin, loggedAt: Date.now() });
   },
   logout() { Store.remove(this.KEY); },
   get() {
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const badge = document.getElementById('sessionBadge');
       if (badge) {
         badge.insertAdjacentHTML('beforebegin',
-          '<span style="padding:4px 10px; background:#FEF3C7; color:#92400E; border-radius:var(--radius-full); font-size:0.75rem; font-weight:600; margin-right:8px;">🔐 로그인이 필요합니다</span>');
+          '<span style="padding:4px 10px; background:var(--warning-bg); color:var(--warning-text); border-radius:var(--radius-full); font-size:0.75rem; font-weight:600; margin-right:8px;">🔐 로그인이 필요합니다</span>');
       }
     }, 400);
   }
@@ -411,8 +411,8 @@ function updateSessionUI() {
     const tier = (s.tier || 'free').toLowerCase();
     const tierMap = {
       free: { label: 'Free',  bg: '#F1F5F9', fg: '#475569' },
-      pro:  { label: 'Pro',   bg: '#FEF3C7', fg: '#92400E' },
-      max:  { label: 'Max',   bg: '#DBEAFE', fg: '#1D4ED8' }
+      pro:  { label: 'Pro',   bg: 'var(--warning-bg)', fg: 'var(--warning-text)' },
+      max:  { label: 'Max',   bg: 'var(--info-bg)', fg: '#1D4ED8' }
     };
     const tm = tierMap[tier] || tierMap.free;
     const tierEl = document.createElement('span');
@@ -471,7 +471,7 @@ function renderSidebar(activePage) {
     <div class="sidebar-header">
       <div class="sidebar-logo" style="flex-direction:column; gap:8px; align-items:center;">
         <img src="img/logo.png" alt="Dental Ops AI" style="max-width:200px; width:100%; height:auto; background:#FFFFFF; padding:10px 14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
-        <div style="font-size:0.6875rem; color:rgba(255,255,255,0.4); letter-spacing:0.08em; text-transform:uppercase; text-align:center;">치과 상담·운영 OS</div>
+        <div style="font-size:0.6875rem; color:var(--text-on-primary-disabled); letter-spacing:0.08em; text-transform:uppercase; text-align:center;">치과 상담·운영 OS</div>
       </div>
     </div>
     <nav class="sidebar-nav">
@@ -822,7 +822,7 @@ function renderConnectionBanner() {
 
   const banner = document.createElement('div');
   banner.className = 'connection-banner';
-  banner.style.cssText = 'background:#FEF3C7; border:1px solid #FCD34D; color:#78350F; padding:12px 16px; border-radius:var(--radius-md); margin-bottom:20px; display:flex; align-items:center; gap:12px; font-size:0.875rem;';
+  banner.style.cssText = 'background:var(--warning-bg); border:1px solid var(--warning-border); color:#78350F; padding:12px 16px; border-radius:var(--radius-md); margin-bottom:20px; display:flex; align-items:center; gap:12px; font-size:0.875rem;';
 
   const msg = '🗄️ Supabase DB가 연결되지 않았습니다. 데이터는 이 브라우저에만 저장됩니다.';
 
