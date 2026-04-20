@@ -57,6 +57,276 @@ ${ctx}
     return await safeGemini(prompt, fallback);
   },
 
+  // 상담실장(병원 관계자)용 코칭 답변
+  // utterances: [{text, at}] — 화자 미구분 발화 배열 (AI가 문맥으로 화자 자동 분리)
+  // (호환) transcript: [{speaker, text}] — 이미 라벨링된 배열이면 그대로 사용
+  async coachReply({ question, patient, utterances, transcript, history }) {
+    const ctx = patient ? `환자: ${patient.name} (${patient.age}세, 관심 치료: ${patient.treatment || '미정'})\n` : '';
+    const hist = history && history.length
+      ? '이전 세션 이력:\n' + history.slice(-5).map((h, i) => `${i + 1}. ${h}`).join('\n') + '\n'
+      : '';
+
+    // 입력 소스 판별
+    const hasLabeled = Array.isArray(transcript) && transcript.length && transcript.every(t => t.speaker === 'patient' || t.speaker === 'staff');
+    const raw = !hasLabeled ? (utterances || transcript || []) : [];
+    const rawBlock = raw.length
+      ? '대화 녹취 (화자 미구분, 시간 순):\n' +
+        raw.map((u, i) => `[${i + 1}] "${u.text}"`).join('\n') + '\n' +
+        '\n👉 먼저 각 발화의 화자를 추론하여 "patient" 또는 "staff"로 라벨링하라.\n' +
+        '기준: 어미(습니다체 vs 반말/존댓말 혼용), 업무 용어(치료/비용/예약/상담), 질문 주체, 의료 지식 수준, 불안·요구 표현 유무.\n' +
+        '같은 발화 내 여러 화자가 섞여 있으면 의미 단위로 나눠 라벨링해도 된다.\n'
+      : '';
+    const labeledBlock = hasLabeled
+      ? '현재 세션 대화 녹취 (시간 순):\n' +
+        transcript.map(t => (t.speaker === 'staff' ? '[상담실장] ' : '[환자] ') + t.text).join('\n') + '\n'
+      : '';
+
+    // 최근 환자 발화 자동 추출 (라벨 있으면 그대로, 없으면 AI가 추론 후 last_patient_utterance 필드로 반환)
+    const lastPatient = hasLabeled
+      ? (transcript.filter(t => t.speaker === 'patient').slice(-1)[0]?.text || question || '')
+      : (question || '');
+
+    const prompt = `당신은 15년 경력의 **환자 중심(patient-centered)** 치과 상담 코치다. 상담실장이 방금 환자와 실제 대화를 나눴다.
+아래 녹취 전체를 읽고 **대화의 결**과 **환자의 불안·두려움·속마음**을 이해한 뒤, 상담실장이 이어서 말할 답변을 준비하라.
+
+${ctx}${hist}${rawBlock}${labeledBlock}
+${lastPatient ? `참고 — 가장 최근 환자 발화(외부 제공): "${lastPatient}"` : '화자 라벨링 후 diarized_turns 내 마지막 patient 발화를 기준으로 분석하라.'}
+
+${typeof QLRCQFramework !== 'undefined' ? '[QLRCQ Framework 참조 — 단계별 3요소]\n' + QLRCQFramework.serializeForPrompt() + '\n\n' : ''}[덴탈클리닉파인더 5단계 × QLRCQ 방법론 — 반드시 적용]
+
+## 5 대단계 (Macro Phases) — 대화는 1→5 순서로 나선형 심화
+1. **공감 (Empathy)** — 감정을 먼저 언어로 인정
+2. **이해 (Understanding)** — 환자의 상황·맥락·우려를 구조적으로 파악
+3. **선택권 제공 (Providing Choice / Decision Rights)** — 2~3개 선택지를 나란히 제시, 결정권을 환자에게
+4. **가치 전달 (Delivering Value)** — 선택 각각의 가치를 담담히 공유 (판매 아님)
+5. **신뢰 구축 (Building Trust)** — 재방문·추가 질문·재연락의 문을 여는 관계 확립
+
+## QLRCQ 마이크로 사이클 — 각 단계 내에서 반복
+- **Q (Question)** — 질문으로 문 열기
+- **L (Listen)** — 경청 (끊지 않고 완성된 반응 받기)
+- **R (Reaction)** — 반응·공명 (판단 없이 감정 되비추기)
+- **C (Confirm)** — 확인 ("제가 이해한 게 맞나요?"로 확인)
+- **Q' (Re-Question)** — 재질문 ⭐ 이 방법론의 핵심 차별화. Confirm에서 멈추지 않고 다시 질문으로 대화를 한 단계 더 깊이 이끎
+
+## 각 단계의 3요소
+- **Success Signals**: 이 단계가 성공적으로 작동 중임을 보여주는 환자 반응·발화
+- **Core Principles**: 상담사가 지켜야 할 태도 원칙
+- **Critical Avoidance**: ❌ 이 단계에서 절대 피할 어휘·행동 (예: "지금 안 하면 큰일납니다" 류 압박)
+
+## 절대 금지 어휘 (출력 시 사용 금지)
+- "전환율", "클로징", "설득", "오늘만 할인", "지금 결정하셔야", "미루면 큰일납니다"
+
+[스킬·하네스 원칙 적용]
+1) 의도 파악: 가격·통증·불안·시간·신뢰·비교·정보부족·결정지연 중 어디에 속하는지 (복수 가능)
+2) 클리셰 금지: "AI는 도구다" 수준의 뻔한 답변은 폐기
+3) 반례 고려: 이 환자에게 오히려 역효과일 수 있는 접근 명시
+4) 두 번째 만남 설계: 한 번에 계약을 몰지 말고, "다음 접점"을 만드는 방향
+
+JSON으로만 출력:
+{
+  "diarized_turns": [ { "speaker": "patient|staff", "text": "발화 내용" } ],
+  "last_patient_utterance": "라벨링 결과 중 마지막 환자 발화 원문",
+  "macro_stage": 1~5 숫자 (현재 대단계),
+  "macro_stage_name": "공감|이해|선택권 제공|가치 전달|신뢰 구축",
+  "qlrcq_position": "Q|L|R|C|Q'  (현재 상담사가 수행해야 할 마이크로 사이클 위치)",
+  "qlrcq_reason": "왜 지금 이 사이클 위치인지 1문장",
+  "success_signals_detected": ["현재 발화에서 감지된 성공 신호 0~3개 (없으면 빈 배열)"],
+  "principle_alignment": "준수|부분준수|위반",
+  "avoidance_violations": ["상담사 발화 중 Critical Avoidance에 해당하는 것 0~2개 (없으면 빈 배열)"],
+  "next_stage_gate": "다음 대단계로 넘어가려면 충족돼야 할 조건 1문장",
+  "intent_primary": "주 의도(price|pain|fear|time|trust|compare|info|delay)",
+  "intent_secondary": ["2~3개 보조 태그"],
+  "subtext": ["환자의 불안·두려움·속마음을 1줄씩 2~3개 (판단 없이 관찰만)"],
+  "recommended_reply": ["상담실장이 그대로 말할 핵심 문장 4~6개 — 현재 macro_stage의 Core Principles와 qlrcq_position에 맞춰 구성"],
+  "key_points": ["현재 단계에서 환자 자율성을 존중하며 짚을 포인트 3~4개"],
+  "treatment_options": [
+    { "name": "옵션 A (예: 즉시 치료)", "pros": "장점 1줄", "cons": "고려할 점 1줄", "estimate_range": "예: 300~500만원" },
+    { "name": "옵션 B (예: 부분 치료 또는 관찰)", "pros": "장점", "cons": "고려할 점", "estimate_range": "비용" }
+  ],
+  "readiness": 0~100 숫자 (환자의 심리적 결정 준비도 — 판매 전환율 아님),
+  "next_action": "QLRCQ 다음 위치에서 상담사가 할 구체 행동 1문장 (예: '방금 확인한 감정을 다시 Q'로 되물어 깊이 탐색')",
+  "cautions": ["현재 단계에서 피해야 할 어휘·태도 2~3개 (Critical Avoidance 기반)"],
+  "risk_level": "low|medium|high"
+}`;
+
+    // 폴백용 간단 휴리스틱 화자 분리 (라벨 없을 때만)
+    const fbDiarized = hasLabeled
+      ? transcript
+      : raw.map(u => {
+          const t = (u.text || '').trim();
+          // 매우 단순한 규칙: 의료 용어/제안 어휘 있으면 staff 가중
+          const staffKeywords = /치료|비용|예약|진단|처방|말씀드리|도와드리|추천드립니다|설명드리/;
+          const patientKeywords = /아파|무서|부담|걱정|싫|얼마|어떻게|해야|꼭|진짜/;
+          let speaker = 'patient';
+          if (staffKeywords.test(t) && !patientKeywords.test(t)) speaker = 'staff';
+          return { speaker, text: t };
+        });
+    const fbLastPatient = fbDiarized.filter(t => t.speaker === 'patient').slice(-1)[0]?.text || question || '';
+
+    const fallback = {
+      diarized_turns: fbDiarized,
+      last_patient_utterance: fbLastPatient,
+      macro_stage: 1,
+      macro_stage_name: '공감',
+      qlrcq_position: 'R',
+      qlrcq_reason: '환자가 불안을 드러냈으므로 Listen 이후 Reaction(공명 반응) 단계',
+      success_signals_detected: [],
+      principle_alignment: '부분준수',
+      avoidance_violations: [],
+      next_stage_gate: '환자가 "이해받고 있다"는 반응을 보이면 2단계(이해)로 진입',
+      intent_primary: 'price',
+      intent_secondary: ['fear'],
+      subtext: [
+        '비용에 대한 걱정 뒤에 치료 필요성과 실패 가능성에 대한 불안이 함께 있음',
+        '중요한 결정을 혼자 내리기 부담스럽고, 가족과 의논할 시간이 필요해 보임',
+        '여러 가능성을 비교하며 스스로 납득하고 싶어함'
+      ],
+      recommended_reply: [
+        '공감: "비용 부담이 크게 느껴지시는 거 충분히 이해합니다. 누구라도 쉽지 않은 결정이에요."',
+        '감정 인정: "걱정되시는 게 당연합니다. 꼭 지금 결정하지 않으셔도 됩니다."',
+        '정보 공유: "참고로 말씀드리면, 현재 상태에서 가능한 선택지가 몇 가지 있어서 편하게 알려드릴게요."',
+        '선택지 제시: "① 오늘 정밀 진단만 받아보시고 자료를 드리는 것, ② 부분만 먼저 치료하는 것, ③ 지금은 관찰하고 3~6개월 후 재평가하는 것 — 세 가지 모두 가능합니다."',
+        '자율 존중: "원장님께 정보만 충분히 들으시고, 집에서 가족분과 의논하신 후 편한 날 다시 말씀 주셔도 좋습니다. 저희가 재촉하지 않습니다."'
+      ],
+      key_points: [
+        '환자의 "비싸다"는 말 뒤의 불안을 먼저 언어로 인정하기',
+        '치료를 권유하기 전에 "결정은 천천히 하셔도 됩니다"를 먼저 말하기',
+        '2~3개 선택지를 나란히 제시하고 각 장단점 중립적으로 안내',
+        '추가 질문·상담 기회를 언제든 열어두고 있음을 명시'
+      ],
+      treatment_options: [
+        { name: '정밀 진단 + 자료 제공 (결정 보류)', pros: '환자가 정보를 충분히 검토한 뒤 판단 가능', cons: '치료가 길어질 경우 손상 진행 가능', estimate_range: '진단비 10~20만원' },
+        { name: '부분 치료 우선', pros: '부담을 낮추면서 핵심 부위부터 보호', cons: '전체 치료 시 총비용은 유사', estimate_range: '200~300만원' },
+        { name: '경과 관찰 후 3~6개월 재평가', pros: '결정에 시간 확보, 경제적 부담 최소', cons: '상태 변화 시 치료 범위가 늘 수 있음', estimate_range: '정기 검진 비용만' }
+      ],
+      readiness: 45,
+      next_action: '환자에게 선택지 자료(팸플릿·견적서)를 드리고 "일주일 안에 편한 때 다시 연락 주시면 됩니다"라고 시간 여지를 열어두기',
+      cautions: [
+        '"지금 안 하시면 큰일납니다", "미루면 더 비싸집니다" 같은 공포 기반 설득 금지',
+        '"결정을 도와드린다"는 말 뒤에 사실상 압박(할인 한정·오늘만 등)을 붙이지 말 것',
+        '환자가 침묵할 때 빈 공간을 조급하게 메우지 말고 기다릴 것'
+      ],
+      risk_level: 'medium'
+    };
+    return await safeGeminiJson(prompt, fallback);
+  },
+
+  // 세션 전체 평가 + 상담사 피드백
+  // session: { turns[], coachResults[], startedAt, endedAt, patientName, author, durationSec }
+  // history: 동일 환자의 과거 세션 요약 배열 (선택)
+  async evaluateSession({ session, patient, history }) {
+    const turns = (session?.turns || []).map((t, i) => {
+      const label = t.speaker === 'staff' ? '[실장]' : t.speaker === 'patient' ? '[환자]' : '[미구분]';
+      return `${i + 1}. ${label} ${t.text}`;
+    }).join('\n');
+    const coachSummaries = (session?.coachResults || []).map((c, i) => {
+      const d = c.data || {};
+      return `${i + 1}. readiness=${d.readiness ?? d.conversion_probability ?? '-'} / ${d.intent_primary || ''} / 권장: ${Array.isArray(d.recommended_reply) ? d.recommended_reply[0] : d.recommended_reply || ''}`;
+    }).join('\n');
+    const ctx = patient ? `환자: ${patient.name} (${patient.age}세, 관심: ${patient.treatment || '미정'})\n` : '';
+    const meta = session
+      ? `세션: ${Math.round((session.durationSec || 0) / 60)}분 · 대화 ${session.turns?.length || 0}회 · 코칭 ${session.coachResults?.length || 0}회\n`
+      : '';
+    const pastBlock = history && history.length
+      ? '동일 환자 이전 세션 요약:\n' + history.slice(0, 5).map((h, i) => `${i + 1}. ${h}`).join('\n') + '\n'
+      : '';
+
+    const prompt = `당신은 **환자 중심(patient-centered) 상담** 평가 코치다.
+아래는 방금 끝난 실제 상담 세션 전체 녹취다. 상담사의 수행을 **덴탈클리닉파인더 5단계 × QLRCQ 방법론**에 비추어 평가하라.
+
+${typeof QLRCQFramework !== 'undefined' ? '[QLRCQ Framework 참조]\n' + QLRCQFramework.serializeForPrompt() + '\n\n' : ''}${ctx}${meta}${pastBlock}
+[대화 녹취]
+${turns || '(비어있음)'}
+
+[세션 중 생성된 코칭 스냅샷]
+${coachSummaries || '(없음)'}
+
+[평가 기준 — 덴탈클리닉파인더 공식 5축, 각 0~20점, 총 100점]
+1. **공감 완결도 (Empathy Completion)** — 1단계에서 환자 감정을 언어로 충분히 인정했는가
+2. **이해 깊이 (Understanding Depth)** — 2단계에서 환자 상황·맥락을 구조적으로 파악했는가
+3. **선택권 존중 (Choice Respect)** — 3단계에서 2~3개 선택지를 나란히 제시하고 결정권을 환자에게 넘겼는가
+4. **가치 전달 명료성 (Value Clarity)** — 4단계에서 각 선택의 가치를 판매 아닌 공유 톤으로 전달했는가
+5. **신뢰 구축 강도 (Trust Depth)** — 5단계에서 재방문·추가 질문·재연락의 문을 열었는가
+
+[보조 지표]
+- **QLRCQ 사이클 완주율 (0~100%)** — 대화가 Q→L→R→C→Q' 사이클을 얼마나 완결적으로 수행했는가
+- **Critical Avoidance 위반 횟수** — 금지 어휘·태도 사용 횟수
+
+JSON으로만 출력:
+{
+  "summary": ["세션 핵심 요약 3~5줄 (환자 상태·주제·전개 흐름)"],
+  "patient_concerns": ["환자가 표현한 주요 우려·불안 2~4개"],
+  "key_moments": [
+    { "when": "몇 번째 turn 또는 시점", "quote": "해당 발화 원문 일부", "why": "왜 중요한 순간인가" }
+  ],
+  "staff_strengths": ["상담사가 잘한 점 3~4개 (구체적 인용과 함께)"],
+  "staff_improvements": ["개선 기회 2~3개 — 다음에 이렇게 해보세요"],
+  "principle_violations": [
+    { "principle": "강요 금지|자율성 존중|공감 우선|정보 균형|침묵 허용", "quote": "위반 의심 발화", "suggestion": "대안 문장" }
+  ],
+  "suggested_followup": ["상담 이후 권장 조치 2~3개 (시간 제공·자료 발송·재방문 제안 등, 재촉 금지)"],
+  "scores": {
+    "empathy_completion": 0~20,
+    "understanding_depth": 0~20,
+    "choice_respect": 0~20,
+    "value_clarity": 0~20,
+    "trust_depth": 0~20
+  },
+  "qlrcq_cycle_completion": 0~100 (QLRCQ 사이클 완주율 %),
+  "max_reached_stage": 1~5 (세션이 도달한 최고 대단계),
+  "stage_distribution": { "1": 0~100, "2": 0~100, "3": 0~100, "4": 0~100, "5": 0~100 } (각 단계에 대화가 머문 비중 %),
+  "avoidance_violation_count": 0 이상 정수,
+  "overall_score": 0~100 (scores 합산),
+  "readiness_trajectory": { "start": 0~100, "end": 0~100, "note": "변화의 의미 1줄" }
+}`;
+
+    const fallback = {
+      summary: [
+        '초기 가격·불안 혼합 저항 환자. 상담 중반 실장이 선택지 3개를 중립적으로 제시한 뒤 환자 긴장이 낮아졌음.',
+        '환자는 가족과 의논할 시간을 원한다는 신호를 두 번 보냈고, 실장이 이를 수용함.',
+        '의료적 결정은 유보되었지만 "재방문에 열려 있음" 상태로 세션 종료.'
+      ],
+      patient_concerns: [
+        '비용이 가족 재정에 부담을 줄까 걱정',
+        '치료 실패·부작용 가능성에 대한 막연한 두려움',
+        '결정을 혼자 내리는 것에 대한 심리적 부담'
+      ],
+      key_moments: [
+        { when: 'turn 3', quote: '"생각보다 비싸네요"', why: '표면은 가격이지만 실제는 불안 표현 — 이 순간 실장이 공감으로 받은 것이 세션 톤을 결정' },
+        { when: 'turn 7', quote: '"오늘 결정 안 하셔도 됩니다"', why: '자율성 존중 언어가 환자의 방어를 풀어 다음 정보 수용으로 이어짐' },
+      ],
+      staff_strengths: [
+        '환자의 "부담스럽다" 발화에 판단 없이 "충분히 이해합니다"로 공감한 점',
+        '치료 옵션을 ①즉시 ②부분 ③관찰 세 가지로 제시해 균형을 유지',
+        '"결정은 천천히 하셔도 됩니다"를 대화 중 두 번 명시해 자율성 보장'
+      ],
+      staff_improvements: [
+        '환자가 침묵한 15초 구간에서 정보를 덧붙이기보다 "생각해보실 시간 드릴게요"로 기다려 보는 것도 좋음',
+        '마지막 단계에서 "자료를 문자로 드릴까요"로 선택권을 한 번 더 넘기기'
+      ],
+      principle_violations: [],
+      suggested_followup: [
+        '상담 자료(팸플릿·옵션별 견적)를 환자가 원한 방식(문자/메일)으로 발송',
+        '"일주일 안에 편한 때 연락 주시면 됩니다" — 연락 주체를 환자에게 넘기기',
+        '2주 후까지 연락이 없으면 간단한 안부 메시지 1회만 (재촉 아님)'
+      ],
+      scores: {
+        empathy_completion: 17,
+        understanding_depth: 16,
+        choice_respect: 18,
+        value_clarity: 15,
+        trust_depth: 16
+      },
+      qlrcq_cycle_completion: 72,
+      max_reached_stage: 3,
+      stage_distribution: { '1': 32, '2': 28, '3': 30, '4': 8, '5': 2 },
+      avoidance_violation_count: 0,
+      overall_score: 82,
+      readiness_trajectory: { start: 35, end: 58, note: '결정 자체는 유보했지만 심리적 문이 열린 상태' }
+    };
+    return await safeGeminiJson(prompt, fallback);
+  },
+
   async triage(symptoms) {
     const prompt = `환자가 호소하는 증상을 분류하라.
 증상: "${symptoms}"

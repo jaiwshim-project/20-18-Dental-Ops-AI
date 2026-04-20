@@ -131,8 +131,8 @@ const Store = {
 const Session = {
   KEY: 'session',
   TTL_MS: 1000 * 60 * 60 * 24 * 7, // 7일
-  login(userId, name, role = 'staff') {
-    Store.set(this.KEY, { userId, name, role, loggedAt: Date.now() });
+  login({ userId, name, role = 'staff', clinic = '', email = '' }) {
+    Store.set(this.KEY, { userId, name, role, clinic, email, loggedAt: Date.now() });
   },
   logout() { Store.remove(this.KEY); },
   get() {
@@ -174,11 +174,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // 데모 로그인 (index.html 모달에서 호출)
 function demoLogin() {
   const name = (document.getElementById('loginName')?.value || '').trim();
+  const clinic = (document.getElementById('loginClinic')?.value || '').trim();
+  const email = (document.getElementById('loginEmail')?.value || '').trim();
   const role = document.getElementById('loginRole')?.value || 'staff';
+
   if (!name) { showToast('이름을 입력하세요', 'warning'); return; }
   if (name.length > 20) { showToast('이름은 20자 이내로 입력하세요', 'warning'); return; }
-  Session.login('u_' + Date.now(), name, role);
-  showToast(`${name}님 환영합니다 (${role})`, 'success');
+  if (!clinic) { showToast('병원명을 입력하세요', 'warning'); return; }
+  if (clinic.length > 40) { showToast('병원명은 40자 이내로 입력하세요', 'warning'); return; }
+  if (!email) { showToast('이메일을 입력하세요', 'warning'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('이메일 형식이 올바르지 않습니다', 'warning'); return; }
+
+  Session.login({ userId: 'u_' + Date.now(), name, role, clinic, email });
+  showToast(`${name}님 (${clinic}) 환영합니다`, 'success');
   closeModal('loginModal');
   const urlParams = new URLSearchParams(window.location.search);
   const redirect = urlParams.get('redirect');
@@ -213,7 +221,24 @@ function updateSessionUI() {
   const el = document.getElementById('sessionBadge');
   if (!el) return;
   if (s) {
-    el.innerHTML = `<span style="padding:6px 12px; background:var(--primary-bg); color:var(--primary); border-radius:var(--radius-full); font-size:0.8125rem; font-weight:600;">${s.name} (${s.role}) <a href="#" onclick="logoutAndRefresh();return false;" style="margin-left:8px; color:var(--danger);">로그아웃</a></span>`;
+    // textContent로 사용자 입력 안전 삽입 후 DOM 조립 (XSS 방지)
+    el.textContent = '';
+    const badge = document.createElement('span');
+    badge.style.cssText = 'padding:6px 12px; background:var(--primary-bg); color:var(--primary); border-radius:var(--radius-full); font-size:0.8125rem; font-weight:600; display:inline-flex; align-items:center; gap:8px;';
+    const nameEl = document.createElement('strong');
+    nameEl.textContent = s.name;
+    badge.appendChild(nameEl);
+    const metaEl = document.createElement('span');
+    metaEl.style.cssText = 'font-weight:500; color:var(--text-tertiary);';
+    metaEl.textContent = `· ${s.clinic || ''} · ${s.role}`;
+    badge.appendChild(metaEl);
+    const out = document.createElement('a');
+    out.href = '#';
+    out.style.cssText = 'color:var(--danger); text-decoration:none;';
+    out.textContent = '로그아웃';
+    out.onclick = (e) => { e.preventDefault(); logoutAndRefresh(); };
+    badge.appendChild(out);
+    el.appendChild(badge);
   } else {
     el.innerHTML = `<button class="btn btn-sm btn-primary" onclick="openModal('loginModal')">로그인</button>`;
   }
@@ -227,9 +252,9 @@ function renderSidebar(activePage) {
   return `
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo" style="flex-direction:column; gap:6px;">
-        <div style="font-size:1.25rem; font-weight:800; color:#FFF; letter-spacing:-0.02em;">🦷 Dental Ops AI</div>
-        <div style="font-size:0.6875rem; color:rgba(255,255,255,0.4); letter-spacing:0.08em; text-transform:uppercase;">치과 상담·운영 OS</div>
+      <div class="sidebar-logo" style="flex-direction:column; gap:8px; align-items:center;">
+        <img src="img/logo.png" alt="Dental Ops AI" style="max-width:200px; width:100%; height:auto; background:#FFFFFF; padding:10px 14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        <div style="font-size:0.6875rem; color:rgba(255,255,255,0.4); letter-spacing:0.08em; text-transform:uppercase; text-align:center;">치과 상담·운영 OS</div>
       </div>
     </div>
     <nav class="sidebar-nav">
@@ -385,8 +410,16 @@ function renderSidebar(activePage) {
           <p style="font-size:0.8125rem; color:var(--primary); font-weight:600;">🎯 8대 엔진 접근에 로그인이 필요합니다</p>
         </div>
         <div class="form-group">
-          <label class="form-label">이름</label>
-          <input type="text" class="form-input" id="loginName" placeholder="홍길동">
+          <label class="form-label">이름 <span style="color:var(--danger);">*</span></label>
+          <input type="text" class="form-input" id="loginName" placeholder="홍길동" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
+          <input type="text" class="form-input" id="loginClinic" placeholder="예: 스마일치과" autocomplete="organization">
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
+          <input type="email" class="form-input" id="loginEmail" placeholder="you@clinic.co.kr" autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label">역할</label>
@@ -414,7 +447,7 @@ function renderFooter() {
     <div class="footer-inner">
       <div class="footer-top">
         <div class="footer-brand">
-          <div style="font-size:1.25rem; font-weight:800; color:#FFF; margin-bottom:12px;">🦷 Dental Ops AI</div>
+          <img src="img/logo.png" alt="Dental Ops AI" style="max-width:180px; background:#FFFFFF; padding:8px 12px; border-radius:8px; margin-bottom:14px; display:inline-block;">
           <p>치과 상담·진단·운영을 자동화하는 AI 운영 플랫폼. 상담 전환율과 환자 경험을 동시에 끌어올립니다.</p>
         </div>
         <div class="footer-section">

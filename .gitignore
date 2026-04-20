@@ -7,3 +7,9 @@ tmp/
 .vscode/
 .idea/
 .claude/settings.local.json
+
+# 저작권 교재 PDF·OCR 텍스트 (로컬 참고용)
+reference/
+
+# 로고 원본 (img/logo.png로 이미 이동됨)
+image-removebg-preview.png

@@ -161,6 +161,123 @@
     .empty { text-align: center; padding: 40px 20px; color: var(--text-tertiary); font-size: 0.9rem; }
     .empty-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; opacity: 0.5; }
     .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin: 0 0 10px; }
+
+    /* QLRCQ 스킬 카드 라이브러리 */
+    .qcards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .qcard {
+      background: var(--surface);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all var(--duration) var(--ease);
+    }
+    .qcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
+    .qcard-head {
+      padding: 16px 18px;
+      background: linear-gradient(135deg, #0F172A, #1E3A5F);
+      color: #FFF;
+    }
+    .qcard-num {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      color: #FFF;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-weight: 800;
+      margin-right: 10px;
+    }
+    .qcard-name { font-size: 1.1rem; font-weight: 800; display: inline-block; }
+    .qcard-en { display: block; font-size: 0.72rem; opacity: 0.7; margin-top: 2px; margin-left: 38px; letter-spacing: 0.06em; }
+    .qcard-goal {
+      padding: 10px 18px;
+      background: #F8FAFC;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .qcard-goal strong { color: var(--primary); }
+    .qcard-section {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .qcard-section:last-child { border-bottom: none; }
+    .qcard-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .qcard-label.success  { color: #065F46; }
+    .qcard-label.core     { color: var(--primary); }
+    .qcard-label.avoid    { color: #991B1B; }
+    .qcard-list { margin: 0; padding: 0; list-style: none; }
+    .qcard-list li {
+      padding: 4px 0 4px 18px;
+      position: relative;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
+    .qcard-list.success li::before { content: '✓'; position: absolute; left: 2px; color: #10B981; font-weight: 800; }
+    .qcard-list.core    li::before { content: '→'; position: absolute; left: 2px; color: var(--primary); font-weight: 800; }
+    .qcard-list.avoid   li::before { content: '✕'; position: absolute; left: 2px; color: var(--danger); font-weight: 800; }
+
+    .qcard-examples {
+      padding: 10px 18px 14px;
+      background: #EFF6FF;
+    }
+    .qcard-examples-label { font-size: 0.7rem; font-weight: 800; color: var(--primary); margin-bottom: 4px; letter-spacing: 0.05em; }
+    .qcard-example {
+      font-size: 0.8rem;
+      color: #1E3A8A;
+      padding: 4px 0;
+      font-style: italic;
+      line-height: 1.5;
+    }
+    .qcard-example::before { content: '💬 '; font-style: normal; }
+
+    /* QLRCQ 사이클 바 */
+    .qlrcq-cycle {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+    }
+    .qlrcq-cycle-step {
+      text-align: center;
+      padding: 10px 6px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--gray-200);
+    }
+    .qlrcq-cycle-key {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: block;
+      margin-bottom: 2px;
+    }
+    .qlrcq-cycle-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .qlrcq-cycle-desc {
+      font-size: 0.68rem;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
   </style>
 </head>
 <body>
@@ -216,6 +333,21 @@
           </div>
         </div>
 
+        <!-- QLRCQ 스킬 카드 라이브러리 -->
+        <div class="card mt-32" id="qcardsPanel">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h3>🧭 QLRCQ 스킬 카드 — 5단계 × 3요소</h3>
+            <span style="font-size:0.7rem; color:var(--text-tertiary); font-weight:600;">© 2025 Dental Clinic Finder</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:16px;">
+              상담 중 현재 단계의 <strong>Success Signals</strong>(성공 신호) · <strong>Core Principles</strong>(핵심 원칙) · <strong>Critical Avoidance</strong>(금지 어휘)를 한눈에 학습하세요. 각 단계는 <strong>Q → L → R → C → Q'</strong> 마이크로 사이클로 순환합니다.
+            </p>
+            <div class="qlrcq-cycle" id="qlrcqCycle"></div>
+            <div class="qcards-grid" id="qcardsGrid"></div>
+          </div>
+        </div>
+
         <!-- 성적 이력 -->
         <div class="card mt-32">
           <div class="card-header">
@@ -233,9 +365,67 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/common.js"></script>
   <script src="js/supabase.js"></script>
+  <script src="js/qlrcq-framework.js"></script>
   <script src="js/dental-engines.js"></script>
   <script>
     document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('training'));
+
+    // ============================================================
+    // QLRCQ 스킬 카드 라이브러리 렌더
+    // ============================================================
+    function renderQlrcqCards() {
+      if (typeof QLRCQFramework === 'undefined') return;
+      const cycle = document.getElementById('qlrcqCycle');
+      if (cycle) {
+        cycle.innerHTML = QLRCQFramework.qlrcq.map(q => `
+          <div class="qlrcq-cycle-step">
+            <span class="qlrcq-cycle-key">${escapeHTML(q.key)}</span>
+            <div class="qlrcq-cycle-label">${escapeHTML(q.label)}</div>
+            <div class="qlrcq-cycle-desc">${escapeHTML(q.desc)}</div>
+          </div>
+        `).join('');
+      }
+      const grid = document.getElementById('qcardsGrid');
+      if (grid) {
+        grid.innerHTML = QLRCQFramework.stages.map(s => `
+          <div class="qcard">
+            <div class="qcard-head">
+              <span class="qcard-num">${s.num}</span>
+              <span class="qcard-name">${escapeHTML(s.name)}</span>
+              <span class="qcard-en">${escapeHTML(s.english)}</span>
+            </div>
+            <div class="qcard-goal"><strong>목표</strong> · ${escapeHTML(s.goal)}</div>
+
+            <div class="qcard-section">
+              <div class="qcard-label success">✅ SUCCESS SIGNALS</div>
+              <ul class="qcard-list success">
+                ${s.success_signals.map(x => `<li>${escapeHTML(x)}</li>`).join('')}
+              </ul>
+            </div>
+
+            <div class="qcard-section">
+              <div class="qcard-label core">🎯 CORE PRINCIPLES</div>
+              <ul class="qcard-list core">
+                ${s.core_principles.map(x => `<li>${escapeHTML(x)}</li>`).join('')}
+              </ul>
+            </div>
+
+            <div class="qcard-section">
+              <div class="qcard-label avoid">❌ CRITICAL AVOIDANCE</div>
+              <ul class="qcard-list avoid">
+                ${s.critical_avoidance.map(x => `<li>${escapeHTML(x)}</li>`).join('')}
+              </ul>
+            </div>
+
+            <div class="qcard-examples">
+              <div class="qcard-examples-label">예시 문장</div>
+              ${s.example_quotes.map(x => `<div class="qcard-example">${escapeHTML(x)}</div>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+    renderQlrcqCards();
 
     let selectedScenario = null;
 
