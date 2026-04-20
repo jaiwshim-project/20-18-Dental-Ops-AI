@@ -269,14 +269,22 @@
       { key: 'auto_revisit_12w', label: '12주 후 재방문 유도', desc: '마지막 방문 후 3개월 시점 알림' }
     ];
 
-    // ---------- 환자 옵션 ----------
-    function populatePatients() {
+    // ---------- 환자 옵션 (Supabase 전용) ----------
+    let patientCache = [];
+    async function populatePatients() {
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        try { patientCache = await SupabaseDB.getPatients({ limit: 200 }); }
+        catch (e) { console.warn(e); patientCache = []; }
+      }
       const sels = document.querySelectorAll('#customPatient, .patient-inline-sel');
       sels.forEach(sel => {
-        (SampleData.patients || []).forEach(p => {
+        // 기본 옵션 외 기존 동적 옵션 제거
+        while (sel.options.length > 1) sel.remove(1);
+        patientCache.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
-          opt.textContent = `${p.name} (${p.age}세)`;
+          const ageTxt = p.age ? `${p.age}세` : '-';
+          opt.textContent = `${p.name} (${ageTxt})`;
           sel.appendChild(opt);
         });
       });
@@ -311,7 +319,7 @@
     }
 
     function getPatientById(id) {
-      return (SampleData.patients || []).find(p => p.id === id);
+      return patientCache.find(p => p.id === id);
     }
 
     async function runTemplate(key, btn) {
@@ -409,27 +417,44 @@
       showToast((val ? 'ON: ' : 'OFF: ') + key, 'info', 1500);
     }
 
-    // ---------- 로그 테이블 ----------
-    function refreshLogs() {
-      const logs = (AutomationEngine.getLogs() || []).slice(0, 20);
+    // ---------- 로그 테이블 (Supabase 전용) ----------
+    async function refreshLogs() {
       const tbody = document.getElementById('logTbody');
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-tertiary); padding:32px;">Supabase 연결 필요</td></tr>';
+        return;
+      }
+      let logs = [];
+      try {
+        const { data, error } = await SupabaseDB.client.from('automations')
+          .select('*').order('created_at', { ascending: false }).limit(20);
+        if (error) throw error;
+        logs = data || [];
+      } catch (e) {
+        console.warn(e);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:32px;">조회 실패: ' + escapeHTML(e.message) + '</td></tr>';
+        return;
+      }
       if (!logs.length) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-tertiary); padding:32px;">실행 로그가 없습니다</td></tr>';
         return;
       }
       tbody.innerHTML = logs.map(log => {
-        const p = getPatientById(log.patientId);
-        const pName = p ? p.name : (log.patientId || '-');
-        const typeTitle = (TPL_META[log.type] && TPL_META[log.type].title) || log.type;
-        const preview = (log.payload || '').slice(0, 50) + ((log.payload || '').length > 50 ? '...' : '');
-        const time = new Date(log.sentAt).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const p = getPatientById(log.patient_id);
+        const pName = p ? escapeHTML(p.name) : escapeHTML(log.patient_id || '-');
+        const typeTitle = escapeHTML((TPL_META[log.type] && TPL_META[log.type].title) || log.type);
+        const payloadText = log.payload ? (typeof log.payload === 'string' ? log.payload : JSON.stringify(log.payload)) : '';
+        const preview = escapeHTML(payloadText.slice(0, 50) + (payloadText.length > 50 ? '...' : ''));
+        const time = new Date(log.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const statusCls = log.status === 'failed' ? 'status-failed' : 'status-sent';
+        const statusIcon = log.status === 'failed' ? '❌' : '✅';
         return `
           <tr>
-            <td style="white-space:nowrap;">${time}</td>
+            <td style="white-space:nowrap;">${escapeHTML(time)}</td>
             <td>${pName}</td>
             <td><span class="badge badge-primary">${typeTitle}</span></td>
             <td style="max-width:380px; color:var(--text-secondary);">${preview || '-'}</td>
-            <td><span class="status-pill status-sent">✅ sent</span></td>
+            <td><span class="status-pill ${statusCls}">${statusIcon} ${escapeHTML(log.status || 'sent')}</span></td>
           </tr>`;
       }).join('');
     }

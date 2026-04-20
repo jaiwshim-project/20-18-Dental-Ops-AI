@@ -355,9 +355,37 @@
       document.getElementById('adviceResult').innerHTML = `<div style="text-align:center; padding:28px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:12px; font-size:0.8125rem;">Gemini로 전략 분석 중...</p></div>`;
 
       try {
-        const res = await CEOEngine.advise({ kpis: SampleData.kpi, context: ctx });
-        const data = res.data || res; // safeGeminiJson wraps in .data
+        // 실데이터 우선: Supabase KPI 스냅샷 최신 1건 or 대시보드 집계 → 없으면 SampleData.kpi
+        let kpis = SampleData.kpi;
+        if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+          try {
+            const agg = await SupabaseDB.getDashboardAggregates();
+            if (agg && agg.kpi) kpis = agg.kpi;
+          } catch (_) {}
+        }
+        const res = await CEOEngine.advise({ kpis, context: ctx });
+        const data = res.data || res;
         renderAdvice(data, res.demo);
+
+        // Supabase 저장 — consult_logs engine='ceo'
+        if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+          try {
+            await SupabaseDB.saveConsultLog({
+              engine: 'ceo',
+              input: ctx,
+              output: (data.top_3_actions || []).map((a,i)=>`${i+1}. ${a.action}`).join(' / '),
+              metadata: {
+                state: data.state,
+                top_3_actions: data.top_3_actions,
+                risks: data.risks,
+                roi_estimate: data.roi_estimate,
+                author: Session.get()?.name,
+                clinic: Session.get()?.clinic,
+                kpis
+              }
+            });
+          } catch (e) { console.warn('CEO 조언 저장 실패', e); }
+        }
       } catch (e) {
         const r = document.getElementById('adviceResult');
         r.textContent = '';
@@ -427,6 +455,18 @@
         const res = await OntologyEngine.suggestAutomation(OntologyEngine.defaultStructure);
         const data = res.data || res;
         const candidates = data.automation_candidates || [];
+
+        // Supabase 저장 — consult_logs engine='ontology'
+        if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+          try {
+            await SupabaseDB.saveConsultLog({
+              engine: 'ontology',
+              input: '자동화 후보 분석 요청',
+              output: candidates.map(c => `${c.process}:${c.automation_type}`).join(' / '),
+              metadata: { candidates, author: Session.get()?.name, clinic: Session.get()?.clinic }
+            });
+          } catch (e) { console.warn('자동화 제안 저장 실패', e); }
+        }
         const priorityBadge = { high: 'badge-danger', mid: 'badge-warning', low: 'badge-primary' };
 
         let html = `<h4 style="margin-bottom:10px; font-size:0.875rem;">${res.demo ? '&#x26A0; 데모 응답' : '&#x1F4A1; AI 제안'} — 자동화 후보</h4>`;

@@ -4,6 +4,17 @@
 -- Supabase SQL Editor에서 실행
 -- ============================================================
 
+-- 0. 사용자 (Users) — 로그인 시 email 기준 upsert
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  clinic TEXT,
+  role TEXT,
+  last_login_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 1. 환자 (Patients)
 CREATE TABLE IF NOT EXISTS patients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -123,6 +134,7 @@ CREATE INDEX IF NOT EXISTS idx_conversions_patient ON conversions(patient_id);
 CREATE INDEX IF NOT EXISTS idx_automations_patient ON automations(patient_id);
 CREATE INDEX IF NOT EXISTS idx_training_user ON training_results(user_id);
 CREATE INDEX IF NOT EXISTS idx_kpi_date ON kpi_snapshots(snapshot_date DESC);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ============================================================
 -- updated_at 자동 갱신 트리거

@@ -13,3 +13,6 @@ reference/
 
 # 로고 원본 (img/logo.png로 이미 이동됨)
 image-removebg-preview.png
+
+# 임시 스크린샷
+vercel-screen*.png

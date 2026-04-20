@@ -469,22 +469,11 @@
 
         renderResult(data, res.demo);
 
-        // 히스토리 저장
-        const history = Store.get('training_history', []);
-        history.unshift({
-          at: new Date().toISOString(),
-          scenarioId: selectedScenario.id,
-          scenarioTitle: selectedScenario.title,
-          score: total,
-          response: userResponse,
-          detail: data
-        });
-        Store.set('training_history', history.slice(0, 10));
-        renderHistory();
-
-        // Supabase 연동
+        // Supabase 전용 저장
         const session = Session.get();
-        if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+          showToast('Supabase 미연결 — 결과가 저장되지 않습니다', 'warning');
+        } else {
           try {
             await SupabaseDB.saveTrainingResult({
               userId: session?.userId,
@@ -492,15 +481,20 @@
               scenario: selectedScenario.title,
               score: total,
               feedback: data.coach_tip || '',
-              detail: data
+              detail: {
+                ...data,
+                scenario_id: selectedScenario.id,
+                user_response: userResponse,
+                clinic: session?.clinic
+              }
             });
-            showToast('DB 저장 완료', 'success');
+            showToast('평가 결과 DB 저장 완료', 'success');
           } catch (e) {
             console.warn('DB 저장 실패', e);
+            showToast('저장 실패: ' + e.message, 'error');
           }
-        } else {
-          showToast('평가 완료 (로컬 저장)', 'success');
         }
+        renderHistory();
       } catch (e) {
         area.innerHTML = '<div class="card"><div class="card-body"><p style="color:var(--danger);">오류: ' + e.message + '</p></div></div>';
       } finally {
@@ -593,9 +587,20 @@
       return 'low';
     }
 
-    function renderHistory() {
-      const list = Store.get('training_history', []);
+    async function renderHistory() {
       const el = document.getElementById('historyArea');
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        el.innerHTML = '<div class="empty"><span class="empty-icon">🔌</span>Supabase 연결 필요</div>';
+        return;
+      }
+      let list = [];
+      try {
+        const session = Session.get();
+        list = await SupabaseDB.getTrainingResults({ userId: session?.userId, limit: 10 });
+      } catch (e) {
+        el.innerHTML = '<div class="empty"><span class="empty-icon">⚠️</span>조회 실패</div>';
+        return;
+      }
       if (!list.length) {
         el.innerHTML = '<div class="empty"><span class="empty-icon">📭</span>아직 교육 이력이 없습니다.</div>';
         return;
@@ -612,14 +617,17 @@
               </tr>
             </thead>
             <tbody>
-              ${list.map(h => `
+              ${list.map(h => {
+                const userResp = (h.detail && h.detail.user_response) || '';
+                const sid = (h.detail && h.detail.scenario_id) || '';
+                return `
                 <tr>
-                  <td>${formatDate(h.at)} ${formatTime(h.at)}</td>
-                  <td><strong>${h.scenarioId}</strong> · ${h.scenarioTitle}</td>
+                  <td>${formatDate(h.created_at)} ${formatTime(h.created_at)}</td>
+                  <td><strong>${escapeHTML(sid)}</strong> · ${escapeHTML(h.scenario || '')}</td>
                   <td><span class="score-pill ${scorePillClass(h.score)}">${h.score}점</span></td>
-                  <td style="color:var(--text-tertiary); font-size:0.85rem;">${(h.response || '').slice(0, 50)}${(h.response || '').length > 50 ? '...' : ''}</td>
-                </tr>
-              `).join('')}
+                  <td style="color:var(--text-tertiary); font-size:0.85rem;">${escapeHTML(userResp.slice(0, 50))}${userResp.length > 50 ? '...' : ''}</td>
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>

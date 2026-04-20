@@ -292,21 +292,35 @@
       { icon: '👨‍👩', label: '가족과 상의', text: '금액이 커서 가족(배우자)과 상의해본 뒤에 다시 연락드릴게요.' },
     ];
 
-    function fillPatientSelect() {
+    let patientCache = [];
+
+    async function fillPatientSelect() {
       const sel = document.getElementById('patientSelect');
-      sel.innerHTML = SampleData.patients.map(p =>
-        `<option value="${p.id}">${p.name} (${p.age}세, ${p.treatment} / ${formatCurrency(p.estimate)})</option>`
-      ).join('');
+      sel.innerHTML = '<option value="">환자 선택</option>';
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        showToast('Supabase 미연결 — 환자 목록을 불러올 수 없습니다', 'warning');
+        return;
+      }
+      try {
+        patientCache = await SupabaseDB.getPatients({ limit: 200 });
+        patientCache.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          const ageTxt = p.age ? `${p.age}세` : '-';
+          opt.textContent = `${p.name} (${ageTxt}, ${p.treatment || '미정'})`;
+          sel.appendChild(opt);
+        });
+      } catch (e) { console.warn('환자 조회 실패', e); }
       sel.addEventListener('change', syncPatient);
       syncPatient();
     }
 
     function syncPatient() {
       const id = document.getElementById('patientSelect').value;
-      const p = SampleData.patients.find(x => x.id === id);
+      const p = patientCache.find(x => x.id === id);
       if (!p) return;
-      document.getElementById('treatmentSelect').value = p.treatment;
-      document.getElementById('estimateInput').value = p.estimate;
+      if (p.treatment) document.getElementById('treatmentSelect').value = p.treatment;
+      // estimate 컬럼이 없을 수 있음 — 비워두기
     }
 
     function fillQuickGrid() {
@@ -401,19 +415,42 @@
           </div>`
         ).join('') + (res.demo ? '<p style="font-size:0.75rem; color:var(--warning); margin-top:8px;">※ Gemini API 키 미설정 — 데모 응답</p>' : '');
 
-        // 히스토리 저장
-        const history = Store.get('conversion_history', []);
-        const patientId = document.getElementById('patientSelect').value;
-        const patient = SampleData.patients.find(p => p.id === patientId);
-        history.unshift({
-          at: new Date().toISOString(),
-          patient: patient?.name || '-',
-          treatment, estimate, objection,
-          steps: steps.map(s => ({ key: s.key, text: s.text }))
-        });
-        Store.set('conversion_history', history.slice(0, 10));
+        // Supabase 저장 — conversions + consult_logs(engine=conversion)
+        const patientId = document.getElementById('patientSelect').value || null;
+        const patient = patientCache.find(p => p.id === patientId);
+        if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+          try {
+            const strategyText = steps.map(s => `[${s.key}] ${s.text}`).join('\n');
+            await SupabaseDB.saveConversion({
+              patientId,
+              treatmentType: treatment,
+              estimate: Number(estimate) || 0,
+              probability: 0,
+              strategy: strategyText,
+              status: '상담중'
+            });
+            await SupabaseDB.saveConsultLog({
+              patientId,
+              engine: 'conversion',
+              input: objection,
+              output: strategyText,
+              metadata: {
+                treatment, estimate, objection,
+                patient_name: patient?.name || '-',
+                author: Session.get()?.name,
+                clinic: Session.get()?.clinic,
+                steps: steps.map(s => ({ key: s.key, text: s.text }))
+              }
+            });
+            showToast('설득 멘트 생성 · Supabase 저장 완료', 'success');
+          } catch (e) {
+            console.warn('Supabase 저장 실패', e);
+            showToast('저장 실패: ' + e.message, 'error');
+          }
+        } else {
+          showToast('설득 멘트 생성 (Supabase 미연결 — 저장 안 됨)', 'warning');
+        }
         renderHistory();
-        showToast('설득 멘트가 생성되었습니다', 'success');
       } catch (e) {
         area.innerHTML = '<div class="card"><div class="card-body"><p style="color:var(--danger);">오류: ' + e.message + '</p></div></div>';
       } finally {
@@ -425,7 +462,7 @@
     async function runProbability() {
       const btn = document.getElementById('probBtn');
       const patientId = document.getElementById('patientSelect').value;
-      const patient = SampleData.patients.find(p => p.id === patientId);
+      const patient = patientCache.find(p => p.id === patientId);
       const treatment = document.getElementById('treatmentSelect').value;
       const objection = document.getElementById('objectionInput').value.trim();
       btn.disabled = true;
@@ -475,22 +512,33 @@
       }
     }
 
-    function renderHistory() {
-      const list = Store.get('conversion_history', []);
+    async function renderHistory() {
       const el = document.getElementById('historyList');
-      if (!list.length) {
-        el.innerHTML = '<div class="empty"><span class="empty-icon">📭</span>아직 이력이 없습니다.</div>';
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        el.innerHTML = '<div class="empty"><span class="empty-icon">🔌</span>Supabase 연결 필요</div>';
         return;
       }
-      el.innerHTML = list.map(h =>
-        `<div class="history-item">
-          <div>
-            <strong>${h.patient}</strong> · ${h.treatment} · ${formatCurrency(h.estimate)}
-            <div style="font-size:0.8rem; color:var(--text-tertiary); margin-top:2px;">"${(h.objection || '').slice(0, 60)}${(h.objection || '').length > 60 ? '...' : ''}"</div>
-          </div>
-          <div class="history-meta">${formatDate(h.at)} ${formatTime(h.at)}</div>
-        </div>`
-      ).join('');
+      try {
+        const logs = await SupabaseDB.getConsultLogs({ engine: 'conversion', limit: 10 });
+        if (!logs.length) {
+          el.innerHTML = '<div class="empty"><span class="empty-icon">📭</span>아직 이력이 없습니다.</div>';
+          return;
+        }
+        el.innerHTML = logs.map(h => {
+          const m = h.metadata || {};
+          const objection = (h.input || '').slice(0, 60);
+          return `<div class="history-item">
+            <div>
+              <strong>${escapeHTML(m.patient_name || '-')}</strong> · ${escapeHTML(m.treatment || '-')}${m.estimate ? ' · ' + formatCurrency(m.estimate) : ''}
+              <div style="font-size:0.8rem; color:var(--text-tertiary); margin-top:2px;">"${escapeHTML(objection)}${(h.input || '').length > 60 ? '...' : ''}"</div>
+            </div>
+            <div class="history-meta">${formatDate(h.created_at)} ${formatTime(h.created_at)}</div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        console.warn(e);
+        el.innerHTML = '<div class="empty"><span class="empty-icon">⚠️</span>조회 실패</div>';
+      }
     }
 
     // 초기화

@@ -36,6 +36,37 @@ const SupabaseDB = {
   },
 
   // ============================================================
+  // 사용자 (Users) — email upsert
+  // ============================================================
+  async upsertUser({ email, name, clinic = '', role = 'staff' }) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    if (!email) throw new Error('email 필요');
+    // 이메일로 찾기
+    const { data: existing, error: findErr } = await this.client
+      .from('users').select('id').eq('email', email).maybeSingle();
+    if (findErr) throw findErr;
+    const payload = { email, name, clinic, role, last_login_at: new Date().toISOString() };
+    if (existing) {
+      const { data, error } = await this.client.from('users')
+        .update(payload).eq('id', existing.id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    const { data, error } = await this.client.from('users')
+      .insert([payload]).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async getUserByEmail(email) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('users')
+      .select('*').eq('email', email).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  // ============================================================
   // 환자 (Patients)
   // ============================================================
   async createPatient({ name, phone, age, gender, treatment, memo }) {
@@ -107,6 +138,39 @@ const SupabaseDB = {
     const { data, error } = await query;
     if (error) throw error;
     return data;
+  },
+
+  // consult_logs 중 session_id가 있는 세션 로그를 세션 객체로 어댑팅
+  async getPatientSessions(patientId, limit = 20) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    let query = this.client.from('consult_logs')
+      .select('*')
+      .eq('engine', 'consult')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (patientId) query = query.eq('patient_id', patientId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || [])
+      .filter(row => row.metadata && row.metadata.session_id)
+      .map(row => ({
+        id: row.metadata.session_id,
+        row_id: row.id,
+        patientId: row.patient_id,
+        patientName: row.metadata.patient_name || '-',
+        author: row.metadata.author || '-',
+        clinic: row.metadata.clinic || '',
+        startedAt: row.metadata.started_at,
+        endedAt: row.metadata.ended_at,
+        durationSec: row.metadata.duration_sec || 0,
+        turns: row.metadata.turns || [],
+        coachResults: (row.metadata.coach_snapshots || []).map(d => ({ data: d })),
+        evaluation: row.metadata.evaluation || null
+      }));
+  },
+
+  async getRecentSessions(limit = 20) {
+    return this.getPatientSessions(null, limit);
   },
 
   // ============================================================

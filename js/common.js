@@ -171,8 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 데모 로그인 (index.html 모달에서 호출)
-function demoLogin() {
+// 데모 로그인 (index.html 모달에서 호출) — Supabase users 테이블과 동기화
+async function demoLogin() {
   const name = (document.getElementById('loginName')?.value || '').trim();
   const clinic = (document.getElementById('loginClinic')?.value || '').trim();
   const email = (document.getElementById('loginEmail')?.value || '').trim();
@@ -185,8 +185,22 @@ function demoLogin() {
   if (!email) { showToast('이메일을 입력하세요', 'warning'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('이메일 형식이 올바르지 않습니다', 'warning'); return; }
 
-  Session.login({ userId: 'u_' + Date.now(), name, role, clinic, email });
-  showToast(`${name}님 (${clinic}) 환영합니다`, 'success');
+  // Supabase users 테이블 upsert — 성공 시 실제 DB userId 사용
+  let userId = 'u_' + Date.now(); // fallback (Supabase 미연결 시)
+  if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+    try {
+      const row = await SupabaseDB.upsertUser({ email, name, clinic, role });
+      userId = row.id;
+      showToast(`${name}님 (${clinic}) · Supabase 동기화 완료`, 'success');
+    } catch (e) {
+      console.warn('Supabase 사용자 upsert 실패', e);
+      showToast(`${name}님 환영합니다 (오프라인 세션)`, 'warning');
+    }
+  } else {
+    showToast(`${name}님 환영합니다 (Supabase 미연결)`, 'warning');
+  }
+
+  Session.login({ userId, name, role, clinic, email });
   closeModal('loginModal');
   const urlParams = new URLSearchParams(window.location.search);
   const redirect = urlParams.get('redirect');

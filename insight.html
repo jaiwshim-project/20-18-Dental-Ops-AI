@@ -542,30 +542,25 @@
         author: session?.name || '익명'
       };
 
-      // Supabase 우선
-      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
-        try {
-          await SupabaseDB.saveInsightReport(payload);
-          showToast('Supabase에 저장되었습니다', 'success');
-          await renderReportList();
-          return;
-        } catch (e) {
-          console.warn('Supabase 저장 실패, 로컬 저장으로 대체', e);
-        }
+      // Supabase 전용
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        showToast('Supabase 미연결 — 리포트가 저장되지 않습니다', 'error');
+        return;
       }
-      // 로컬 저장
-      const reports = Store.get('insight_reports', []);
-      reports.unshift({
-        id: 'R_' + Date.now(),
-        title: topic,
-        summary: data.summary,
-        data,
-        author: session?.name || '익명',
-        created_at: new Date().toISOString()
-      });
-      Store.set('insight_reports', reports.slice(0, 30));
-      showToast('로컬에 저장되었습니다', 'success');
-      renderReportList();
+      try {
+        await SupabaseDB.saveInsightReport({
+          ...payload,
+          // findings JSONB에 raw data도 함께 저장 (loadReport용)
+          findings: Array.isArray(payload.findings) && payload.findings.length
+            ? payload.findings
+            : [{ _raw: data }]
+        });
+        showToast('Supabase에 저장되었습니다', 'success');
+        await renderReportList();
+      } catch (e) {
+        console.warn('Supabase 저장 실패', e);
+        showToast('저장 실패: ' + e.message, 'error');
+      }
     }
 
     function downloadPDF() {
@@ -577,16 +572,16 @@
     async function renderReportList() {
       const el = document.getElementById('reportList');
       let list = [];
-      // Supabase 우선
-      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
-        try {
-          list = await SupabaseDB.getInsightReports({ limit: 5 });
-        } catch (e) {
-          console.warn(e);
-          list = Store.get('insight_reports', []).slice(0, 5);
-        }
-      } else {
-        list = Store.get('insight_reports', []).slice(0, 5);
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        el.innerHTML = '<div class="empty"><span class="empty-icon">🔌</span>Supabase 연결 필요</div>';
+        return;
+      }
+      try {
+        list = await SupabaseDB.getInsightReports({ limit: 5 });
+      } catch (e) {
+        console.warn(e);
+        el.innerHTML = '<div class="empty"><span class="empty-icon">⚠️</span>조회 실패</div>';
+        return;
       }
 
       if (!list || !list.length) {
