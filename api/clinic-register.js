@@ -6,12 +6,22 @@ function sha256(str) {
 }
 
 module.exports = async (req, res) => {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[clinic-register] 환경 변수 미설정', {
-      url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const hasKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  console.log('[clinic-register] 환경 변수 체크:', {
+    NEXT_PUBLIC_SUPABASE_URL: hasUrl ? process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30) : 'MISSING',
+    SUPABASE_SERVICE_ROLE_KEY: hasKey ? 'SET' : 'MISSING',
+    allEnvKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('NEXT_PUBLIC')).join(',')
+  });
+
+  if (!hasUrl || !hasKey) {
+    console.error('[clinic-register] 환경 변수 미설정!', {
+      url: hasUrl,
+      key: hasKey,
+      NODE_ENV: process.env.NODE_ENV
     });
-    return res.status(500).json({ error: '서버 환경 변수 미설정' });
+    return res.status(500).json({ error: '서버 환경 변수 미설정', debug: { hasUrl, hasKey } });
   }
 
   const supabase = createClient(
