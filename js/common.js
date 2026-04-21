@@ -678,15 +678,11 @@ function renderFooter() {
           <h4>Docs</h4>
           <a href="manual.html" class="footer-link">매뉴얼</a>
           <a href="architecture.html" class="footer-link">아키텍처</a>
-          <span class="footer-link" style="cursor:default;">Gemini 2.0 Flash</span>
-          <span class="footer-link" style="cursor:default;">Supabase DB</span>
         </div>
       </div>
       <div class="footer-bottom">
         <div class="footer-copy">&copy; ${new Date().getFullYear()} Dental Ops AI. Powered by AX Dental Solutions.</div>
         <div class="footer-badges">
-          <span class="footer-badge">Gemini AI</span>
-          <span class="footer-badge">Supabase</span>
           <span class="footer-badge">8-Engine</span>
           <a href="admin-dashboard.html" class="footer-badge" style="background:rgba(0,102,255,0.15); border-color:rgba(0,102,255,0.4); color:#60A5FA; text-decoration:none; cursor:pointer;">🛠 관리자 대시보드</a>
         </div>
