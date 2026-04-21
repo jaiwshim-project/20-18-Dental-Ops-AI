@@ -262,8 +262,8 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
 
 .header {
   height: var(--header-h);
-  background: var(--surface);
-  border-bottom: 1px solid var(--gray-200);
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -271,10 +271,11 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
   position: sticky;
   top: 0;
   z-index: 50;
+  color: rgba(255,255,255,0.9);
 }
 
-.header-title { font-size: 1.125rem; font-weight: 700; }
-.header-actions { display: flex; align-items: center; gap: 12px; }
+.header-title { font-size: 1.125rem; font-weight: 700; color: #FFFFFF; }
+.header-actions { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.8); }
 
 .content { padding: 32px; max-width: var(--content-max); margin: 0 auto; }
 
