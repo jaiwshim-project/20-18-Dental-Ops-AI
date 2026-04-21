@@ -1,9 +1,5 @@
-// ============================================================
-// POST /api/clinic-register — 병원 회원가입
-// ============================================================
-
-import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
+const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -14,40 +10,33 @@ function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex');
 }
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { clinicName, directorName, region, password } = req.body;
 
-  // 유효성 검사
   if (!clinicName?.trim() || !directorName?.trim() || !region?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });
   }
 
-  // 비밀번호 6자리 숫자 검증
   if (!/^\d{6}$/.test(password)) {
     return res.status(400).json({ error: '비밀번호는 숫자 6자리여야 합니다' });
   }
 
   try {
-    // 비밀번호 해시
     const passwordHash = sha256(password);
 
-    // 병원명 중복 확인
     const { data: existing, error: existError } = await supabase
       .from('clinics')
       .select('id')
       .eq('name', clinicName.trim())
       .maybeSingle();
 
-    if (existError) throw new Error(`중복 확인 오류: ${existError.message}`);
-    if (existing) {
-      return res.status(409).json({ error: '이미 등록된 병원명입니다' });
-    }
+    if (existError) throw new Error(`중복 확인: ${existError.message}`);
+    if (existing) return res.status(409).json({ error: '이미 등록된 병원명입니다' });
 
-    // clinics 테이블에 INSERT
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
       .insert([{
@@ -60,9 +49,9 @@ export default async function handler(req, res) {
       .select()
       .single();
 
-    if (clinicError) throw new Error(`병원 등록 오류: ${clinicError.message}`);
+    if (clinicError) throw new Error(`병원 등록: ${clinicError.message}`);
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       clinicId: clinic.id,
       message: '병원 회원가입이 완료되었습니다. 로그인해주세요.'
@@ -70,6 +59,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('[clinic-register]', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
-}
+};

@@ -1,7 +1,6 @@
 {
   "name": "dental-ops-ai",
   "version": "1.0.0",
-  "type": "module",
   "description": "치과 상담·운영 AI 플랫폼",
   "scripts": {
     "dev": "next dev",

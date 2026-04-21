@@ -1,9 +1,5 @@
-// ============================================================
-// POST /api/login — 병원 + 이메일 + 비밀번호 로그인
-// ============================================================
-
-import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
+const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -14,7 +10,7 @@ function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex');
 }
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -30,25 +26,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. 병원 조회 및 비밀번호 검증
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
       .select('id, password_hash, tier')
       .eq('name', clinicName.trim())
       .maybeSingle();
 
-    if (clinicError) throw new Error(`병원 조회 오류: ${clinicError.message}`);
-    if (!clinic) {
-      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
-    }
+    if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
+    if (!clinic) return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
 
-    // 비밀번호 검증
     const passwordHash = sha256(password);
     if (clinic.password_hash !== passwordHash) {
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
 
-    // 2. 직원(users) 조회
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, name, role, is_admin')
@@ -56,37 +47,35 @@ export default async function handler(req, res) {
       .eq('clinic_id', clinic.id)
       .maybeSingle();
 
-    if (userError) throw new Error(`직원 조회 오류: ${userError.message}`);
+    if (userError) throw new Error(`직원 조회: ${userError.message}`);
 
-    // 직원이 없으면 신규 등록 (이메일 기반 자동 회원가입)
     let userData = user;
     if (!user) {
       const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert([{
           email: email.trim(),
-          name: email.trim().split('@')[0], // 이메일 로컬 부분을 이름으로
+          name: email.trim().split('@')[0],
           clinic_id: clinic.id,
-          role: '상담실장', // 기본값
+          role: '상담실장',
           is_admin: false,
           last_login_at: new Date().toISOString()
         }])
         .select('id, name, role, is_admin')
         .single();
 
-      if (insertError) throw new Error(`직원 등록 오류: ${insertError.message}`);
+      if (insertError) throw new Error(`직원 등록: ${insertError.message}`);
       userData = newUser;
     } else {
-      // 기존 직원: last_login_at 업데이트
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_login_at: new Date().toISOString() })
         .eq('id', user.id);
 
-      if (updateError) throw new Error(`로그인 시간 업데이트 오류: ${updateError.message}`);
+      if (updateError) throw new Error(`로그인 업데이트: ${updateError.message}`);
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       userId: userData.id,
       name: userData.name,
@@ -100,6 +89,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('[login]', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
-}
+};
