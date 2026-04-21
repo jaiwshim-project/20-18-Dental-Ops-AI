@@ -59,7 +59,7 @@ ${ctx}
   // 상담실장(병원 관계자)용 코칭 답변
   // utterances: [{text, at}] — 화자 미구분 발화 배열 (AI가 문맥으로 화자 자동 분리)
   // (호환) transcript: [{speaker, text}] — 이미 라벨링된 배열이면 그대로 사용
-  async coachReply({ question, patient, utterances, transcript, history }) {
+  async coachReply({ question, patient, utterances, transcript, history, language }) {
     const ctx = patient ? `환자: ${patient.name} (${patient.age}세, 관심 치료: ${patient.treatment || '미정'})\n` : '';
     const hist = history && history.length
       ? '이전 세션 이력:\n' + history.slice(-5).map((h, i) => `${i + 1}. ${h}`).join('\n') + '\n'
@@ -85,7 +85,12 @@ ${ctx}
       ? (transcript.filter(t => t.speaker === 'patient').slice(-1)[0]?.text || question || '')
       : (question || '');
 
-    const prompt = `⚠️ 실시간 상담 도중 코칭이다. 2~3초 내 응답이 절대적으로 중요.
+    // 다언어 지시문
+    const langInstruction = language && language !== 'ko-KR'
+      ? `⚠️ LANGUAGE INSTRUCTION: The patient is speaking ${language}. You MUST write ALL fields in the SAME language as the patient's input. This includes: subtext, recommended_reply, next_action, key_points, cautions, treatment_options, diarized_turns, and all other text fields. Do NOT translate or use Korean in any field.\n\n`
+      : '';
+
+    const prompt = `${langInstruction}⚠️ 실시간 상담 도중 코칭이다. 2~3초 내 응답이 절대적으로 중요.
 - 핵심 필드(subtext, recommended_reply, next_action)만 충실히 채움
 - 나머지 필드(key_points, treatment_options, cautions, avoidance_violations 등)는 빈 배열 또는 1줄로 간결히
 - 불필요한 중복·장문 설명 금지
@@ -218,7 +223,7 @@ JSON으로만 출력:
 
   // ⚡ 빠른 즉시 응답 (Phase 2 — 실시간 상담 맥 유지용)
   // 1~1.5초 내 응답을 목표로 최소 3필드만 반환
-  async coachReplyQuick({ patient, utterances, transcript }) {
+  async coachReplyQuick({ patient, utterances, transcript, language }) {
     const hasLabeled = Array.isArray(transcript) && transcript.length &&
                        transcript.every(t => t.speaker === 'patient' || t.speaker === 'staff');
     const raw = !hasLabeled ? (utterances || transcript || []) : [];
@@ -229,7 +234,12 @@ JSON으로만 출력:
 
     const ctx = patient ? `환자: ${patient.name} (${patient.age || '?'}세, 관심: ${patient.treatment || '미정'})` : '';
 
-    const prompt = `⚡ 실시간 즉시 코칭 (1초 이내 필수). 핵심 3필드만, 장문 금지.
+    // 다언어 지시문
+    const langInstruction = language && language !== 'ko-KR'
+      ? `⚠️ CRITICAL: Respond ENTIRELY in the language of the conversation (detected: ${language}). All fields (intent, subtext, recommended_reply) MUST be written in that language.\n\n`
+      : '';
+
+    const prompt = `${langInstruction}⚡ 실시간 즉시 코칭 (1초 이내 필수). 핵심 3필드만, 장문 금지.
 
 ${ctx}
 녹취(최근):
