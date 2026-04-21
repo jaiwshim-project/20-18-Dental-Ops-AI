@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>병원 관리 대시보드 — Dental Ops AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { background: var(--bg-base); }
+    .clinic-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    .clinic-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #1E3A5F 100%);
+      color: white;
+      padding: 32px 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 28px;
+    }
+
+    .clinic-header h1 { font-size: 2rem; margin: 0 0 8px 0; }
+    .clinic-header p { margin: 4px 0; opacity: 0.9; }
+
+    .clinic-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .info-card {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 12px 16px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .info-label { font-size: 0.8125rem; opacity: 0.8; margin-bottom: 4px; }
+    .info-value { font-size: 1.125rem; font-weight: 600; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section h2 {
+      font-size: 1.375rem;
+      margin: 0 0 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .staff-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .staff-table thead {
+      background: var(--gray-50);
+    }
+
+    .staff-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .staff-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .staff-table tbody tr:hover {
+      background: var(--gray-50);
+    }
+
+    .staff-name { font-weight: 500; }
+    .staff-email { color: var(--text-secondary); font-size: 0.9375rem; }
+
+    .action-btn {
+      padding: 4px 10px;
+      font-size: 0.8125rem;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      transition: all var(--duration) var(--ease);
+    }
+
+    .action-btn.delete {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .action-btn.delete:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .tier-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .tier-free { background: var(--gray-100); color: var(--text-secondary); }
+    .tier-pro { background: var(--primary-bg); color: var(--primary); }
+    .tier-max { background: var(--success-bg); color: var(--success); }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 0.9375rem;
+      transition: border-color var(--duration) var(--ease);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-bg);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    .exit-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: var(--gray-200);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all var(--duration) var(--ease);
+    }
+
+    .exit-btn:hover {
+      background: var(--gray-300);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="clinic-container">
+    <!-- 헤더 -->
+    <div class="clinic-header">
+      <h1 id="clinicTitle">병원 관리</h1>
+      <p>병원 정보, 직원 관리, 요금제 변경</p>
+      <div class="clinic-info">
+        <div class="info-card">
+          <div class="info-label">현재 요금제</div>
+          <div class="info-value" id="tierDisplay">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">직원 수</div>
+          <div class="info-value" id="staffCountDisplay">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">가입일</div>
+          <div class="info-value" id="createdAtDisplay">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 병원 정보 -->
+    <div class="section">
+      <h2>🏥 병원 정보</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">병원명</label>
+          <input type="text" class="form-input" id="clinicName" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">대표원장</label>
+          <input type="text" class="form-input" id="directorName" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">지역</label>
+          <input type="text" class="form-input" id="region" readonly>
+        </div>
+      </div>
+    </div>
+
+    <!-- 직원 관리 -->
+    <div class="section">
+      <h2>👥 직원 관리</h2>
+      <div class="section-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="showStaffForm()">➕ 직원 추가</button>
+      </div>
+
+      <!-- 직원 추가 폼 -->
+      <div id="staffFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:20px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">이름</label>
+            <input type="text" class="form-input" id="newStaffName" placeholder="예: 김치과 의사">
+          </div>
+          <div class="form-group">
+            <label class="form-label">이메일</label>
+            <input type="email" class="form-input" id="newStaffEmail" placeholder="staff@clinic.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">휴대폰</label>
+            <input type="tel" class="form-input" id="newStaffPhone" placeholder="010-1234-5678">
+          </div>
+          <div class="form-group">
+            <label class="form-label">직급</label>
+            <select class="form-input" id="newStaffRole">
+              <option value="상담실장">상담실장</option>
+              <option value="의사">의사</option>
+              <option value="위생사">위생사</option>
+              <option value="직원">직원</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="addStaff()">저장</button>
+          <button class="btn btn-secondary btn-sm" onclick="hideStaffForm()">취소</button>
+        </div>
+      </div>
+
+      <!-- 직원 목록 -->
+      <div id="staffTableContainer">
+        <table class="staff-table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th>휴대폰</th>
+              <th>직급</th>
+              <th>가입일</th>
+              <th style="width:100px;">작업</th>
+            </tr>
+          </thead>
+          <tbody id="staffTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 요금제 변경 -->
+    <div class="section">
+      <h2>💳 요금제 관리</h2>
+      <div class="form-group" style="max-width:300px;">
+        <label class="form-label">현재 요금제</label>
+        <select class="form-input" id="tierSelect" onchange="changeTier()">
+          <option value="free">Free — 기본 기능</option>
+          <option value="pro">Pro — 고급 분석</option>
+          <option value="max">Max — 무제한</option>
+        </select>
+      </div>
+      <p style="color:var(--text-secondary); font-size:0.875rem; margin-top:8px;">
+        요금제 변경은 관리자 승인이 필요합니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 나가기 버튼 -->
+  <button class="exit-btn" onclick="exitClinic()">🚪 나가기</button>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    let clinicId = null;
+    let clinicData = null;
+
+    function checkAuth() {
+      const session = Session.get();
+      if (!session || !session.clinicId) {
+        window.location.href = 'index.html';
+      }
+      clinicId = session.clinicId;
+    }
+
+    async function loadClinicInfo() {
+      try {
+        const res = await fetch(`/api/clinic-info?id=${clinicId}`);
+        if (!res.ok) {
+          showToast('병원 정보 로드 실패', 'error');
+          return;
+        }
+
+        clinicData = await res.json();
+        document.getElementById('clinicTitle').textContent = `${clinicData.name} 관리`;
+        document.getElementById('clinicName').value = clinicData.name;
+        document.getElementById('directorName').value = clinicData.director_name || '-';
+        document.getElementById('region').value = clinicData.region || '-';
+        document.getElementById('tierDisplay').textContent = clinicData.tier.toUpperCase();
+        document.getElementById('tierSelect').value = clinicData.tier;
+        document.getElementById('createdAtDisplay').textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
+
+        loadStaffList();
+      } catch (e) {
+        console.error('[loadClinicInfo]', e);
+        showToast('오류: ' + e.message, 'error');
+      }
+    }
+
+    async function loadStaffList() {
+      try {
+        const res = await fetch(`/api/clinic-staff?id=${clinicId}`);
+        if (!res.ok) throw new Error('직원 목록 로드 실패');
+
+        const staff = await res.json();
+        document.getElementById('staffCountDisplay').textContent = staff.length;
+        renderStaffTable(staff);
+      } catch (e) {
+        console.error('[loadStaffList]', e);
+        showToast('직원 목록 로드 실패: ' + e.message, 'error');
+      }
+    }
+
+    function renderStaffTable(staff) {
+      const tbody = document.getElementById('staffTableBody');
+
+      if (!staff.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:40px; color:var(--text-secondary);">
+              직원이 없습니다. 추가해주세요.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = staff.map(s => `
+        <tr>
+          <td><span class="staff-name">${s.name}</span></td>
+          <td><span class="staff-email">${s.email}</span></td>
+          <td>${s.phone || '-'}</td>
+          <td>${s.role || '직원'}</td>
+          <td>${new Date(s.created_at).toLocaleDateString('ko-KR')}</td>
+          <td>
+            <button class="action-btn delete" onclick="deleteStaff('${s.id}')">삭제</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function showStaffForm() {
+      document.getElementById('staffFormContainer').style.display = 'block';
+    }
+
+    function hideStaffForm() {
+      document.getElementById('staffFormContainer').style.display = 'none';
+      document.getElementById('newStaffName').value = '';
+      document.getElementById('newStaffEmail').value = '';
+      document.getElementById('newStaffPhone').value = '';
+    }
+
+    async function addStaff() {
+      const name = document.getElementById('newStaffName').value.trim();
+      const email = document.getElementById('newStaffEmail').value.trim();
+      const phone = document.getElementById('newStaffPhone').value.trim();
+      const role = document.getElementById('newStaffRole').value;
+
+      if (!name || !email) {
+        showToast('이름과 이메일은 필수입니다', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/add-staff', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId, name, email, phone, role })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || '직원 추가 실패', 'error');
+          return;
+        }
+
+        showToast('직원이 추가되었습니다', 'success');
+        hideStaffForm();
+        loadStaffList();
+      } catch (e) {
+        console.error('[addStaff]', e);
+        showToast('오류: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteStaff(staffId) {
+      if (!confirm('이 직원을 삭제하시겠습니까?')) return;
+
+      try {
+        const res = await fetch('/api/delete-staff', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ staffId })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || '삭제 실패', 'error');
+          return;
+        }
+
+        showToast('직원이 삭제되었습니다', 'success');
+        loadStaffList();
+      } catch (e) {
+        console.error('[deleteStaff]', e);
+        showToast('오류: ' + e.message, 'error');
+      }
+    }
+
+    async function changeTier() {
+      const newTier = document.getElementById('tierSelect').value;
+      if (!confirm(`요금제를 ${newTier.toUpperCase()}로 변경하시겠습니까?`)) {
+        document.getElementById('tierSelect').value = clinicData.tier;
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/change-tier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId, tier: newTier })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || '변경 실패', 'error');
+          document.getElementById('tierSelect').value = clinicData.tier;
+          return;
+        }
+
+        showToast('요금제가 변경되었습니다', 'success');
+        clinicData.tier = newTier;
+        document.getElementById('tierDisplay').textContent = newTier.toUpperCase();
+      } catch (e) {
+        console.error('[changeTier]', e);
+        showToast('오류: ' + e.message, 'error');
+        document.getElementById('tierSelect').value = clinicData.tier;
+      }
+    }
+
+    function exitClinic() {
+      if (confirm('병원 관리를 종료하시겠습니까?')) {
+        Session.logout();
+        window.location.href = 'index.html';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      loadClinicInfo();
+    });
+  </script>
+</body>
+</html>

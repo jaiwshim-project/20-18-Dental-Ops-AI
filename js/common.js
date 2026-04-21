@@ -341,29 +341,90 @@ async function sha256(str) {
 function switchAuthTab(tab) {
   const loginContent = document.getElementById('loginTabContent');
   const signupContent = document.getElementById('signupTabContent');
+  const adminContent = document.getElementById('adminTabContent');
   const loginTab = document.getElementById('loginTab');
   const signupTab = document.getElementById('signupTab');
+  const adminTab = document.getElementById('adminTab');
   const authBtn = document.getElementById('authBtn');
   const registerBtn = document.getElementById('registerBtn');
+  const adminAuthBtn = document.getElementById('adminAuthBtn');
+
+  const resetTabs = () => {
+    loginContent.style.display = 'none';
+    signupContent.style.display = 'none';
+    adminContent.style.display = 'none';
+    loginTab.style.background = 'transparent';
+    loginTab.style.color = 'var(--text-secondary)';
+    signupTab.style.background = 'transparent';
+    signupTab.style.color = 'var(--text-secondary)';
+    adminTab.style.background = 'transparent';
+    adminTab.style.color = 'var(--text-secondary)';
+    authBtn.style.display = 'none';
+    registerBtn.style.display = 'none';
+    adminAuthBtn.style.display = 'none';
+  };
+
+  resetTabs();
 
   if (tab === 'login') {
     loginContent.style.display = 'block';
-    signupContent.style.display = 'none';
     loginTab.style.background = 'var(--primary)';
     loginTab.style.color = 'white';
-    signupTab.style.background = 'transparent';
-    signupTab.style.color = 'var(--text-secondary)';
     authBtn.style.display = 'block';
-    registerBtn.style.display = 'none';
-  } else {
-    loginContent.style.display = 'none';
+  } else if (tab === 'signup') {
     signupContent.style.display = 'block';
-    loginTab.style.background = 'transparent';
-    loginTab.style.color = 'var(--text-secondary)';
     signupTab.style.background = 'var(--primary)';
     signupTab.style.color = 'white';
-    authBtn.style.display = 'none';
     registerBtn.style.display = 'block';
+  } else if (tab === 'admin') {
+    adminContent.style.display = 'block';
+    adminTab.style.background = 'var(--primary)';
+    adminTab.style.color = 'white';
+    adminAuthBtn.style.display = 'block';
+  }
+}
+
+// 병원 관리자 인증: 병원명 + 비밀번호(6자리)
+async function submitClinicAdmin() {
+  const clinic = (document.getElementById('adminClinicName')?.value || '').trim();
+  const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`adminPwd${i}`)?.value || '').join('');
+
+  if (!clinic || pwd.length !== 6) {
+    showToast('모든 필드를 입력하세요', 'warning');
+    return;
+  }
+
+  if (!/^\d{6}$/.test(pwd)) {
+    showToast('비밀번호는 숫자 6자리입니다', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/clinic-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinicName: clinic, password: pwd })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || '인증 실패', 'error');
+      return;
+    }
+
+    const clinic_info = await res.json();
+    Session.login({
+      clinicId: clinic_info.clinicId,
+      clinic: clinic_info.name,
+      role: 'clinic_admin',
+      is_admin: true
+    });
+
+    closeModal('loginModal');
+    setTimeout(() => window.location.href = 'clinic-dashboard.html', 300);
+  } catch (e) {
+    console.error('[submitClinicAdmin]', e);
+    showToast('인증 중 오류 발생: ' + e.message, 'error');
   }
 }
 
@@ -740,8 +801,9 @@ function renderSidebar(activePage) {
     <div class="modal" style="max-width:480px;">
       <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gray-200); padding-bottom:12px;">
         <div style="display:flex; gap:0; border-radius:8px; background:var(--gray-100); padding:2px;">
-          <button class="btn btn-sm" id="loginTab" onclick="switchAuthTab('login')" style="background:var(--primary); color:white; border:none; border-radius:6px 0 0 6px;">🔐 로그인</button>
-          <button class="btn btn-sm" id="signupTab" onclick="switchAuthTab('signup')" style="background:transparent; color:var(--text-secondary); border:none; border-radius:0 6px 6px 0;">🏥 병원 가입</button>
+          <button class="btn btn-sm" id="loginTab" onclick="switchAuthTab('login')" style="background:var(--primary); color:white; border:none; border-radius:6px 0 0 0;">🔐 로그인</button>
+          <button class="btn btn-sm" id="signupTab" onclick="switchAuthTab('signup')" style="background:transparent; color:var(--text-secondary); border:none;">🏥 병원 가입</button>
+          <button class="btn btn-sm" id="adminTab" onclick="switchAuthTab('admin')" style="background:transparent; color:var(--text-secondary); border:none; border-radius:0 6px 6px 0;">🏛️ 병원 관리</button>
         </div>
         <button class="btn btn-sm btn-secondary" onclick="closeModal('loginModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
       </div>
@@ -801,11 +863,34 @@ function renderSidebar(activePage) {
             </div>
           </div>
         </div>
+
+        <!-- 병원 관리 탭 -->
+        <div id="adminTabContent" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="adminClinicName" placeholder="예: 디지털스마일 치과" autocomplete="organization">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></span>
+              <small style="color:var(--text-tertiary);">병원 관리용 비밀번호</small>
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
+              <input type="password" class="form-input" id="adminPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="adminPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="adminPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="adminPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="adminPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="adminPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
         <button class="btn btn-primary" id="authBtn" onclick="submitClinicLogin()" style="display:none;">🔐 로그인</button>
         <button class="btn btn-primary" id="registerBtn" onclick="submitClinicRegister()" style="display:none;">💾 병원 가입하기</button>
+        <button class="btn btn-primary" id="adminAuthBtn" onclick="submitClinicAdmin()" style="display:none;">🏛️ 병원 관리 입장</button>
       </div>
     </div>
   </div>`;
