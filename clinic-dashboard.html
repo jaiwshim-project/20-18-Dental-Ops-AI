@@ -305,10 +305,11 @@
 
     function checkAuth() {
       const session = Session.get();
-      if (!session || !session.clinicId) {
+      if (!session || !session.clinic_id) {
         window.location.href = 'index.html';
+        return;
       }
-      clinicId = session.clinicId;
+      clinicId = session.clinic_id;
     }
 
     async function loadClinicInfo() {

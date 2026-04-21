@@ -414,7 +414,7 @@ async function submitClinicAdmin() {
 
     const clinic_info = await res.json();
     Session.login({
-      clinicId: clinic_info.clinicId,
+      clinic_id: clinic_info.clinicId,
       clinic: clinic_info.name,
       role: 'clinic_admin',
       is_admin: true
