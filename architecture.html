@@ -362,6 +362,7 @@
               <h3>Frontend</h3>
               <ul>
                 <li>HTML5 / CSS3 / Vanilla JS</li>
+                <li><strong>Web Speech API</strong> — 30개 언어 음성 인식</li>
                 <li>Pretendard 웹폰트</li>
                 <li>순수 SVG 차트 (라이브러리 0)</li>
                 <li>반응형 모바일 대응</li>
@@ -384,6 +385,7 @@
               <h3>AI</h3>
               <ul>
                 <li>Google Gemini 2.0 Flash</li>
+                <li><strong>30개 언어 다국어 지원</strong> — 프롬프트 언어 자동 전환</li>
                 <li>텍스트 + 이미지 멀티모달</li>
                 <li>JSON 모드 안정 파싱</li>
                 <li>safeGemini / safeGeminiJson 래퍼</li>
@@ -397,24 +399,44 @@
           <div class="flow-step">
             <div class="flow-num">1</div>
             <div>
-              <strong>환자 입력</strong>
-              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">상담 AI 페이지에서 환자 정보와 질문을 입력합니다. patients.html에서 신규 환자 등록도 가능합니다.</p>
+              <strong>상담 준비 — 언어 선택 + 환자 입력</strong>
+              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">
+                🌐 <strong>상담 언어 선택</strong> (30개국) → 음성 인식 언어 자동 설정<br>
+                환자 정보 선택 → 🎙 음성 녹취 또는 텍스트 입력
+              </p>
             </div>
           </div>
           <div class="flow-arrow">&#x2193;</div>
           <div class="flow-step">
             <div class="flow-num">2</div>
             <div>
-              <strong>엔진 라우팅</strong>
-              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">해당 페이지가 8대 엔진 중 적절한 엔진(ConsultEngine / ConversionEngine 등)을 호출합니다.</p>
+              <strong>음성 인식 & 화자 분리</strong>
+              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">
+                Web Speech API로 선택된 언어로 음성 자동 인식<br>
+                환자와 상담실장의 발화를 구분하여 turns 배열에 저장
+              </p>
             </div>
           </div>
           <div class="flow-arrow">&#x2193;</div>
           <div class="flow-step">
             <div class="flow-num">3</div>
             <div>
+              <strong>엔진 호출 + 언어 지시문</strong>
+              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">
+                ConsultEngine.coachReply({ utterances, language })로 호출<br>
+                프롬프트 맨 앞에 "LANGUAGE INSTRUCTION" 자동 추가 → 모든 응답을 선택된 언어로 생성하도록 지시
+              </p>
+            </div>
+          </div>
+          <div class="flow-arrow">&#x2193;</div>
+          <div class="flow-step">
+            <div class="flow-num">4</div>
+            <div>
               <strong>Gemini API 호출</strong>
-              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">엔진이 프롬프트를 구성해 GeminiAPI.chat() 또는 .json()으로 전송합니다. 키가 없으면 데모 Fallback 반환.</p>
+              <p style="margin:4px 0 0; font-size:0.875rem; color:var(--text-secondary);">
+                엔진이 다언어 프롬프트를 구성해 GeminiAPI.json()으로 전송<br>
+                Gemini가 선택된 언어로 JSON 응답 반환
+              </p>
             </div>
           </div>
           <div class="flow-arrow">&#x2193;</div>

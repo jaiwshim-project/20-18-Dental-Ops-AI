@@ -358,14 +358,49 @@
 
             <section class="manual-section" id="sec-consult">
               <h2>4. 상담 AI 사용법</h2>
-              <p>사이드바의 <strong>상담 AI</strong> 메뉴에서 환자 질문을 입력하면 구조화된 답변을 받을 수 있습니다.</p>
-              <div class="screenshot-placeholder">&#x1F4F7; 스크린샷 자리 — 상담 AI 입력 화면</div>
+              <p>사이드바의 <strong>상담 AI</strong> 메뉴에서 실시간 상담 녹취, AI 분석, 코칭 답변을 받을 수 있습니다.</p>
+
+              <h3>4.1 기본 사용 흐름</h3>
               <ol>
-                <li>환자 프로필 선택 (선택 사항 — 선택 시 맞춤 답변)</li>
-                <li>환자 질문 텍스트 입력</li>
-                <li><strong>답변 생성</strong> 클릭 → 4단계 응답 출력</li>
-                <li>Supabase 연결 시 상담 로그가 자동 저장됨</li>
+                <li><strong style="color: var(--danger); font-weight: 700;">🌐 상담 언어 선택</strong> — 30개 언어 중 선택 (한국어·영어·중국어·일본어·스페인어·독일어·프랑스어 등)</li>
+                <li><strong>환자 선택</strong> (선택 사항 — 선택 시 맞춤 코칭)</li>
+                <li><strong>🎙 마이크 버튼</strong>으로 환자·상담실장 대화 녹음 (자동 음성 인식)</li>
+                <li><strong>또는 수동 입력</strong> — 텍스트로 직접 입력 가능</li>
+                <li><strong>📤 전송</strong> 클릭 → AI 즉시 분석 + 코칭 답변 생성</li>
+                <li><strong>🛑 상담 종료 및 저장</strong> — Supabase에 자동 저장</li>
               </ol>
+
+              <h3>4.2 다언어 지원 (30개 언어)</h3>
+              <p><strong>상담 언어</strong> 드롭다운에서 원하는 언어를 선택하면:</p>
+              <ul>
+                <li><strong>음성 인식</strong>이 선택된 언어로 변경됨 (SpeechRecognition API)</li>
+                <li><strong>AI 분석</strong이 해당 언어로 진행 — 프롬프트 자동 언어 전환</li>
+                <li><strong>코칭 답변</strong>이 선택된 언어로 완전히 생성됨</li>
+              </ul>
+              <p style="font-size: 0.9rem; color: var(--text-tertiary); margin-top: 12px;">지원 언어: 한국어, English (US), 中文 (简体·繁體), 日本語, Español, Français, Deutsch, Italiano, Português, Русский, العربية, हिन्दी, Tiếng Việt, ภาษาไทย, Bahasa Indonesia, 등 총 30개 언어</p>
+
+              <h3>4.3 실시간 상담 녹취 & 화자 분리</h3>
+              <ul>
+                <li>환자와 상담실장의 대화를 자동으로 기록</li>
+                <li><strong>AI가 자동으로 화자 분리</strong> — "환자", "상담실장" 라벨링</li>
+                <li>대화 중 누가 무엇을 말했는지 명확히 파악</li>
+                <li>음성 인식이 잘못 인식한 부분도 수정 가능</li>
+              </ul>
+
+              <h3>4.4 즉시 코칭 답변 & 상세 분석</h3>
+              <ul>
+                <li><strong>⚡ 즉시 응답</strong> (1~2초) — 상담실장이 바로 말할 수 있는 스크립트</li>
+                <li><strong>속마음</strong> — 환자의 숨은 의도·불안·요구 파악</li>
+                <li><strong>🧭 5단계 × QLRCQ 좌표</strong> — 현재 상담 위치와 다음 액션 제시</li>
+                <li><strong>상세 분석</strong> (3~5초) — 치료 옵션, 주의사항, 성공 신호 등</li>
+              </ul>
+
+              <h3>4.5 세션 관리 & 저장</h3>
+              <ul>
+                <li>상담 세션 시작 후 언어는 변경 불가 (일관성 유지)</li>
+                <li>모든 대화, 코칭, 분석 결과가 Supabase에 자동 저장</li>
+                <li>같은 환자의 과거 상담 이력을 참고하여 맞춤 분석</li>
+              </ul>
             </section>
 
             <section class="manual-section" id="sec-conversion">
