@@ -88,11 +88,11 @@
           <!-- KPI 카드 -->
           <div class="dash-kpi-grid" id="dashKpi"></div>
 
-          <!-- 회원 관리 -->
+          <!-- 병원 관리 -->
           <div class="card">
             <div class="card-header flex justify-between items-center">
-              <h3>👥 회원 관리</h3>
-              <button class="btn btn-secondary btn-sm" onclick="renderMembersTable()">🔄 새로고침</button>
+              <h3>🏥 병원 관리</h3>
+              <button class="btn btn-secondary btn-sm" onclick="renderClinicsTable()">🔄 새로고침</button>
             </div>
             <div class="card-body">
               <div id="membersSummary"></div>
@@ -100,18 +100,16 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>이메일</th>
-                      <th>이름</th>
-                      <th>병원</th>
-                      <th>역할</th>
+                      <th>병원명</th>
+                      <th>대표원장</th>
+                      <th>지역</th>
+                      <th>직원수</th>
                       <th>요금제</th>
-                      <th>이번달</th>
-                      <th>본사</th>
                       <th>가입일</th>
                     </tr>
                   </thead>
                   <tbody id="membersTable">
-                    <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
+                    <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -260,30 +258,19 @@
 
     function safe(x) { return String(x || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]); }
 
-    async function renderMembersTable() {
+    async function renderClinicsTable() {
       const tbody = document.getElementById('membersTable');
       const summary = document.getElementById('membersSummary');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
 
       try {
-        const [users, usage] = await Promise.all([
-          SupabaseDB.listUsers(),
-          SupabaseDB.getAllMonthlyUsage()
-        ]);
-        const tierLimits = { free: 3, pro: 20, max: 60 };
+        const clinics = await SupabaseDB.listClinics();
         let free = 0, pro = 0, max = 0;
 
-        const rows = users.map(u => {
-          const used = usage[u.id] || 0;
-          const tier = u.tier || 'free';
-          const limit = tierLimits[tier];
-          const ratio = limit ? used / limit : 0;
-          const isOver = !u.is_admin && used >= limit;
-          const isNear = !u.is_admin && !isOver && ratio >= 0.8;
-          const color = isOver ? 'var(--danger)' : isNear ? 'var(--warning)' : 'var(--text-primary)';
-          const weight = (isOver || isNear) ? '700' : '500';
-          const icon = isOver ? ' 🔴' : isNear ? ' ⚠️' : '';
+        const rows = await Promise.all(clinics.map(async c => {
+          const tier = c.tier || 'free';
+          const userCount = await SupabaseDB.getClinicUsers(c.id).catch(() => []).then(users => users.length);
 
           if (tier === 'free') free++;
           else if (tier === 'pro') pro++;
@@ -291,30 +278,28 @@
 
           return `
             <tr>
-              <td style="font-family:monospace; font-size:0.8125rem;">${safe(u.email)}</td>
-              <td>${safe(u.name)}</td>
-              <td>${safe(u.clinic)}</td>
-              <td style="font-size:0.8125rem;">${safe(u.role)}</td>
+              <td style="font-weight:600;">${safe(c.name)}</td>
+              <td>${safe(c.director_name)}</td>
+              <td>${safe(c.region)}</td>
+              <td style="text-align:center;">${userCount}명</td>
               <td>
-                <select onchange="changeTier('${u.id}', this.value)" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
-                  <option value="free" ${tier === 'free' ? 'selected' : ''}>🆓 Free (3)</option>
-                  <option value="pro" ${tier === 'pro' ? 'selected' : ''}>⭐ Pro (20)</option>
-                  <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60)</option>
+                <select onchange="changeClinicTier('${c.id}', this.value)" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
+                  <option value="free" ${tier === 'free' ? 'selected' : ''}>🆓 Free (3회)</option>
+                  <option value="pro" ${tier === 'pro' ? 'selected' : ''}>⭐ Pro (20회)</option>
+                  <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60회)</option>
                 </select>
               </td>
-              <td style="color:${color}; font-weight:${weight};">${used} / ${u.is_admin ? '∞' : limit}${icon}</td>
-              <td>${u.is_admin ? '✅' : '—'}</td>
-              <td style="font-size:0.75rem; color:var(--text-tertiary);">${(u.created_at || '').slice(0, 10)}</td>
+              <td style="font-size:0.75rem; color:var(--text-tertiary);">${(c.created_at || '').slice(0, 10)}</td>
             </tr>
           `;
-        }).join('');
+        }));
 
-        tbody.innerHTML = rows || '<tr><td colspan="8" style="text-align:center; padding:20px;">회원 없음</td></tr>';
+        tbody.innerHTML = rows.join('') || '<tr><td colspan="6" style="text-align:center; padding:20px;">병원 없음</td></tr>';
 
         if (summary) {
           summary.innerHTML = `
             <div style="display:flex; gap:20px; padding:12px 16px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:16px; font-size:0.875rem; flex-wrap:wrap;">
-              <span><strong>전체:</strong> ${users.length}명</span>
+              <span><strong>전체 병원:</strong> ${clinics.length}개</span>
               <span>🆓 Free <strong>${free}</strong></span>
               <span>⭐ Pro <strong>${pro}</strong></span>
               <span>🚀 Max <strong>${max}</strong></span>
@@ -322,13 +307,17 @@
           `;
         }
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger); padding:20px;">조회 실패: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger); padding:20px;">조회 실패: ${e.message}</td></tr>`;
       }
     }
 
-    async function changeTier(userId, tier) {
+    async function renderMembersTable() {
+      return renderClinicsTable(); // 호환성 유지
+    }
+
+    async function changeClinicTier(clinicId, tier) {
       try {
-        await SupabaseDB.updateUserTier(userId, tier);
+        await SupabaseDB.updateClinicTier(clinicId, tier);
         showToast('요금제 변경 완료', 'success');
         await renderMembersTable();
         await renderKpi();
