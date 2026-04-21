@@ -1,16 +1,23 @@
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex');
 }
 
 module.exports = async (req, res) => {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[clinic-register] 환경 변수 미설정', {
+      url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    });
+    return res.status(500).json({ error: '서버 환경 변수 미설정' });
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
