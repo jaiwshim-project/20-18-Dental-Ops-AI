@@ -35,14 +35,15 @@ export default async function handler(req, res) {
       .from('clinics')
       .select('id, password_hash, tier')
       .eq('name', clinicName.trim())
-      .single();
+      .maybeSingle();
 
-    if (clinicError || !clinic) {
+    if (clinicError) throw new Error(`병원 조회 오류: ${clinicError.message}`);
+    if (!clinic) {
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
 
     // 비밀번호 검증
-    const passwordHash = await sha256(password);
+    const passwordHash = sha256(password);
     if (clinic.password_hash !== passwordHash) {
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
@@ -53,11 +54,9 @@ export default async function handler(req, res) {
       .select('id, name, role, is_admin')
       .eq('email', email.trim())
       .eq('clinic_id', clinic.id)
-      .single();
+      .maybeSingle();
 
-    if (userError && userError.code !== 'PGRST116') {
-      throw userError;
-    }
+    if (userError) throw new Error(`직원 조회 오류: ${userError.message}`);
 
     // 직원이 없으면 신규 등록 (이메일 기반 자동 회원가입)
     let userData = user;
@@ -75,14 +74,16 @@ export default async function handler(req, res) {
         .select('id, name, role, is_admin')
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) throw new Error(`직원 등록 오류: ${insertError.message}`);
       userData = newUser;
     } else {
       // 기존 직원: last_login_at 업데이트
-      await supabase
+      const { error: updateError } = await supabase
         .from('users')
         .update({ last_login_at: new Date().toISOString() })
         .eq('id', user.id);
+
+      if (updateError) throw new Error(`로그인 시간 업데이트 오류: ${updateError.message}`);
     }
 
     return res.status(200).json({
@@ -98,7 +99,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('[login]', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }

@@ -33,15 +33,16 @@ export default async function handler(req, res) {
 
   try {
     // 비밀번호 해시
-    const passwordHash = await sha256(password);
+    const passwordHash = sha256(password);
 
     // 병원명 중복 확인
-    const { data: existing } = await supabase
+    const { data: existing, error: existError } = await supabase
       .from('clinics')
       .select('id')
       .eq('name', clinicName.trim())
-      .single();
+      .maybeSingle();
 
+    if (existError) throw new Error(`중복 확인 오류: ${existError.message}`);
     if (existing) {
       return res.status(409).json({ error: '이미 등록된 병원명입니다' });
     }
@@ -59,10 +60,7 @@ export default async function handler(req, res) {
       .select()
       .single();
 
-    if (clinicError) throw clinicError;
-
-    // users 테이블에 대표원장 정보 추가
-    // (나중에 로그인할 때 생성되도록 하는 게 나을 수 있음)
+    if (clinicError) throw new Error(`병원 등록 오류: ${clinicError.message}`);
 
     return res.status(201).json({
       success: true,
@@ -71,7 +69,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Clinic register error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('[clinic-register]', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
