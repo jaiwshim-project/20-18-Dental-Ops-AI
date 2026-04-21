@@ -1,8 +1,10 @@
 {
-  "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
+  "buildCommand": "",
   "outputDirectory": ".",
-  "cleanUrls": true,
-  "trailingSlash": false
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ]
 }

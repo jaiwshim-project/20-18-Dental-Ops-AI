@@ -4,8 +4,8 @@
   "description": "치과 상담·운영 AI 플랫폼",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build": "",
+    "start": ""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
