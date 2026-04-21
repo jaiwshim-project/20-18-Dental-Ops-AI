@@ -99,6 +99,82 @@ const SupabaseDB = {
     return data;
   },
 
+  // ============================================================
+  // 병원 (Clinics) — SaaS 다중 테넌트 관리
+  // ============================================================
+  async getClinicByName(name) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('clinics')
+      .select('*').eq('name', name).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async createClinic({ name, directorName, region, passwordHash }) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('clinics')
+      .insert([{
+        name,
+        director_name: directorName,
+        region,
+        password_hash: passwordHash,
+        tier: 'free'
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async addClinicUser({ clinicId, name, email, phone = '', role = '상담실장' }) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('users')
+      .insert([{
+        clinic_id: clinicId,
+        name,
+        email,
+        phone,
+        role,
+        is_admin: false,
+        last_login_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateClinicTier(clinicId, tier) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('clinics')
+      .update({ tier }).eq('id', clinicId).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async listClinics() {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('clinics')
+      .select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getClinicUsers(clinicId) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { data, error } = await this.client.from('users')
+      .select('*').eq('clinic_id', clinicId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async deleteClinicUser(userId) {
+    if (!this.client) throw new Error('Supabase 미연결');
+    const { error } = await this.client.from('users').delete().eq('id', userId);
+    if (error) throw error;
+    return true;
+  },
+
   async getAllMonthlyUsage() {
     if (!this.client) throw new Error('Supabase 미연결');
     const monthStart = new Date();

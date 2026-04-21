@@ -131,8 +131,8 @@ const Store = {
 const Session = {
   KEY: 'session',
   TTL_MS: 1000 * 60 * 60 * 24 * 7, // 7일
-  login({ userId, name, role = 'staff', clinic = '', email = '', tier = 'free', is_admin = false }) {
-    Store.set(this.KEY, { userId, name, role, clinic, email, tier, is_admin, loggedAt: Date.now() });
+  login({ userId, name, role = 'staff', clinic = '', clinic_id = '', email = '', tier = 'free', is_admin = false }) {
+    Store.set(this.KEY, { userId, name, role, clinic, clinic_id, email, tier, is_admin, loggedAt: Date.now() });
   },
   logout() { Store.remove(this.KEY); },
   get() {
@@ -327,6 +327,143 @@ document.addEventListener('keydown', (e) => {
 });
 
 // 신규 가입 필드 토글
+// ============================================================
+// 병원 단위 인증 시스템 (SaaS 다중 테넌트)
+// ============================================================
+
+// SHA256 해시 (비밀번호 저장용)
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 탭 전환
+function switchAuthTab(tab) {
+  const loginContent = document.getElementById('loginTabContent');
+  const signupContent = document.getElementById('signupTabContent');
+  const loginTab = document.getElementById('loginTab');
+  const signupTab = document.getElementById('signupTab');
+  const authBtn = document.getElementById('authBtn');
+  const registerBtn = document.getElementById('registerBtn');
+
+  if (tab === 'login') {
+    loginContent.style.display = 'block';
+    signupContent.style.display = 'none';
+    loginTab.style.background = 'var(--primary)';
+    loginTab.style.color = 'white';
+    signupTab.style.background = 'transparent';
+    signupTab.style.color = 'var(--text-secondary)';
+    authBtn.style.display = 'block';
+    registerBtn.style.display = 'none';
+  } else {
+    loginContent.style.display = 'none';
+    signupContent.style.display = 'block';
+    loginTab.style.background = 'transparent';
+    loginTab.style.color = 'var(--text-secondary)';
+    signupTab.style.background = 'var(--primary)';
+    signupTab.style.color = 'white';
+    authBtn.style.display = 'none';
+    registerBtn.style.display = 'block';
+  }
+}
+
+// 로그인: 병원명 + 이메일 + 비밀번호(6자리)
+async function submitClinicLogin() {
+  const clinic = (document.getElementById('clinicName')?.value || '').trim();
+  const email = (document.getElementById('loginEmail')?.value || '').trim();
+  const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`loginPwd${i}`)?.value || '').join('');
+
+  if (!clinic || !email || pwd.length !== 6) {
+    showToast('모든 필드를 입력하세요', 'warning');
+    return;
+  }
+
+  if (!/^\d{6}$/.test(pwd)) {
+    showToast('비밀번호는 숫자 6자리입니다', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinicName: clinic, email, password: pwd })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || '로그인 실패', 'error');
+      return;
+    }
+
+    const user = await res.json();
+    Session.login({
+      userId: user.userId,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      clinic: user.clinic,
+      clinic_id: user.clinic_id,
+      tier: user.tier,
+      is_admin: user.is_admin
+    });
+
+    closeModal('loginModal');
+    location.reload();
+  } catch (e) {
+    console.error('Login error:', e);
+    showToast('로그인 중 오류가 발생했습니다', 'error');
+  }
+}
+
+// 병원 회원가입
+async function submitClinicRegister() {
+  const clinic = (document.getElementById('signupClinicName')?.value || '').trim();
+  const director = (document.getElementById('signupDirector')?.value || '').trim();
+  const region = (document.getElementById('signupRegion')?.value || '').trim();
+  const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`signupPwd${i}`)?.value || '').join('');
+
+  if (!clinic || !director || !region || pwd.length !== 6) {
+    showToast('모든 필드를 입력하세요', 'warning');
+    return;
+  }
+
+  if (!/^\d{6}$/.test(pwd)) {
+    showToast('비밀번호는 숫자 6자리입니다', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/clinic-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clinicName: clinic,
+        directorName: director,
+        region,
+        password: pwd
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || '가입 실패', 'error');
+      return;
+    }
+
+    showToast('병원 가입이 완료되었습니다. 로그인해주세요.', 'success');
+    switchAuthTab('login');
+    // 입력 필드 초기화
+    ['clinicName', 'loginEmail', 'loginPwd1', 'loginPwd2', 'loginPwd3', 'loginPwd4', 'loginPwd5', 'loginPwd6'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+  } catch (e) {
+    console.error('Register error:', e);
+    showToast('가입 중 오류가 발생했습니다', 'error');
+  }
+}
+
 function toggleSignupFields(e) {
   if (e) e.preventDefault();
   const fields = document.getElementById('signupFields');
@@ -600,51 +737,75 @@ function renderSidebar(activePage) {
   </div>
   <!-- 로그인 모달 -->
   <div class="modal-overlay" id="loginModal">
-    <div class="modal" style="max-width:420px;">
-      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:1.25rem;">🚀</span> 로그인
-        </h3>
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gray-200); padding-bottom:12px;">
+        <div style="display:flex; gap:0; border-radius:8px; background:var(--gray-100); padding:2px;">
+          <button class="btn btn-sm" id="loginTab" onclick="switchAuthTab('login')" style="background:var(--primary); color:white; border:none; border-radius:6px 0 0 6px;">🔐 로그인</button>
+          <button class="btn btn-sm" id="signupTab" onclick="switchAuthTab('signup')" style="background:transparent; color:var(--text-secondary); border:none; border-radius:0 6px 6px 0;">🏥 병원 가입</button>
+        </div>
         <button class="btn btn-sm btn-secondary" onclick="closeModal('loginModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
       </div>
       <div class="modal-body">
-        <div style="padding:14px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:20px;">
-          <p style="font-size:0.8125rem; color:var(--primary); font-weight:600; line-height:1.55;">✨ <strong>이전에 가입한 이메일이면 즉시 로그인</strong>됩니다.<br>처음이시면 하단 '가입 정보 입력'을 펼쳐 매직링크를 받으세요.</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
-          <input type="email" class="form-input" id="loginEmail" placeholder="you@clinic.co.kr" autocomplete="email">
-        </div>
-
-        <div id="signupFields" style="display:none; border-top:1px solid var(--gray-200); margin-top:16px; padding-top:16px;">
-          <div style="font-size:0.8125rem; color:var(--text-secondary); font-weight:600; margin-bottom:10px;">신규 가입 정보 (매직링크 발송용)</div>
-          <div class="form-group">
-            <label class="form-label">이름 <span style="color:var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="loginName" placeholder="홍길동" autocomplete="name">
-          </div>
+        <!-- 로그인 탭 -->
+        <div id="loginTabContent">
           <div class="form-group">
             <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="loginClinic" placeholder="예: 스마일치과" autocomplete="organization">
+            <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일 치과" autocomplete="organization">
           </div>
           <div class="form-group">
-            <label class="form-label">역할</label>
-            <select class="form-input" id="loginRole">
-              <option value="상담실장">상담실장</option>
-              <option value="원장">원장</option>
-              <option value="코디네이터">코디네이터</option>
-              <option value="치위생사">치위생사</option>
-              <option value="관리자">관리자 (CEO)</option>
-            </select>
+            <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
+            <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></span>
+              <small style="color:var(--text-tertiary);">병원 공유 비밀번호</small>
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
+              <input type="password" class="form-input" id="loginPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="loginPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="loginPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="loginPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="loginPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="loginPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            </div>
           </div>
         </div>
 
-        <div style="margin-top:14px;">
-          <a href="#" id="toggleSignupLink" onclick="toggleSignupFields(event)" style="font-size:0.8125rem; color:var(--primary); font-weight:600; text-decoration:none;">처음이신가요? 가입 정보 입력 ▾</a>
+        <!-- 병원 회원가입 탭 -->
+        <div id="signupTabContent" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="signupClinicName" placeholder="예: 디지털스마일 치과" autocomplete="organization">
+          </div>
+          <div class="form-group">
+            <label class="form-label">대표원장 이름 <span style="color:var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="signupDirector" placeholder="홍길동" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">지역명 <span style="color:var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="signupRegion" placeholder="예: 서울 강남">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></span>
+              <small style="color:var(--text-tertiary);">직원들과 공유하는 비밀번호</small>
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
+              <input type="password" class="form-input" id="signupPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="signupPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="signupPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="signupPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="signupPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+              <input type="password" class="form-input" id="signupPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
-        <button class="btn btn-primary" id="loginBtn" onclick="smartLogin()">🚀 로그인</button>
+        <button class="btn btn-primary" id="authBtn" onclick="submitClinicLogin()" style="display:none;">🔐 로그인</button>
+        <button class="btn btn-primary" id="registerBtn" onclick="submitClinicRegister()" style="display:none;">💾 병원 가입하기</button>
       </div>
     </div>
   </div>`;
