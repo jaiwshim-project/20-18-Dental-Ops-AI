@@ -53,10 +53,22 @@
   --danger-border: #FCA5A5;
   --info-border: #93C5FD;
 
-  /* Surface */
+  /* Surface & Premium Background Layers */
   --surface: #FFFFFF;
   --surface-elevated: #FFFFFF;
   --bg: #F0F4F8;
+
+  /* 🎨 Premium Background Hierarchy */
+  --bg-base: #FFFFFF;           /* L0: 페이지 배경 */
+  --bg-surface: #FAFAFA;        /* L1: 카드, 패널, 섹션 */
+  --bg-secondary: #F3F4F6;      /* L2: 호버, 선택, 강조 */
+  --bg-tertiary: #E5E7EB;       /* L3: 테이블 행, 리스트 */
+  --bg-overlay: rgba(0,0,0,0.5); /* L4: 모달 오버레이 */
+
+  /* Premium Border Hierarchy */
+  --border: #D1D5DB;            /* Primary 테두리 */
+  --border-light: #E5E7EB;      /* Light 테두리, divider */
+  --border-accent: var(--primary); /* Accent 테두리 */
 
   /* Text Opacity Hierarchy */
   --text-primary: rgba(15, 23, 42, 0.92);
