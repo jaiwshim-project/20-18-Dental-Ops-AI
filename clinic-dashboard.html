@@ -1036,19 +1036,48 @@
 
     // DOMContentLoaded 또는 즉시 실행
     function initClinicDashboard() {
-      console.log('[initClinicDashboard] 실행됨. readyState:', document.readyState);
-      checkAuth();
+      console.log('[initClinicDashboard] ▶️ 실행 시작');
+      console.log('[initClinicDashboard] document.readyState:', document.readyState);
 
-      // 병원 목록 로드 및 자동완성 이벤트 리스너 등록
-      loadAllClinics();
-      registerAuthClinicInputListeners();
+      try {
+        checkAuth();
+        console.log('[initClinicDashboard] ✅ checkAuth() 완료');
+      } catch (e) {
+        console.error('[initClinicDashboard] ❌ checkAuth() 에러:', e);
+      }
+
+      try {
+        loadAllClinics();
+        console.log('[initClinicDashboard] ✅ loadAllClinics() 완료');
+      } catch (e) {
+        console.error('[initClinicDashboard] ⚠️ loadAllClinics() 에러:', e);
+      }
+
+      try {
+        registerAuthClinicInputListeners();
+        console.log('[initClinicDashboard] ✅ registerAuthClinicInputListeners() 완료');
+      } catch (e) {
+        console.error('[initClinicDashboard] ⚠️ registerAuthClinicInputListeners() 에러:', e);
+      }
+
+      console.log('[initClinicDashboard] ✅✅✅ 초기화 완료');
+    }
+
+    // 즉시 실행 + DOMContentLoaded 대기 (중복 방지)
+    console.log('[clinic-dashboard] ▶️ 초기화 시작');
+    console.log('[clinic-dashboard] document.readyState:', document.readyState);
+
+    function initAndRegister() {
+      console.log('[clinic-dashboard] initAndRegister() 호출됨');
+      initClinicDashboard();
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initClinicDashboard);
+      console.log('[clinic-dashboard] DOMContentLoaded 대기 중...');
+      document.addEventListener('DOMContentLoaded', initAndRegister);
     } else {
-      // DOMContentLoaded이 이미 발생한 경우 (js 파일이 로드된 후)
-      initClinicDashboard();
+      console.log('[clinic-dashboard] DOMContentLoaded 이미 발생 → 즉시 실행');
+      initAndRegister();
     }
   </script>
 </body>
