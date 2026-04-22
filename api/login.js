@@ -97,8 +97,20 @@ module.exports = async (req, res) => {
 
     if (!clinic) {
       console.warn('[/api/login] ❌ clinic not found:', clinicName);
-      console.warn('[/api/login] 검색 데이터:', { allClinicsCount: allClinics?.length || 0 });
-      return res.status(401).json({ error: 'clinic not found' });
+      console.warn('[/api/login] 저장된 clinic 정보:', allClinics);
+
+      // 디버그 정보를 응답에 포함
+      return res.status(401).json({
+        error: 'clinic not found',
+        debug: {
+          searchedFor: clinicName,
+          storedClinics: (allClinics || []).map(c => ({
+            name: c.name,
+            hex: Buffer.from(c.name).toString('hex'),
+            id: c.id
+          }))
+        }
+      });
     }
 
     console.log('[/api/login] ✅ clinic 찾음:', {
