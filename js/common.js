@@ -140,26 +140,17 @@ const Store = {
   get(key, fallback = null) {
     try {
       const val = localStorage.getItem('dops_' + key);
-      const result = val ? JSON.parse(val) : fallback;
-      if (key === 'session') {
-        console.log('[Store.get] localStorage:', result);
-      }
-      return result;
+      return val ? JSON.parse(val) : fallback;
     } catch (e) {
       // localStorage 실패 → 메모리에서 읽기
-      console.warn('[Store.get] localStorage 실패, 메모리에서 읽음:', key);
       return MemoryStore[key] ?? fallback;
     }
   },
   set(key, val) {
     try {
       localStorage.setItem('dops_' + key, JSON.stringify(val));
-      if (key === 'session') {
-        console.log('[Store.set] localStorage 저장:', val);
-      }
     } catch (e) {
       // localStorage 실패 → 메모리에만 저장
-      console.warn('[Store.set] localStorage 실패, 메모리에만 저장:', key);
       MemoryStore[key] = val;
     }
   },
@@ -170,9 +161,6 @@ const Store = {
       // localStorage 실패는 무시
     }
     delete MemoryStore[key];
-    if (key === 'session') {
-      console.log('[Store.remove] session 제거됨');
-    }
   }
 };
 
@@ -206,10 +194,7 @@ const PUBLIC_PAGES = ['index.html', 'manual.html', 'architecture.html', ''];
 function gateSessionOrRedirect() {
   const path = window.location.pathname.split('/').pop() || 'index.html';
   const isPublic = PUBLIC_PAGES.includes(path);
-  const isLoggedIn = Session.isLoggedIn();
-  console.log('[gateSessionOrRedirect]', { path, isPublic, isLoggedIn });
-  if (!isPublic && !isLoggedIn) {
-    console.warn('[gateSessionOrRedirect] 세션 없음 → redirect 파라미터로 이동:', path);
+  if (!isPublic && !Session.isLoggedIn()) {
     window.location.href = 'index.html?redirect=' + encodeURIComponent(path);
   }
 }
@@ -312,9 +297,6 @@ async function submitClinicLogin() {
     }
 
     const user = await res.json();
-    console.log('✅ API 응답:', user);
-
-    console.log('💾 Session.login 호출...');
     Session.login({
       userId: user.userId,
       name: user.name,
@@ -326,20 +308,14 @@ async function submitClinicLogin() {
       is_admin: user.is_admin
     });
 
-    console.log('✅ Session.login 완료. 저장된 세션:', Session.get());
-
     closeModal('loginModal');
 
     // redirect 파라미터 확인
     const params = new URLSearchParams(window.location.search);
     const redirectPage = params.get('redirect');
-    console.log('[submitClinicLogin] redirect 파라미터:', redirectPage);
-
     if (redirectPage) {
-      console.log('🔄 redirect 페이지로 이동:', redirectPage);
       window.location.href = redirectPage;
     } else {
-      console.log('🔄 페이지 새로고침 중...');
       location.reload();
     }
   } catch (e) {
