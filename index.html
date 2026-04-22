@@ -335,6 +335,19 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/common.js"></script>
+  <script>
+    // 강제 초기화: window.allClinics 선언 (let → var 호환성)
+    if (typeof window.allClinics === 'undefined') {
+      window.allClinics = [];
+      console.log('[force-init] window.allClinics 초기화됨');
+    }
+    // 병원 목록 즉시 로드
+    (async () => {
+      if (typeof loadClinicsList === 'function') {
+        await loadClinicsList();
+      }
+    })();
+  </script>
   <script src="js/supabase.js"></script>
   <script src="js/qlrcq-framework.js"></script>
   <script src="js/dental-engines.js"></script>
