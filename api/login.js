@@ -8,19 +8,17 @@ function sha256(str) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  // ===== DEBUG: 정확히 뭐가 들어오는가 =====
-  if (req.method === 'POST') {
-    return res.status(200).json({
-      _DEBUG: 'BODY_INSPECTION',
-      bodyDirect: req.body,
-      clinicNameReceived: req.body?.clinicName,
-      clinicNameExists: 'clinicName' in (req.body || {}),
-      emailReceived: req.body?.email,
-      passwordReceived: req.body?.password,
-      allKeys: Object.keys(req.body || {})
-    });
+  // ===== FIX: Vercel UTF-8 인코딩 문제 해결 =====
+  // clinicName이 latin1로 수신되면 utf8로 재인코딩
+  if (req.body?.clinicName) {
+    try {
+      const buf = Buffer.from(req.body.clinicName, 'latin1');
+      req.body.clinicName = buf.toString('utf8');
+    } catch (e) {
+      // 이미 정상이면 그대로 유지
+    }
   }
-  // ======================================
+  // =============================================
 
   // 모든 환경 변수 로깅 (진단용)
   const allEnvKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE')).join(', ');
