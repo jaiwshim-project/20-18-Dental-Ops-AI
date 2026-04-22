@@ -223,9 +223,69 @@
           <main>
             <section class="manual-section" id="sec-start">
               <h2>1. 시작하기</h2>
-              <p>Dental Ops AI는 치과 상담실장·원장·코디가 함께 쓰는 운영 자동화 플랫폼입니다. 로그인만 하면 바로 사용할 수 있습니다.</p>
-              <h3>1.1 로그인</h3>
-              <p>홈 우측 상단의 <strong>로그인</strong> 버튼을 눌러 이름과 역할을 선택합니다. 역할(원장/상담실장/코디/위생사/관리자)에 따라 접근 가능한 메뉴가 달라집니다.</p>
+              <p>Dental Ops AI는 치과 상담실장·원장·코디가 함께 쓰는 운영 자동화 플랫폼입니다. 3단계(병원 회원가입 → 로그인 → 대시보드 진입)만으로 시작할 수 있습니다.</p>
+
+              <h3 style="font-size:1.6rem; color:var(--primary); margin-bottom:8px;">🌟 1단계 · 병원 회원가입</h3>
+              <p style="font-size:1.05rem; color:var(--text-secondary); margin-bottom:24px;"><strong>새로운 병원 계정을 생성하고 대시보드에 진입하는 첫 번째 단계입니다.</strong></p>
+
+              <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--radius-lg); padding:28px; margin-bottom:24px;">
+                <img src="img/1.병원가입.png" alt="병원 회원가입 화면" style="width:100%; max-width:700px; border-radius:var(--radius-md); border:2px solid var(--gray-300); margin-bottom:24px; display:block;">
+
+                <h4 style="font-size:1.1rem; margin-bottom:16px; color:var(--gray-900);">📋 회원가입 진행 방법</h4>
+                <ol style="margin-bottom:0; font-size:0.95rem; line-height:1.9;">
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">홈 페이지 접속</strong> → 우측에 "회원가입" 탭을 클릭합니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">병원명 입력</strong> (예: "스마일 치과") — 향후 직원들이 로그인할 때 선택합니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">대표원장 이름 입력</strong> — 원장의 실명을 정확히 입력합니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">지역 선택</strong> — 병원 위치의 시/도 및 구를 선택합니다 (예: "서울 강남구").</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">비밀번호 설정 (숫자 6자리)</strong> — 예: 123456, 654321. 직원들이 로그인할 때 공유하는 병원 공유 비밀번호입니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">[병원 가입하기] 버튼 클릭</strong> — API 호출 후 병원 계정이 자동 생성됩니다.</li>
+                  <li style="margin-bottom:0;"><strong style="color:var(--success);">✅ 회원가입 완료</strong> — 자동으로 로그인 상태로 전환되어 상담 AI 대시보드가 바로 열립니다.</li>
+                </ol>
+              </div>
+
+              <div style="padding:16px 20px; background:var(--success-light-bg); border-left:4px solid var(--success); border-radius:var(--radius-sm); margin-bottom:20px; font-size:0.95rem;">
+                <strong style="color:var(--success-text); display:block; margin-bottom:6px;">💡 팁: 비밀번호 설정</strong>
+                <span style="color:var(--text-secondary);">비밀번호는 모든 직원이 공유하는 비밀번호이므로 복잡할 필요가 없습니다. 쉬운 숫자 조합(예: 000000, 123456)으로 설정해도 괜찮습니다. 비밀번호는 나중에 언제든 변경 가능합니다.</span>
+              </div>
+
+              <h3 style="font-size:1.6rem; color:var(--primary); margin-bottom:8px;">🔐 2단계 · 로그인</h3>
+              <p style="font-size:1.05rem; color:var(--text-secondary); margin-bottom:24px;"><strong>직원이 이메일과 병원 비밀번호로 로그인하여 상담 AI 대시보드에 진입하는 단계입니다.</strong></p>
+
+              <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--radius-lg); padding:28px; margin-bottom:24px;">
+                <img src="img/2.로그인.png" alt="로그인 화면" style="width:100%; max-width:700px; border-radius:var(--radius-md); border:2px solid var(--gray-300); margin-bottom:24px; display:block;">
+
+                <h4 style="font-size:1.1rem; margin-bottom:16px; color:var(--gray-900);">📋 로그인 진행 방법</h4>
+                <ol style="margin-bottom:0; font-size:0.95rem; line-height:1.9;">
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">홈 페이지 접속</strong> → "로그인" 탭이 기본 활성화됩니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">병원명 입력창 클릭</strong> → 가입된 모든 병원 목록이 자동으로 드롭다운됩니다. 자신의 병원명을 선택합니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">🔍 검색 기능</strong> — 병원명을 부분으로 입력해도 자동 필터링됩니다. 예: "스마일" 입력 → "스마일 치과", "스마일 미소 치과" 등이 검색됩니다.</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">이메일 입력</strong> — 개인 이메일을 입력합니다 (예: "kim@example.com", "lee@smileclinic.com").</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">비밀번호 입력 (숫자 6자리)</strong> — 병원 회원가입 시 설정한 공유 비밀번호를 입력합니다 (예: 123456).</li>
+                  <li style="margin-bottom:12px;"><strong style="color:var(--primary);">[🔐 로그인] 버튼 클릭</strong> — API 검증 후 로그인 진행됩니다.</li>
+                  <li style="margin-bottom:0;"><strong style="color:var(--success);">✅ 로그인 완료</strong> — 세션이 저장되고 상담 AI 대시보드가 바로 열립니다. 브라우저를 새로고침해도 로그인 상태가 유지됩니다.</li>
+                </ol>
+              </div>
+
+              <div style="padding:16px 20px; background:var(--info-light-bg); border-left:4px solid var(--info); border-radius:var(--radius-sm); margin-bottom:20px; font-size:0.95rem;">
+                <strong style="color:var(--info-text); display:block; margin-bottom:6px;">ℹ️ 참고: 공유 비밀번호 시스템</strong>
+                <span style="color:var(--text-secondary);">같은 병원의 모든 직원은 <strong>동일한 비밀번호</strong>를 사용합니다. 하지만 각자 <strong>다른 이메일</strong>로 로그인하므로 개인별 활동(상담 기록, 훈련 결과, 의견)이 자동으로 추적되고 병원 관리자가 확인할 수 있습니다.</span>
+              </div>
+
+              <h3>1.3 기본 메뉴 구성</h3>
+              <p>로그인 후 왼쪽 사이드바에서 8가지 주요 메뉴에 접근할 수 있습니다:</p>
+              <ul>
+                <li><strong>📱 상담 AI</strong> — 환자 상담 녹음, 실시간 AI 코칭</li>
+                <li><strong>🎯 전환 전략</strong> — 환자 반대 상황 극복 전략</li>
+                <li><strong>⚙️ 자동화</strong> — 신환 환영, 상담 후속, 재방문 유도 메시지</li>
+                <li><strong>👥 환자 관리</strong> — 환자 정보 CRUD, 상태 추적</li>
+                <li><strong>📊 KPI 대시보드</strong> — 전환율, 재방문율, AI 활용률 모니터링</li>
+                <li><strong>🎓 교육/훈련</strong> — 상담 롤플레이 시뮬레이션</li>
+                <li><strong>📈 인사이트 리포트</strong> — 주간/월간 경영 분석 리포트</li>
+                <li><strong>👨‍💼 CEO 대시보드</strong> — 원장/관리자 전용 전략 조언</li>
+              </ul>
+              <div style="padding:14px 18px; background:var(--danger-light-bg); border-left:4px solid var(--danger); border-radius:var(--radius-sm);">
+                <strong style="color:var(--danger-text);">🏢 병원 관리:</strong> <span style="color:var(--text-secondary);">사이드바 우측 상단에 <strong>[⚙️ 병원 관리]</strong> 버튼이 있습니다. 직원 추가, 비밀번호 변경 등의 관리 작업은 여기서 수행합니다.</span>
+              </div>
             </section>
 
             <section class="manual-section" id="sec-engines">
@@ -306,10 +366,10 @@
               <table style="width:100%; border-collapse:collapse; margin:14px 0; font-size:0.92rem;">
                 <thead>
                   <tr style="background:#F0F9FF;">
-                    <th style="padding:10px; text-align:left; border-bottom:1px solid #BFDBFE;">#</th>
-                    <th style="padding:10px; text-align:left; border-bottom:1px solid #BFDBFE;">단계</th>
-                    <th style="padding:10px; text-align:left; border-bottom:1px solid #BFDBFE;">영문</th>
-                    <th style="padding:10px; text-align:left; border-bottom:1px solid #BFDBFE;">핵심</th>
+                    <th style="padding:10px; text-align:left; border-bottom:1px solid var(--info-light-bg);">#</th>
+                    <th style="padding:10px; text-align:left; border-bottom:1px solid var(--info-light-bg);">단계</th>
+                    <th style="padding:10px; text-align:left; border-bottom:1px solid var(--info-light-bg);">영문</th>
+                    <th style="padding:10px; text-align:left; border-bottom:1px solid var(--info-light-bg);">핵심</th>
                   </tr>
                 </thead>
                 <tbody>

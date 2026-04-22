@@ -47,6 +47,11 @@
   --danger-bg: #FEE2E2;
   --info-bg: #DBEAFE;
 
+  /* Semantic light bg (더 밝은 배경) */
+  --info-light-bg: #BFDBFE;
+  --success-light-bg: #DCFCE7;
+  --danger-light-bg: #FEF2F2;
+
   /* Semantic border (라이트 테두리) */
   --success-border: #A7F3D0;
   --warning-border: #FCD34D;

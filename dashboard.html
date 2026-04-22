@@ -463,7 +463,7 @@
       badge.id = 'dataSourceBadge';
       badge.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:var(--radius-full); font-size:0.72rem; font-weight:800; letter-spacing:0.04em; margin-bottom:14px;';
       if (currentData.isLive) {
-        badge.style.background = '#DCFCE7';
+        badge.style.background = 'var(--success-light-bg)';
         badge.style.color = '#14532D';
         badge.innerHTML = '<span style="width:8px; height:8px; border-radius:50%; background:var(--success); display:inline-block; animation:pulse 1.6s infinite;"></span> 🔴 LIVE · Supabase';
       } else {
