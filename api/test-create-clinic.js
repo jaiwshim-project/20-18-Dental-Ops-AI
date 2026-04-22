@@ -30,38 +30,77 @@ module.exports = async (req, res) => {
       tier: 'free'
     };
 
-    console.log('[test-create-clinic] 테스트 clinic 생성 시도:', {
+    console.log('[test-create-clinic] 테스트 clinic 처리 시작:', {
       name: testClinic.name,
       nameHex: Buffer.from(testClinic.name).toString('hex')
     });
 
-    // 기존 clinic 확인
-    const { data: existing, error: checkError } = await sb
+    // 1️⃣ 모든 clinic 조회
+    console.log('[test-create-clinic] 1️⃣ 모든 clinic 조회 중...');
+    const { data: allClinics, error: listError } = await sb
       .from('clinics')
-      .select('id, name')
-      .eq('name', testClinic.name)
-      .maybeSingle();
+      .select('id, name');
 
-    if (checkError) {
-      console.error('[test-create-clinic] 확인 오류:', checkError.message);
-      throw new Error(`확인 오류: ${checkError.message}`);
+    if (listError) {
+      throw new Error(`조회 오류: ${listError.message}`);
     }
 
-    if (existing) {
-      console.log('[test-create-clinic] ✅ clinic 이미 존재:', existing.id);
+    console.log('[test-create-clinic] 조회된 clinic 수:', allClinics?.length || 0);
+    if (allClinics && allClinics.length > 0) {
+      console.log('[test-create-clinic] clinic 목록:', allClinics.map(c => ({
+        id: c.id,
+        name: c.name,
+        hex: Buffer.from(c.name).toString('hex')
+      })));
+    }
+
+    // 2️⃣ 정확한 이름 또는 정규화된 이름으로 기존 clinic 찾기
+    console.log('[test-create-clinic] 2️⃣ 기존 clinic 검색 중...');
+    const normalizedSearch = testClinic.name.toLowerCase().trim();
+
+    let existingClinic = null;
+    if (allClinics) {
+      existingClinic = allClinics.find(c =>
+        c.name === testClinic.name ||
+        c.name.toLowerCase().trim() === normalizedSearch
+      );
+    }
+
+    if (existingClinic) {
+      console.log('[test-create-clinic] ✅ clinic 이미 존재:', existingClinic.id);
+
+      // 기존 clinic의 이름을 올바르게 업데이트
+      if (existingClinic.name !== testClinic.name) {
+        console.log('[test-create-clinic] 3️⃣ clinic 이름 업데이트 중...');
+        const { error: updateError } = await sb
+          .from('clinics')
+          .update({ name: testClinic.name })
+          .eq('id', existingClinic.id);
+
+        if (updateError) {
+          console.error('[test-create-clinic] 이름 업데이트 오류:', updateError.message);
+        } else {
+          console.log('[test-create-clinic] ✅ clinic 이름 업데이트 완료');
+        }
+      }
+
       return res.status(200).json({
         success: true,
-        message: '테스트 clinic이 이미 존재합니다',
-        clinic: existing,
+        message: 'clinic 준비 완료',
+        clinic: {
+          id: existingClinic.id,
+          name: testClinic.name
+        },
         testData: {
-          name: testClinic.name,
+          name: '디지털스마일치과',
           email: 'digitalsmiledc@gmail.com',
           password: '036323'
         }
       });
     }
 
-    // clinic 생성
+    // 3️⃣ clinic이 없으면 생성
+    console.log('[test-create-clinic] 3️⃣ clinic 생성 중...');
     const { data: clinic, error: insertError } = await sb
       .from('clinics')
       .insert([testClinic])
@@ -75,7 +114,7 @@ module.exports = async (req, res) => {
 
     console.log('[test-create-clinic] ✅ clinic 생성 완료:', clinic.id);
 
-    // 테스트 user 생성
+    // 4️⃣ 테스트 user 생성
     const { data: user, error: userError } = await sb
       .from('users')
       .insert([{
@@ -91,14 +130,13 @@ module.exports = async (req, res) => {
 
     if (userError) {
       console.error('[test-create-clinic] user 생성 오류:', userError.message);
-      // user 생성 실패해도 clinic은 생성됨
     } else {
       console.log('[test-create-clinic] ✅ user 생성 완료:', user.id);
     }
 
     return res.status(200).json({
       success: true,
-      message: '✅ 테스트 clinic 생성 완료',
+      message: '✅ clinic 준비 완료',
       clinic: {
         id: clinic.id,
         name: clinic.name
