@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=3600'); // 1시간 캐시
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // 캐시 비활성화
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'POST only' });
