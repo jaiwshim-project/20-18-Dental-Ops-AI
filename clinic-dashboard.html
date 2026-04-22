@@ -442,10 +442,11 @@
     let isClinicAuthVerified = false;
 
     function checkAuth() {
+      console.log('[checkAuth] 실행됨');
       const session = Session.get();
 
       console.log('[checkAuth] 세션 상태:', {
-        session: session,
+        session: !!session,
         clinic_id: session?.clinic_id,
         timestamp: new Date().toISOString(),
         localStorage_keys: Object.keys(localStorage).filter(k => k.startsWith('dops_'))
@@ -463,20 +464,21 @@
       clinicId = session.clinic_id;
 
       // 병원 관리자 인증 모달 표시 - 콘텐츠 먼저 숨기기
-      setTimeout(() => {
-        const container = document.querySelector('.clinic-container');
-        if (container) {
-          container.style.display = 'none';
-          console.log('[checkAuth] 콘텐츠 숨김');
-        }
-        const modal = document.getElementById('clinicAuthModal');
-        if (modal) {
-          modal.classList.add('active');
-          console.log('[checkAuth] 모달 표시 (active 클래스 추가)');
-        } else {
-          console.error('[checkAuth] clinicAuthModal 요소 없음');
-        }
-      }, 100);
+      const container = document.querySelector('.clinic-container');
+      if (container) {
+        container.style.display = 'none';
+        console.log('[checkAuth] 콘텐츠 숨김');
+      } else {
+        console.warn('[checkAuth] .clinic-container 요소 없음');
+      }
+
+      const modal = document.getElementById('clinicAuthModal');
+      if (modal) {
+        modal.classList.add('active');
+        console.log('[checkAuth] ✅ 모달 표시 (active 클래스 추가)');
+      } else {
+        console.error('[checkAuth] ❌ clinicAuthModal 요소 없음!');
+      }
     }
 
     async function verifyClinicAdmin() {
@@ -485,50 +487,69 @@
       const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`authPwd${i}`)?.value || '').join('');
       const errorEl = document.getElementById('authError');
 
+      console.log('[verifyClinicAdmin] 인증 시도:', { clinicName, email, pwdLength: pwd.length });
+
       if (!clinicName || !email || pwd.length !== 6) {
         errorEl.style.display = 'block';
         errorEl.textContent = '모든 필드를 입력하세요';
+        console.warn('[verifyClinicAdmin] 입력값 검증 실패');
         return;
       }
 
       if (!/^\d{6}$/.test(pwd)) {
         errorEl.style.display = 'block';
         errorEl.textContent = '비밀번호는 숫자 6자리입니다';
+        console.warn('[verifyClinicAdmin] 비밀번호 형식 오류');
         return;
       }
 
       try {
         errorEl.style.display = 'none';
+
+        console.log('[verifyClinicAdmin] /api/login 호출 중...');
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clinicName, email, password: pwd })
         });
 
+        console.log('[verifyClinicAdmin] API 응답 상태:', res.status);
+
         if (!res.ok) {
-          const err = await res.json();
+          const err = await res.json().catch(() => ({}));
+          const errMsg = err.error || '인증 실패. 정보를 다시 확인해주세요.';
           errorEl.style.display = 'block';
-          errorEl.textContent = err.error || '인증 실패. 정보를 다시 확인해주세요.';
+          errorEl.textContent = errMsg;
+          console.error('[verifyClinicAdmin] 인증 실패:', errMsg);
           return;
         }
 
         const user = await res.json();
         isClinicAuthVerified = true;
 
+        console.log('[verifyClinicAdmin] ✅ 인증 성공');
+
         // 인증 성공 → 콘텐츠 표시
         const modal = document.getElementById('clinicAuthModal');
-        if (modal) modal.classList.remove('active');
+        if (modal) {
+          modal.classList.remove('active');
+          console.log('[verifyClinicAdmin] 모달 닫음');
+        }
 
         const container = document.querySelector('.clinic-container');
-        if (container) container.style.display = 'block';
+        if (container) {
+          container.style.display = 'block';
+          console.log('[verifyClinicAdmin] 대시보드 표시');
+        }
 
         showToast('병원 관리자 인증 성공', 'success');
-        console.log('[verifyClinicAdmin] ✅ 인증 완료');
 
         // 인증 후 병원 정보 로드
+        console.log('[verifyClinicAdmin] 병원 정보 로드 시작');
         await loadClinicInfo();
+        console.log('[verifyClinicAdmin] 병원 정보 로드 완료');
       } catch (e) {
-        console.error('[verifyClinicAdmin]', e);
+        console.error('[verifyClinicAdmin] 예외 발생:', e);
         errorEl.style.display = 'block';
         errorEl.textContent = '오류: ' + e.message;
       }
@@ -536,21 +557,53 @@
 
     async function loadClinicInfo() {
       try {
+        console.log('[loadClinicInfo] 시작. clinicId:', clinicId);
+
+        if (!clinicId) {
+          console.error('[loadClinicInfo] clinicId 없음');
+          showToast('병원 ID가 없습니다', 'error');
+          return;
+        }
+
         const res = await fetch(`/api/clinic-info?id=${clinicId}`);
+        console.log('[loadClinicInfo] API 응답 상태:', res.status);
+
         if (!res.ok) {
-          showToast('병원 정보 로드 실패', 'error');
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData.error || `API 오류 (${res.status})`;
+          console.error('[loadClinicInfo] 병원 정보 로드 실패:', errMsg);
+          showToast('병원 정보 로드 실패: ' + errMsg, 'error');
           return;
         }
 
         clinicData = await res.json();
-        document.getElementById('clinicTitle').textContent = `${clinicData.name} 관리 대시보드`;
-        document.getElementById('clinicName').value = clinicData.name;
-        document.getElementById('directorName').value = clinicData.director_name || '-';
-        document.getElementById('region').value = clinicData.region || '-';
-        document.getElementById('createdAt').value = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
-        document.getElementById('tierDisplay').textContent = clinicData.tier.toUpperCase();
-        document.getElementById('tierInfo').textContent = clinicData.tier.toUpperCase();
-        document.getElementById('createdAtDisplay').textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
+        console.log('[loadClinicInfo] 병원 데이터 로드 완료:', clinicData.name);
+
+        // 대시보드 제목 업데이트
+        const titleEl = document.getElementById('clinicTitle');
+        if (titleEl) titleEl.textContent = `${clinicData.name} 관리 대시보드`;
+
+        // 병원 정보 표시
+        const clinicNameEl = document.getElementById('clinicName');
+        if (clinicNameEl) clinicNameEl.value = clinicData.name;
+
+        const directorEl = document.getElementById('directorName');
+        if (directorEl) directorEl.value = clinicData.director_name || '-';
+
+        const regionEl = document.getElementById('region');
+        if (regionEl) regionEl.value = clinicData.region || '-';
+
+        const createdEl = document.getElementById('createdAt');
+        if (createdEl) createdEl.value = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
+
+        const tierDisplayEl = document.getElementById('tierDisplay');
+        if (tierDisplayEl) tierDisplayEl.textContent = clinicData.tier.toUpperCase();
+
+        const tierInfoEl = document.getElementById('tierInfo');
+        if (tierInfoEl) tierInfoEl.textContent = clinicData.tier.toUpperCase();
+
+        const createdDisplayEl = document.getElementById('createdAtDisplay');
+        if (createdDisplayEl) createdDisplayEl.textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
 
         // 현재 비밀번호 표시
         if (clinicData.password) {
@@ -562,6 +615,7 @@
         }
 
         loadStaffList();
+        console.log('[loadClinicInfo] ✅ 완료');
       } catch (e) {
         console.error('[loadClinicInfo]', e);
         showToast('오류: ' + e.message, 'error');
