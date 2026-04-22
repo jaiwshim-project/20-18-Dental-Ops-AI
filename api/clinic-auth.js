@@ -56,10 +56,23 @@ module.exports = async (req, res) => {
     console.log('[clinic-auth] Supabase 조회:', { clinicFound: !!clinic, error: clinicError?.message });
 
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
-    if (!clinic) return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+    if (!clinic) {
+      // 모든 clinic 재조회 (진단용)
+      const { data: all } = await supabase.from('clinics').select('name');
+      console.log('[clinic-auth] clinic 없음 - available:', all?.map(c => c.name));
+      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+    }
+
+    // 비밀번호 검증 상세 로깅
+    console.log('[clinic-auth] 비밀번호 검증:', {
+      input: password,
+      inputHash: passwordHash.substring(0, 20),
+      storedHash: clinic.password_hash.substring(0, 20),
+      match: clinic.password_hash === passwordHash
+    });
 
     if (clinic.password_hash !== passwordHash) {
-      console.log('[clinic-auth] 비밀번호 불일치');
+      console.log('[clinic-auth] ❌ 비밀번호 불일치');
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
 
