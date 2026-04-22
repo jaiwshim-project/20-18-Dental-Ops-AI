@@ -290,28 +290,22 @@ function switchAuthTab(tab) {
 // ============================================================
 // 병원명 자동완성 및 검색
 // ============================================================
-var allClinics = [];  // 전역 변수
-window.allClinics = [];  // window에 직접 할당
+// 주의: let 사용 금지! var 필수 (window 객체 attach)
+var allClinics = [];
+
+// 초기화: window에 직접 할당 (let/var 호환성)
+window.allClinics = [];
 
 async function loadClinicsList() {
   try {
-    console.log('[loadClinicsList] 요청 시작');
     const res = await fetch('/api/clinics');
-    console.log('[loadClinicsList] 응답:', res.status, res.ok);
-    if (!res.ok) {
-      console.warn('[loadClinicsList] 응답 실패:', res.status);
-      return;
-    }
+    if (!res.ok) return;
     const data = await res.json();
-    console.log('[loadClinicsList] 데이터 수신:', data.clinics?.length, '개');
 
-    // 로컬 변수와 window 객체에 모두 할당
-    allClinics = data.clinics || [];
+    // window 객체에 직접 할당 (로컬 변수 대신)
     window.allClinics = data.clinics || [];
-
-    console.log('[loadClinicsList] ✅ 완료! allClinics:', window.allClinics.length, '개');
   } catch (e) {
-    console.error('[loadClinicsList] ❌ 에러:', e.message);
+    console.error('[loadClinicsList]', e);
   }
 }
 
