@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
 
     const { error } = await supabase
       .from('clinics')
-      .update({ password_hash: passwordHash })
+      .update({ password_hash: passwordHash, password })
       .eq('id', clinicId);
 
     if (error) throw error;

@@ -422,6 +422,15 @@
         document.getElementById('tierInfo').textContent = clinicData.tier.toUpperCase();
         document.getElementById('createdAtDisplay').textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
 
+        // 현재 비밀번호 표시
+        if (clinicData.password) {
+          const pwdChars = clinicData.password.split('');
+          for (let i = 1; i <= 6; i++) {
+            const elem = document.getElementById(`currentPwd${i}`);
+            if (elem) elem.value = pwdChars[i - 1] || '';
+          }
+        }
+
         loadStaffList();
       } catch (e) {
         console.error('[loadClinicInfo]', e);
@@ -634,8 +643,11 @@
 
       if (isPasswordDisplaying) {
         // 숫자 표시
-        for (let i = 1; i <= 6; i++) {
-          document.getElementById(`currentPwd${i}`).value = '0';
+        if (clinicData?.password) {
+          const pwdChars = clinicData.password.split('');
+          for (let i = 1; i <= 6; i++) {
+            document.getElementById(`currentPwd${i}`).value = pwdChars[i - 1] || '';
+          }
         }
         btn.textContent = '숨김';
       } else {
@@ -682,12 +694,21 @@
         }
 
         showToast('비밀번호가 변경되었습니다', 'success');
+
+        // 현재 비밀번호 업데이트
+        clinicData.password = pwd;
+        const pwdChars = pwd.split('');
+        for (let i = 1; i <= 6; i++) {
+          document.getElementById(`currentPwd${i}`).value = pwdChars[i - 1] || '';
+        }
+
         document.getElementById('newPwd1').value = '';
         document.getElementById('newPwd2').value = '';
         document.getElementById('newPwd3').value = '';
         document.getElementById('newPwd4').value = '';
         document.getElementById('newPwd5').value = '';
         document.getElementById('newPwd6').value = '';
+        isPasswordDisplaying = false;
         togglePasswordForm();
       } catch (e) {
         console.error('[updatePassword]', e);

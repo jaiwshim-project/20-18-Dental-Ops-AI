@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
   try {
     const { data: clinic, error } = await supabase
       .from('clinics')
-      .select('*')
+      .select('id, name, director_name, region, password, tier, created_at')
       .eq('id', id)
       .single();
 
