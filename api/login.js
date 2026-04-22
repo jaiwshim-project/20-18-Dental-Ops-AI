@@ -59,29 +59,45 @@ module.exports = async (req, res) => {
     const envOk = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
     console.log('[login] 환경:', { envOk, urlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL, keyExists: !!process.env.SUPABASE_SERVICE_ROLE_KEY });
 
-    // 모든 clinic 조회
+    // 모든 clinic 조회 (진단용)
     const { data: allClinics, error: allError } = await supabase
       .from('clinics')
       .select('id, name, password_hash')
       .limit(10);
 
     console.log('[login] 전체 clinic:', { count: allClinics?.length, error: allError?.message });
-    if (allClinics?.length > 0) {
-      allClinics.forEach(c => console.log(`  - [${c.id}] ${c.name}`));
-    }
+    allClinics?.forEach(c => {
+      console.log(`  - clinic: "${c.name}" (length: ${c.name.length})`);
+      console.log(`    hex: ${Buffer.from(c.name).toString('hex')}`);
+    });
+
+    // 실제 쿼리용 clinicName 준비
+    const trimmedName = clinicName.trim();
+    console.log('[login] 검색 대상:', {
+      input: clinicName,
+      trimmed: trimmedName,
+      trimmedLength: trimmedName.length,
+      trimmedHex: Buffer.from(trimmedName).toString('hex')
+    });
 
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
       .select('id, password_hash, tier')
-      .eq('name', clinicName.trim())
+      .eq('name', trimmedName)
       .maybeSingle();
 
     console.log('[login] Clinic 조회:', {
-      query: clinicName.trim(),
+      query: trimmedName,
       found: !!clinic,
       clinicId: clinic?.id,
       error: clinicError?.message
     });
+
+    // 수동 검색 (문제 해결용)
+    if (!clinic && allClinics?.length > 0) {
+      const manualFound = allClinics.find(c => c.name === trimmedName);
+      console.log('[login] 수동 검색:', { found: !!manualFound });
+    }
 
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
     if (!clinic) {
