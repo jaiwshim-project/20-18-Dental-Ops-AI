@@ -8,6 +8,16 @@ function sha256(str) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
+  // 📊 진단: 요청 정보
+  console.log('[API_LOGIN_DEBUG]', {
+    method: req.method,
+    receivedClinicName: req.body?.clinicName,
+    receivedEmail: req.body?.email,
+    receivedPassword: req.body?.password,
+    hasURL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  });
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -41,10 +51,20 @@ module.exports = async (req, res) => {
       .eq('id', CLINIC_ID)
       .maybeSingle();
 
+    console.log('[API_LOGIN_DEBUG] clinic query:', { clinic, clinicError });
+
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
-    if (!clinic) return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+    if (!clinic) return res.status(401).json({ 
+      error: '병원명 또는 비밀번호가 틀렸습니다',
+      _debug: { clinicFound: false, CLINIC_ID }
+    });
 
     const passwordHash = sha256(password);
+    console.log('[API_LOGIN_DEBUG] password check:', {
+      inputHash: passwordHash,
+      storedHash: clinic.password_hash,
+      match: clinic.password_hash === passwordHash
+    });
 
     if (clinic.password_hash !== passwordHash) {
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
@@ -56,6 +76,8 @@ module.exports = async (req, res) => {
       .eq('email', email.trim())
       .eq('clinic_id', clinic.id)
       .maybeSingle();
+
+    console.log('[API_LOGIN_DEBUG] user query:', { user, userError });
 
     if (userError) throw new Error(`직원 조회: ${userError.message}`);
 
@@ -76,6 +98,7 @@ module.exports = async (req, res) => {
 
       if (insertError) throw new Error(`직원 등록: ${insertError.message}`);
       userData = newUser;
+      console.log('[API_LOGIN_DEBUG] user created:', userData);
     } else {
       const { error: updateError } = await supabase
         .from('users')
@@ -83,9 +106,10 @@ module.exports = async (req, res) => {
         .eq('id', user.id);
 
       if (updateError) throw new Error(`로그인 업데이트: ${updateError.message}`);
+      console.log('[API_LOGIN_DEBUG] user updated:', user.id);
     }
 
-    res.status(200).json({
+    const response = {
       success: true,
       userId: userData.id,
       name: userData.name,
@@ -95,10 +119,16 @@ module.exports = async (req, res) => {
       clinic_id: clinic.id,
       tier: clinic.tier,
       is_admin: userData.is_admin || false
-    });
+    };
+
+    console.log('[API_LOGIN_DEBUG] success response:', response);
+    res.status(200).json(response);
 
   } catch (error) {
-    console.error('[login]', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('[login] ERROR:', error);
+    res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      _debug: error.message
+    });
   }
 };
