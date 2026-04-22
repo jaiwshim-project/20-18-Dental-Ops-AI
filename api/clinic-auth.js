@@ -6,12 +6,24 @@ function sha256(str) {
 }
 
 module.exports = async (req, res) => {
-  // Vercel UTF-8 인코딩 명시
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // === DEBUG: request body 그대로 반환 ===
+  return res.status(200).json({
+    debug: 'REQUEST_BODY',
+    bodyRaw: req.body,
+    bodyType: typeof req.body,
+    bodyKeys: req.body ? Object.keys(req.body) : [],
+    clinicName: req.body?.clinicName,
+    clinicNameType: typeof req.body?.clinicName,
+    password: req.body?.password,
+    passwordType: typeof req.body?.password
+  });
+  // ====================================
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[clinic-auth] 환경 변수 미설정');
