@@ -395,16 +395,55 @@
   <!-- 나가기 버튼 -->
   <button class="exit-btn" onclick="exitClinic()">🚪 나가기</button>
 
+  <!-- 병원 관리자 인증 모달 -->
+  <div class="modal-overlay" id="clinicAuthModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gray-200); padding-bottom:12px;">
+        <h3 style="margin:0;">🔐 병원 관리 인증</h3>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('clinicAuthModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:20px;">
+          병원 관리에 접근하기 위해 인증이 필요합니다. 회원가입 시 입력한 정보를 입력해주세요.
+        </p>
+        <div class="form-group">
+          <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
+          <input type="text" class="form-input" id="authClinicName" placeholder="예: 디지털스마일치과" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
+          <input type="email" class="form-input" id="authClinicEmail" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></label>
+          <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
+            <input type="password" class="form-input" id="authPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="authPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="authPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="authPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="authPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="authPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+          </div>
+        </div>
+        <div id="authError" style="margin-top:12px; padding:10px 12px; background:var(--danger-bg); color:var(--danger); border-radius:6px; display:none; font-size:0.875rem;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('clinicAuthModal')">취소</button>
+        <button class="btn btn-primary" onclick="verifyClinicAdmin()">✓ 인증</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/supabase.js"></script>
   <script src="js/common.js"></script>
   <script>
     let clinicId = null;
     let clinicData = null;
+    let isClinicAuthVerified = false;
 
     function checkAuth() {
       const session = Session.get();
 
-      // [진단 로깅]
       console.log('[checkAuth] 세션 상태:', {
         session: session,
         clinic_id: session?.clinic_id,
@@ -414,15 +453,67 @@
 
       if (!session || !session.clinic_id) {
         console.warn('[checkAuth] ❌ 세션 없음 → index.html으로 리다이렉트');
-        // redirect 파라미터가 있으면 그것을 redirect로 사용
         const params = new URLSearchParams(window.location.search);
         const redirectPage = params.get('redirect') || 'dashboard.html';
         window.location.href = `index.html?redirect=${encodeURIComponent(redirectPage)}`;
         return;
       }
 
-      console.log('[checkAuth] ✅ 인증 완료 → clinic_id:', session.clinic_id);
+      console.log('[checkAuth] ✅ 세션 있음 → 병원 관리자 인증 모달 표시');
       clinicId = session.clinic_id;
+
+      // 병원 관리자 인증 모달 표시
+      document.querySelector('.clinic-container').style.display = 'none';
+      openModal('clinicAuthModal');
+    }
+
+    async function verifyClinicAdmin() {
+      const clinicName = document.getElementById('authClinicName').value.trim();
+      const email = document.getElementById('authClinicEmail').value.trim();
+      const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`authPwd${i}`)?.value || '').join('');
+      const errorEl = document.getElementById('authError');
+
+      if (!clinicName || !email || pwd.length !== 6) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = '모든 필드를 입력하세요';
+        return;
+      }
+
+      if (!/^\d{6}$/.test(pwd)) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = '비밀번호는 숫자 6자리입니다';
+        return;
+      }
+
+      try {
+        errorEl.style.display = 'none';
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicName, email, password: pwd })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          errorEl.style.display = 'block';
+          errorEl.textContent = err.error || '인증 실패. 정보를 다시 확인해주세요.';
+          return;
+        }
+
+        const user = await res.json();
+        isClinicAuthVerified = true;
+
+        // 인증 성공 → 콘텐츠 표시
+        closeModal('clinicAuthModal');
+        document.querySelector('.clinic-container').style.display = 'block';
+        showToast('병원 관리자 인증 성공', 'success');
+
+        console.log('[verifyClinicAdmin] ✅ 인증 완료');
+      } catch (e) {
+        console.error('[verifyClinicAdmin]', e);
+        errorEl.style.display = 'block';
+        errorEl.textContent = '오류: ' + e.message;
+      }
     }
 
     async function loadClinicInfo() {
