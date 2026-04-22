@@ -34,7 +34,15 @@ module.exports = async (req, res) => {
   const { clinicName, password } = body;
 
   if (!clinicName?.trim() || !password) {
-    return res.status(400).json({ error: '모든 필드가 필요합니다' });
+    return res.status(400).json({
+      error: '필드 누락',
+      debug: {
+        clinicNameType: typeof clinicName,
+        clinicNameValue: clinicName,
+        passwordType: typeof password,
+        passwordValue: password
+      }
+    });
   }
 
   if (!/^\d{6}$/.test(password)) {
