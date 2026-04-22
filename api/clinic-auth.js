@@ -93,7 +93,15 @@ module.exports = async (req, res) => {
 
     if (clinic.password_hash !== passwordHash) {
       console.log('[clinic-auth] ❌ 비밀번호 불일치');
-      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+      return res.status(401).json({
+        error: '병원명 또는 비밀번호가 틀렸습니다',
+        debug: {
+          input: password,
+          inputHash: passwordHash,
+          storedHash: clinic.password_hash,
+          match: false
+        }
+      });
     }
 
     console.log('[clinic-auth] 인증 성공:', clinic.id);
