@@ -9,12 +9,21 @@ module.exports = async (req, res) => {
   // Vercel UTF-8 인코딩 명시
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[login] 환경 변수 미설정', {
-      url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-    });
-    return res.status(500).json({ error: '서버 환경 변수 미설정' });
+  // 모든 환경 변수 로깅 (진단용)
+  const allEnvKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE')).join(', ');
+  const urlEnv = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const keyEnv = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  console.log('[login] ENV 상태:', {
+    hasUrl: !!urlEnv,
+    urlValue: urlEnv ? urlEnv.substring(0, 40) + '...' : 'MISSING',
+    hasKey: !!keyEnv,
+    keyValue: keyEnv ? keyEnv.substring(0, 20) + '...' : 'MISSING',
+    allKeys: allEnvKeys
+  });
+
+  if (!urlEnv || !keyEnv) {
+    console.error('[login] 환경 변수 미설정!');
+    return res.status(500).json({ error: '서버 환경 변수 미설정', debug: { hasUrl: !!urlEnv, hasKey: !!keyEnv } });
   }
 
   const supabase = createClient(
