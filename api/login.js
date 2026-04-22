@@ -35,9 +35,20 @@ module.exports = async (req, res) => {
   try {
     console.log('[login] 요청:', { clinicName: clinicName?.trim(), email, passwordLength: password?.length });
 
-    // Supabase 연결 확인
-    const { data: testClinic } = await supabase.from('clinics').select('count', { count: 'exact' });
-    console.log('[login] Supabase 연결:', { status: 'ok', clinicCount: testClinic?.length });
+    // 환경 변수 확인
+    const envOk = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log('[login] 환경:', { envOk, urlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL, keyExists: !!process.env.SUPABASE_SERVICE_ROLE_KEY });
+
+    // 모든 clinic 조회
+    const { data: allClinics, error: allError } = await supabase
+      .from('clinics')
+      .select('id, name, password_hash')
+      .limit(10);
+
+    console.log('[login] 전체 clinic:', { count: allClinics?.length, error: allError?.message });
+    if (allClinics?.length > 0) {
+      allClinics.forEach(c => console.log(`  - [${c.id}] ${c.name}`));
+    }
 
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
@@ -51,12 +62,12 @@ module.exports = async (req, res) => {
       clinicId: clinic?.id,
       error: clinicError?.message
     });
-    if (clinic) {
-      console.log('[login] 병원 데이터:', { id: clinic.id, hashLength: clinic.password_hash?.length });
-    }
 
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
-    if (!clinic) return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+    if (!clinic) {
+      console.log('[login] ❌ clinic 없음 - 사용 가능한 병원:', allClinics?.map(c => c.name).join(', '));
+      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+    }
 
     const passwordHash = sha256(password);
     console.log('[login] 비밀번호 검증:', {
