@@ -9,6 +9,7 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
+  res.setHeader("X-Claude-Login-V3", "20250422-001");
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
