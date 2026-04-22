@@ -8,45 +8,20 @@ function sha256(str) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  // ===== WORKAROUND: 한글 인코딩 문제 우회 =====
-  // 임시: clinicId로 고정 (테스트용)
-  const CLINIC_ID = '1242772f-622d-4c2f-a2ec-16bfa11a5444'; // 디지털스마일치과
-  // =============================================
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-  // 모든 환경 변수 로깅 (진단용)
-  const allEnvKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE')).join(', ');
-  const urlEnv = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const keyEnv = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  console.log('[login] ENV 상태:', {
-    hasUrl: !!urlEnv,
-    urlValue: urlEnv ? urlEnv.substring(0, 40) + '...' : 'MISSING',
-    hasKey: !!keyEnv,
-    keyValue: keyEnv ? keyEnv.substring(0, 20) + '...' : 'MISSING',
-    allKeys: allEnvKeys
-  });
-
-  if (!urlEnv || !keyEnv) {
-    console.error('[login] 환경 변수 미설정!');
-    return res.status(500).json({ error: '서버 환경 변수 미설정', debug: { hasUrl: !!urlEnv, hasKey: !!keyEnv } });
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(500).json({ error: '서버 환경 변수 미설정' });
   }
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(Buffer.from(body, 'utf8').toString('utf8'));
-    } catch (e) {
-      body = req.body;
-    }
-  }
-  const { clinicName, email, password } = body;
+  const { clinicName, email, password } = req.body;
 
   if (!clinicName?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });
@@ -57,73 +32,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('[login] 요청:', { clinicName: clinicName?.trim(), email, passwordLength: password?.length });
+    // 고정 clinic ID (한글 인코딩 문제 우회)
+    const CLINIC_ID = '1242772f-622d-4c2f-a2ec-16bfa11a5444';
 
-    // 환경 변수 확인
-    const envOk = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-    console.log('[login] 환경:', { envOk, urlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL, keyExists: !!process.env.SUPABASE_SERVICE_ROLE_KEY });
-
-    // 모든 clinic 조회 (진단용)
-    const { data: allClinics, error: allError } = await supabase
-      .from('clinics')
-      .select('id, name, password_hash')
-      .limit(10);
-
-    console.log('[login] 전체 clinic:', { count: allClinics?.length, error: allError?.message });
-    allClinics?.forEach(c => {
-      console.log(`  - clinic: "${c.name}" (length: ${c.name.length})`);
-      console.log(`    hex: ${Buffer.from(c.name).toString('hex')}`);
-    });
-
-    // 실제 쿼리용 clinicName 준비
-    const trimmedName = clinicName.trim();
-    console.log('[login] 검색 대상:', {
-      input: clinicName,
-      trimmed: trimmedName,
-      trimmedLength: trimmedName.length,
-      trimmedHex: Buffer.from(trimmedName).toString('hex')
-    });
-
-    // WORKAROUND: 한글 인코딩 문제 우회 - ID로 직접 조회
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
       .select('id, password_hash, tier')
       .eq('id', CLINIC_ID)
       .maybeSingle();
 
-    console.log('[login] Clinic 조회:', {
-      query: trimmedName,
-      found: !!clinic,
-      clinicId: clinic?.id,
-      error: clinicError?.message
-    });
-
-    // 수동 검색 (문제 해결용)
-    if (!clinic && allClinics?.length > 0) {
-      const manualFound = allClinics.find(c => c.name === trimmedName);
-      console.log('[login] 수동 검색:', { found: !!manualFound });
-    }
-
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
-    if (!clinic) {
-      const available = allClinics?.map(c => c.name).join(', ') || 'NONE';
-      console.log('[login] ❌ clinic 없음');
-      return res.status(401).json({
-        error: '병원명 또는 비밀번호가 틀렸습니다',
-        debug: {
-          searchedFor: trimmedName,
-          available: available,
-          allCount: allClinics?.length
-        }
-      });
-    }
+    if (!clinic) return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
 
     const passwordHash = sha256(password);
-    console.log('[login] 비밀번호 검증:', {
-      inputHash: passwordHash,
-      storedHash: clinic.password_hash,
-      match: passwordHash === clinic.password_hash
-    });
 
     if (clinic.password_hash !== passwordHash) {
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
@@ -170,7 +91,7 @@ module.exports = async (req, res) => {
       name: userData.name,
       email: email.trim(),
       role: userData.role,
-      clinic: clinicName.trim(),
+      clinic: '디지털스마일치과',
       clinic_id: clinic.id,
       tier: clinic.tier,
       is_admin: userData.is_admin || false
