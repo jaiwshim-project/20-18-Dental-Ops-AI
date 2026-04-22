@@ -3,6 +3,17 @@
 
 // === Enter 키 로그인 (간단함) ===
 document.addEventListener('DOMContentLoaded', () => {
+  // 병원명 입력 필드 Enter 키 리스너
+  const clinicNameInput = document.getElementById('clinicName');
+  if (clinicNameInput) {
+    clinicNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        console.log('⌨️ Enter 키 감지 → 병원명 확인');
+        confirmClinicAndProceed();
+      }
+    });
+  }
+
   // 비밀번호 입력 필드들에 Enter 키 리스너 추가
   ['loginPwd1', 'loginPwd2', 'loginPwd3', 'loginPwd4', 'loginPwd5', 'loginPwd6'].forEach(id => {
     const input = document.getElementById(id);
@@ -256,7 +267,15 @@ function switchAuthTab(tab) {
     loginContent.style.display = 'block';
     loginTab.style.background = 'var(--primary)';
     loginTab.style.color = 'white';
-    authBtn.style.display = 'block';
+    // 병원명 입력 여부에 따라 확인 또는 로그인 버튼 표시
+    const clinicNameInput = document.getElementById('clinicName');
+    if (clinicNameInput && clinicNameInput.value.trim()) {
+      clinicConfirmBtn.style.display = 'block';
+      authBtn.style.display = 'none';
+    } else {
+      clinicConfirmBtn.style.display = 'block'; // 항상 확인 버튼 표시
+      authBtn.style.display = 'none';
+    }
   } else if (tab === 'signup') {
     signupContent.style.display = 'block';
     signupTab.style.background = 'var(--primary)';
@@ -412,6 +431,34 @@ async function submitClinicLogin() {
     console.error('Login error:', e);
     showToast('로그인 중 오류가 발생했습니다', 'error');
   }
+}
+
+// 병원명 확인 후 로그인 폼으로 진행
+function confirmClinicAndProceed() {
+  const clinicName = (document.getElementById('clinicName')?.value || '').trim();
+
+  if (!clinicName) {
+    showToast('병원명을 입력하세요', 'warning');
+    return;
+  }
+
+  // 확인 버튼 숨기고 로그인 버튼 표시
+  const clinicConfirmBtn = document.getElementById('clinicConfirmBtn');
+  const authBtn = document.getElementById('authBtn');
+  if (clinicConfirmBtn) clinicConfirmBtn.style.display = 'none';
+  if (authBtn) authBtn.style.display = 'block';
+
+  // 드롭다운 닫기
+  const clinicDropdown = document.getElementById('clinicDropdown');
+  if (clinicDropdown) clinicDropdown.style.display = 'none';
+
+  // 이메일 입력 필드로 포커스 이동
+  setTimeout(() => {
+    const emailInput = document.getElementById('loginEmail');
+    if (emailInput) emailInput.focus();
+  }, 100);
+
+  console.log('[confirmClinicAndProceed] ✅ 병원명 확인:', clinicName);
 }
 
 // 병원 회원가입
@@ -767,7 +814,7 @@ function renderSidebar(activePage) {
 
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
-        <button class="btn btn-primary" id="clinicConfirmBtn" onclick="submitClinicLogin()" style="display:none;">✓ 확인</button>
+        <button class="btn btn-primary" id="clinicConfirmBtn" onclick="confirmClinicAndProceed()" style="display:none;">✓ 확인</button>
         <button class="btn btn-primary" id="authBtn" onclick="submitClinicLogin()" style="display:none;">🔐 로그인</button>
         <button class="btn btn-primary" id="registerBtn" onclick="submitClinicRegister()" style="display:none;">💾 병원 가입하기</button>
       </div>
