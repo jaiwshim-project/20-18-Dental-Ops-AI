@@ -182,9 +182,14 @@
 <body>
   <div class="clinic-container">
     <!-- 헤더 -->
-    <div class="clinic-header">
-      <h1 id="clinicTitle">병원 관리</h1>
-      <p>병원 정보, 직원 관리, 요금제 변경</p>
+    <div class="clinic-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <h1 id="clinicTitle">병원 관리</h1>
+        <p>병원 정보, 직원 관리, 요금제 변경</p>
+      </div>
+      <button class="btn" onclick="exitClinic()" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.5); padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.875rem; white-space:nowrap; margin-top:4px;">← 이전 단계</button>
+    </div>
+    <div style="margin-top:16px;">
       <div class="clinic-info">
         <div class="info-card">
           <div class="info-label">현재 요금제</div>
@@ -199,6 +204,7 @@
           <div class="info-value" id="createdAtDisplay">-</div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- 병원 정보 -->
