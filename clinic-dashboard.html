@@ -462,9 +462,21 @@
       console.log('[checkAuth] ✅ 세션 있음 → 병원 관리자 인증 모달 표시');
       clinicId = session.clinic_id;
 
-      // 병원 관리자 인증 모달 표시
-      document.querySelector('.clinic-container').style.display = 'none';
-      openModal('clinicAuthModal');
+      // 병원 관리자 인증 모달 표시 - 콘텐츠 먼저 숨기기
+      setTimeout(() => {
+        const container = document.querySelector('.clinic-container');
+        if (container) {
+          container.style.display = 'none';
+          console.log('[checkAuth] 콘텐츠 숨김');
+        }
+        const modal = document.getElementById('clinicAuthModal');
+        if (modal) {
+          modal.classList.add('active');
+          console.log('[checkAuth] 모달 표시 (active 클래스 추가)');
+        } else {
+          console.error('[checkAuth] clinicAuthModal 요소 없음');
+        }
+      }, 100);
     }
 
     async function verifyClinicAdmin() {
@@ -504,11 +516,17 @@
         isClinicAuthVerified = true;
 
         // 인증 성공 → 콘텐츠 표시
-        closeModal('clinicAuthModal');
-        document.querySelector('.clinic-container').style.display = 'block';
-        showToast('병원 관리자 인증 성공', 'success');
+        const modal = document.getElementById('clinicAuthModal');
+        if (modal) modal.classList.remove('active');
 
+        const container = document.querySelector('.clinic-container');
+        if (container) container.style.display = 'block';
+
+        showToast('병원 관리자 인증 성공', 'success');
         console.log('[verifyClinicAdmin] ✅ 인증 완료');
+
+        // 인증 후 병원 정보 로드
+        await loadClinicInfo();
       } catch (e) {
         console.error('[verifyClinicAdmin]', e);
         errorEl.style.display = 'block';
@@ -857,7 +875,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       checkAuth();
-      loadClinicInfo();
+      // loadClinicInfo()는 verifyClinicAdmin() 이후에 호출됨
     });
   </script>
 </body>
