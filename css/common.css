@@ -106,7 +106,7 @@
   /* Layout */
   --sidebar-w: 260px;
   --header-h: 64px;
-  --content-max: 900px;
+  --content-max: 700px;
 }
 
 html { font-size: 16px; scroll-behavior: smooth; }
