@@ -213,55 +213,6 @@ async function initAuthBridge() {
   });
 }
 
-async function applyAuthSession(authSession) {
-  const authUser = authSession.user;
-  const email = authUser.email;
-  if (!email) return;
-
-  // pending_login에서 입력 정보 복구 (매직링크 발송 당시 저장한 값)
-  const pending = Store.get('pending_login', null);
-  let name = pending?.name || email.split('@')[0];
-  let clinic = pending?.clinic || '';
-  let role = pending?.role || 'staff';
-
-  // public.users 테이블에 upsert — 최대 3회 재시도 (exponential backoff)
-  let userId = authUser.id;
-  let tier = 'free';
-  let is_admin = false;
-  let upsertOk = false;
-  let lastErr = null;
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const row = await SupabaseDB.upsertUser({ email, name, clinic, role });
-      if (row?.id) userId = row.id;
-      name = row?.name || name;
-      clinic = row?.clinic || clinic;
-      role = row?.role || role;
-      tier = row?.tier || 'free';
-      is_admin = row?.is_admin === true;
-      upsertOk = true;
-      break;
-    } catch (e) {
-      lastErr = e;
-      console.warn(`users upsert 시도 ${attempt}/3 실패`, e);
-      if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt)); // 0.5s, 1s
-    }
-  }
-
-  Session.login({ userId, name, role, clinic, email, tier, is_admin });
-  Store.remove('pending_login');
-
-  if (upsertOk) {
-    showToast(`${name}님 환영합니다 (${clinic})`, 'success');
-  } else {
-    console.error('applyAuthSession: upsertUser 3회 실패', lastErr);
-    showToast(
-      `로그인은 됐지만 프로필 동기화 실패 (${lastErr?.message || '오류'}). 새로고침 후 재시도하세요.`,
-      'error', 8000
-    );
-  }
-}
 
 // Enter 키로 로그인 제출
 document.addEventListener('keydown', (e) => {
@@ -269,7 +220,7 @@ document.addEventListener('keydown', (e) => {
     const loginModal = document.getElementById('loginModal');
     if (loginModal && loginModal.classList.contains('active')) {
       e.preventDefault();
-      smartLogin();
+      submitClinicLogin();
     }
   }
 });
@@ -499,69 +450,6 @@ function toggleSignupFields(e) {
 }
 
 // 스마트 로그인 — 등록된 이메일이면 즉시, 신규면 매직링크
-async function smartLogin() {
-  const email = (document.getElementById('loginEmail')?.value || '').trim();
-  if (!email) { showToast('이메일을 입력하세요', 'warning'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('이메일 형식이 올바르지 않습니다', 'warning'); return; }
-
-  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
-    showToast('Supabase 미연결 — 로그인 불가', 'error');
-    return;
-  }
-
-  const signupVisible = document.getElementById('signupFields')?.style.display !== 'none';
-  const btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '확인 중...'; }
-
-  try {
-    const existing = await SupabaseDB.getUserByEmail(email);
-
-    // 기존 사용자 + 신규 가입 폼 안 열린 상태 → 즉시 로그인
-    if (existing && !signupVisible) {
-      Session.login({
-        userId: existing.id,
-        name: existing.name || email.split('@')[0],
-        role: existing.role || '상담실장',
-        clinic: existing.clinic || '',
-        email: existing.email,
-        tier: existing.tier || 'free',
-        is_admin: existing.is_admin === true
-      });
-      closeModal('loginModal');
-      showToast(`${existing.name}님 환영합니다 (${existing.clinic || ''})`, 'success');
-      updateSessionUI();
-
-      const params = new URLSearchParams(location.search);
-      const redirect = params.get('redirect');
-      if (redirect) {
-        const safePath = /^[a-z0-9_-]+\.html$/i.test(redirect) ? redirect : 'index.html';
-        setTimeout(() => { location.href = safePath; }, 300);
-      }
-      return;
-    }
-
-    // 기존 사용자 + 신규 폼 열린 상태 → 간편 로그인 안내
-    if (existing && signupVisible) {
-      showToast('이미 가입된 이메일입니다. 가입 폼 닫고 즉시 로그인됩니다.', 'info');
-      toggleSignupFields();
-      return;
-    }
-
-    // 미등록 이메일 + 신규 폼 안 열린 상태 → 가입 폼 펼치기
-    if (!existing && !signupVisible) {
-      showToast('처음 사용하시는 이메일입니다. 가입 정보를 입력하세요.', 'info');
-      toggleSignupFields();
-      return;
-    }
-
-    // 이미 clinic 인증됨 → 로그인 완료 (demoLogin 제거됨)
-  } catch (e) {
-    console.error('로그인 확인 실패', e);
-    showToast('로그인 확인 실패: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🚀 로그인'; }
-  }
-}
 
 async function logoutAndRefresh() {
   try {
