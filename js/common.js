@@ -200,7 +200,7 @@ const Session = {
 };
 
 // 화이트리스트 (로그인 없이 공개)
-const PUBLIC_PAGES = ['index.html', 'manual.html', 'architecture.html', ''];
+const PUBLIC_PAGES = ['index.html', 'manual.html', 'architecture.html', 'clinic-dashboard.html', ''];
 
 function gateSessionOrRedirect() {
   const path = window.location.pathname.split('/').pop() || 'index.html';
