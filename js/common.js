@@ -169,9 +169,7 @@ const PUBLIC_PAGES = ['index.html', 'manual.html', 'architecture.html', ''];
 function gateSessionOrRedirect() {
   const path = window.location.pathname.split('/').pop() || 'index.html';
   const isPublic = PUBLIC_PAGES.includes(path);
-  console.log('[gateSessionOrRedirect]', { path, isPublic, isLoggedIn: Session.isLoggedIn() });
   if (!isPublic && !Session.isLoggedIn()) {
-    console.warn('[gateSessionOrRedirect] 로그인 필요 → redirect 파라미터로 이동:', path);
     window.location.href = 'index.html?redirect=' + encodeURIComponent(path);
   }
 }
