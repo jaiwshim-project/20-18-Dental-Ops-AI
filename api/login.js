@@ -31,12 +31,12 @@ module.exports = async (req, res) => {
 
   try {
     const sb = createClient(url, key);
-    const CLINIC_ID = '1242772f-622d-4c2f-a2ec-16bfa11a5444';
-    
+
+    // ✅ clinicName으로 병원 찾기
     const { data: clinic, error: cErr } = await sb
       .from('clinics')
       .select('*')
-      .eq('id', CLINIC_ID)
+      .eq('name', clinicName)
       .maybeSingle();
 
     if (cErr) throw new Error(`clinic: ${cErr.message}`);
