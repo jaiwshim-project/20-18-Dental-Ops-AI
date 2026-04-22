@@ -294,12 +294,19 @@ let allClinics = [];
 
 async function loadClinicsList() {
   try {
+    console.log('[loadClinicsList] 요청 시작');
     const res = await fetch('/api/clinics');
-    if (!res.ok) return;
+    console.log('[loadClinicsList] 응답:', res.status, res.ok);
+    if (!res.ok) {
+      console.warn('[loadClinicsList] 응답 실패:', res.status);
+      return;
+    }
     const data = await res.json();
+    console.log('[loadClinicsList] 데이터:', data);
     allClinics = data.clinics || [];
+    console.log('[loadClinicsList] ✅ 병원 목록 로드 완료:', allClinics.length, '개');
   } catch (e) {
-    console.error('[loadClinicsList]', e);
+    console.error('[loadClinicsList] ❌ 에러:', e.message);
   }
 }
 
