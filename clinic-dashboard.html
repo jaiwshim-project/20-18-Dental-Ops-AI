@@ -8,7 +8,10 @@
   <link rel="stylesheet" href="css/common.css">
   <style>
     body { background: var(--bg-base); }
-    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; }
+    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none !important; }
+
+    /* 🔐 clinic-dashboard에서는 인증 모달을 기본으로 활성화 */
+    #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; }
 
     .clinic-header {
       background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
