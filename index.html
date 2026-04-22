@@ -336,15 +336,18 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/common.js"></script>
   <script>
-    // 강제 초기화: window.allClinics 선언 (let → var 호환성)
-    if (typeof window.allClinics === 'undefined') {
-      window.allClinics = [];
-      console.log('[force-init] window.allClinics 초기화됨');
-    }
-    // 병원 목록 즉시 로드
+    // 병원 목록 즉시 로드 (common.js 로드 후)
     (async () => {
-      if (typeof loadClinicsList === 'function') {
-        await loadClinicsList();
+      window.allClinics = [];
+      try {
+        const res = await fetch('/api/clinics');
+        if (res.ok) {
+          const data = await res.json();
+          window.allClinics = data.clinics || [];
+          console.log('[init-clinics] ✅ 병원 목록 로드:', window.allClinics.length, '개');
+        }
+      } catch (e) {
+        console.error('[init-clinics] ❌', e.message);
       }
     })();
   </script>
