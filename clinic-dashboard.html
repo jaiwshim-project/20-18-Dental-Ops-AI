@@ -529,37 +529,57 @@
     }
 
     function checkAuth() {
-      console.log('[checkAuth] 실행됨');
+      console.log('[checkAuth] ▶️ 시작');
+      console.log('[checkAuth] URL:', window.location.href);
+      console.log('[checkAuth] 페이지:', document.title);
+
       const session = Session.get();
 
       console.log('[checkAuth] 세션 상태:', {
         session: !!session,
-        clinic_id: session?.clinic_id,
-        timestamp: new Date().toISOString()
+        clinic_id: session?.clinic_id
       });
 
-      // 세션이 있으면 clinicId 설정 (나중에 사용)
+      // ✅ 1단계: 세션이 있으면 clinicId 설정
       if (session && session.clinic_id) {
         clinicId = session.clinic_id;
         console.log('[checkAuth] ✅ 세션 있음. clinicId:', clinicId);
       } else {
-        console.log('[checkAuth] ⚠️ 세션 없음. 병원 관리 인증 모달에서 정보 입력 필요');
+        console.log('[checkAuth] ⚠️ 세션 없음 → 모달에서 인증 정보 입력 필요');
       }
 
-      // 병원 관리자 인증 모달 항상 표시 (로그인 여부 상관없이)
+      // ✅ 2단계: 대시보드 콘텐츠 숨김
+      console.log('[checkAuth] 2단계: 대시보드 콘텐츠 숨김');
       const container = document.querySelector('.clinic-container');
       if (container) {
         container.style.display = 'none';
-        console.log('[checkAuth] 콘텐츠 숨김');
+        console.log('[checkAuth] ✅ 콘텐츠 숨김 완료');
+      } else {
+        console.warn('[checkAuth] ⚠️ .clinic-container 요소 없음');
       }
 
+      // ✅ 3단계: 병원 관리 인증 모달 표시 (항상)
+      console.log('[checkAuth] 3단계: 병원 관리 인증 모달 표시');
       const modal = document.getElementById('clinicAuthModal');
-      if (modal) {
-        modal.classList.add('active');
-        console.log('[checkAuth] ✅ 인증 모달 표시');
-      } else {
-        console.error('[checkAuth] ❌ clinicAuthModal 요소 없음!');
+
+      if (!modal) {
+        console.error('[checkAuth] ❌❌❌ clinicAuthModal 요소 없음! (이것이 문제)');
+        return;
       }
+
+      // 모달 표시 (3가지 방법으로 명확하게)
+      modal.style.display = 'flex';  // display 명시
+      modal.style.opacity = '1';      // opacity 명시
+      modal.classList.add('active');  // active 클래스 추가
+
+      console.log('[checkAuth] ✅ 병원 관리 인증 모달 표시 완료');
+      console.log('[checkAuth] 모달 상태:', {
+        display: modal.style.display,
+        opacity: modal.style.opacity,
+        hasActive: modal.classList.contains('active')
+      });
+
+      console.log('[checkAuth] ✅✅✅ checkAuth() 완료');
     }
 
     async function verifyClinicAdmin() {
