@@ -827,7 +827,7 @@ function renderSidebar(activePage) {
         <div id="loginTabContent">
           <div class="form-group">
             <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일 치과" autocomplete="organization">
+            <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일치과" autocomplete="organization">
           </div>
           <div class="form-group">
             <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
