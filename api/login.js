@@ -101,8 +101,16 @@ module.exports = async (req, res) => {
 
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
     if (!clinic) {
-      console.log('[login] ❌ clinic 없음 - 사용 가능한 병원:', allClinics?.map(c => c.name).join(', '));
-      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+      const available = allClinics?.map(c => c.name).join(', ') || 'NONE';
+      console.log('[login] ❌ clinic 없음');
+      return res.status(401).json({
+        error: '병원명 또는 비밀번호가 틀렸습니다',
+        debug: {
+          searchedFor: trimmedName,
+          available: available,
+          allCount: allClinics?.length
+        }
+      });
     }
 
     const passwordHash = sha256(password);
