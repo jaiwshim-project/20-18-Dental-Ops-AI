@@ -22,3 +22,5 @@ vercel-screen*.png
 brochure.md
 
 .vercel
+
+.env*.local
