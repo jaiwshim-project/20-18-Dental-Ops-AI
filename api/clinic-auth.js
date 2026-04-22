@@ -12,17 +12,15 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ===== FIX: Vercel UTF-8 인코딩 문제 해결 =====
-  // clinicName이 latin1로 수신되면 utf8로 재인코딩
-  if (req.body?.clinicName) {
-    try {
-      const buf = Buffer.from(req.body.clinicName, 'latin1');
-      req.body.clinicName = buf.toString('utf8');
-    } catch (e) {
-      // 이미 정상이면 그대로 유지
+  // ===== FIX: 한글 깨짐 자동 복구 =====
+  if (req.body?.clinicName && typeof req.body.clinicName === 'string') {
+    if (/[^\x00-\x7F]/.test(req.body.clinicName)) {
+      try {
+        req.body.clinicName = Buffer.from(req.body.clinicName, 'latin1').toString('utf8');
+      } catch (e) {}
     }
   }
-  // =============================================
+  // =====================================
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[clinic-auth] 환경 변수 미설정');
