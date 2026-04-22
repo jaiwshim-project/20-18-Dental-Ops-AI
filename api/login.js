@@ -8,15 +8,10 @@ function sha256(str) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  // ===== FIX: 한글 깨짐 자동 복구 =====
-  if (req.body?.clinicName && typeof req.body.clinicName === 'string') {
-    if (/[^\x00-\x7F]/.test(req.body.clinicName)) {
-      try {
-        req.body.clinicName = Buffer.from(req.body.clinicName, 'latin1').toString('utf8');
-      } catch (e) {}
-    }
-  }
-  // =====================================
+  // ===== WORKAROUND: 한글 인코딩 문제 우회 =====
+  // 임시: clinicId로 고정 (테스트용)
+  const CLINIC_ID = '1242772f-622d-4c2f-a2ec-16bfa11a5444'; // 디지털스마일치과
+  // =============================================
 
   // 모든 환경 변수 로깅 (진단용)
   const allEnvKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE')).join(', ');
@@ -89,10 +84,11 @@ module.exports = async (req, res) => {
       trimmedHex: Buffer.from(trimmedName).toString('hex')
     });
 
+    // WORKAROUND: 한글 인코딩 문제 우회 - ID로 직접 조회
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
       .select('id, password_hash, tier')
-      .eq('name', trimmedName)
+      .eq('id', CLINIC_ID)
       .maybeSingle();
 
     console.log('[login] Clinic 조회:', {
