@@ -133,32 +133,43 @@ function escapeHTML(str) {
 }
 
 // --- Local Storage ---
+// 메모리 백업 (localStorage 실패 시)
+const MemoryStore = {};
+
 const Store = {
   get(key, fallback = null) {
     try {
       const val = localStorage.getItem('dops_' + key);
       const result = val ? JSON.parse(val) : fallback;
       if (key === 'session') {
-        console.log('[Store.get] session:', result);
+        console.log('[Store.get] localStorage:', result);
       }
       return result;
     } catch (e) {
-      console.error('[Store.get] 에러:', key, e);
-      return fallback;
+      // localStorage 실패 → 메모리에서 읽기
+      console.warn('[Store.get] localStorage 실패, 메모리에서 읽음:', key);
+      return MemoryStore[key] ?? fallback;
     }
   },
   set(key, val) {
     try {
       localStorage.setItem('dops_' + key, JSON.stringify(val));
       if (key === 'session') {
-        console.log('[Store.set] session 저장:', val);
+        console.log('[Store.set] localStorage 저장:', val);
       }
     } catch (e) {
-      console.error('[Store.set] 에러:', key, e);
+      // localStorage 실패 → 메모리에만 저장
+      console.warn('[Store.set] localStorage 실패, 메모리에만 저장:', key);
+      MemoryStore[key] = val;
     }
   },
   remove(key) {
-    localStorage.removeItem('dops_' + key);
+    try {
+      localStorage.removeItem('dops_' + key);
+    } catch (e) {
+      // localStorage 실패는 무시
+    }
+    delete MemoryStore[key];
     if (key === 'session') {
       console.log('[Store.remove] session 제거됨');
     }
@@ -178,7 +189,12 @@ const Session = {
   get() {
     const s = Store.get(this.KEY, null);
     if (!s) return null;
-    if (Date.now() - s.loggedAt > this.TTL_MS) { this.logout(); return null; }
+    // loggedAt이 없거나 TTL 초과인 경우만 logout
+    if (s.loggedAt && Date.now() - s.loggedAt > this.TTL_MS) {
+      console.warn('[Session.get] TTL 초과 → 세션 제거');
+      this.logout();
+      return null;
+    }
     return s;
   },
   isLoggedIn() { return !!this.get(); }
