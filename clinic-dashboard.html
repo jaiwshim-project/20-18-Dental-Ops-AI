@@ -597,45 +597,76 @@
     }
 
     async function verifyClinicAdmin() {
-      const clinicName = document.getElementById('authClinicName').value.trim();
-      const email = document.getElementById('authClinicEmail').value.trim();
-      const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`authPwd${i}`)?.value || '').join('');
+      console.log('[verifyClinicAdmin] ▶️ 시작');
+
+      const clinicNameEl = document.getElementById('authClinicName');
+      const emailEl = document.getElementById('authClinicEmail');
       const errorEl = document.getElementById('authError');
 
-      console.log('[verifyClinicAdmin] 인증 시도:', { clinicName, email, pwdLength: pwd.length });
+      const clinicName = clinicNameEl?.value?.trim() || '';
+      const email = emailEl?.value?.trim() || '';
+      const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`authPwd${i}`)?.value || '').join('');
 
-      if (!clinicName || !email || pwd.length !== 6) {
+      console.log('[verifyClinicAdmin] 입력값:', {
+        clinicName: clinicName || '(비어있음)',
+        email: email || '(비어있음)',
+        pwdLength: pwd.length,
+        pwd: pwd || '(비어있음)'
+      });
+
+      // 유효성 검사
+      if (!clinicName) {
+        console.warn('[verifyClinicAdmin] ❌ 병원명이 입력되지 않음');
         errorEl.style.display = 'block';
-        errorEl.textContent = '모든 필드를 입력하세요';
-        console.warn('[verifyClinicAdmin] 입력값 검증 실패');
+        errorEl.textContent = '병원명을 입력하세요';
+        return;
+      }
+
+      if (!email) {
+        console.warn('[verifyClinicAdmin] ❌ 이메일이 입력되지 않음');
+        errorEl.style.display = 'block';
+        errorEl.textContent = '이메일을 입력하세요';
+        return;
+      }
+
+      if (pwd.length !== 6) {
+        console.warn('[verifyClinicAdmin] ❌ 비밀번호 길이 오류:', pwd.length);
+        errorEl.style.display = 'block';
+        errorEl.textContent = '비밀번호는 숫자 6자리를 모두 입력하세요';
         return;
       }
 
       if (!/^\d{6}$/.test(pwd)) {
+        console.warn('[verifyClinicAdmin] ❌ 비밀번호 형식 오류');
         errorEl.style.display = 'block';
-        errorEl.textContent = '비밀번호는 숫자 6자리입니다';
-        console.warn('[verifyClinicAdmin] 비밀번호 형식 오류');
+        errorEl.textContent = '비밀번호는 숫자만 입력하세요';
         return;
       }
+
+      console.log('[verifyClinicAdmin] ✅ 입력값 검증 성공');
 
       try {
         errorEl.style.display = 'none';
 
-        console.log('[verifyClinicAdmin] /api/login 호출 중...');
+        console.log('[verifyClinicAdmin] 🔄 /api/login 호출 중...', { clinicName, email, pwdLength: pwd.length });
+
+        const body = JSON.stringify({ clinicName, email, password: pwd });
+        console.log('[verifyClinicAdmin] 요청 본문:', body);
+
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clinicName, email, password: pwd })
+          body: body
         });
 
-        console.log('[verifyClinicAdmin] API 응답 상태:', res.status);
+        console.log('[verifyClinicAdmin] API 응답 상태:', res.status, res.statusText);
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           const errMsg = err.error || '인증 실패. 정보를 다시 확인해주세요.';
           errorEl.style.display = 'block';
-          errorEl.textContent = errMsg;
-          console.error('[verifyClinicAdmin] 인증 실패:', errMsg);
+          errorEl.textContent = '❌ ' + errMsg;
+          console.error('[verifyClinicAdmin] ❌ 인증 실패:', { status: res.status, error: errMsg });
           return;
         }
 
@@ -644,35 +675,42 @@
 
         console.log('[verifyClinicAdmin] ✅ 인증 성공:', user);
 
-        // 응답에서 clinic_id 추출 (세션이 없는 경우)
+        // 응답에서 clinic_id 추출
         if (user.clinic_id && !clinicId) {
           clinicId = user.clinic_id;
-          console.log('[verifyClinicAdmin] clinic_id 설정:', clinicId);
+          console.log('[verifyClinicAdmin] ✅ clinic_id 설정:', clinicId);
         }
 
         // 인증 성공 → 콘텐츠 표시
+        console.log('[verifyClinicAdmin] UI 업데이트 중...');
+
         const modal = document.getElementById('clinicAuthModal');
         if (modal) {
           modal.classList.remove('active');
-          console.log('[verifyClinicAdmin] 모달 닫음');
+          modal.style.opacity = '0';
+          modal.style.pointerEvents = 'none';
+          console.log('[verifyClinicAdmin] ✅ 모달 닫음');
         }
 
         const container = document.querySelector('.clinic-container');
         if (container) {
           container.style.display = 'block';
-          console.log('[verifyClinicAdmin] 대시보드 표시');
+          console.log('[verifyClinicAdmin] ✅ 대시보드 표시');
         }
 
+        console.log('[verifyClinicAdmin] showToast() 호출...');
         showToast('병원 관리자 인증 성공', 'success');
+        console.log('[verifyClinicAdmin] ✅ showToast() 완료');
 
         // 인증 후 병원 정보 로드
-        console.log('[verifyClinicAdmin] 병원 정보 로드 시작 (clinicId:', clinicId, ')');
+        console.log('[verifyClinicAdmin] 병원 정보 로드 중... (clinicId:', clinicId, ')');
         await loadClinicInfo();
-        console.log('[verifyClinicAdmin] 병원 정보 로드 완료');
+        console.log('[verifyClinicAdmin] ✅✅✅ 모든 작업 완료');
+
       } catch (e) {
-        console.error('[verifyClinicAdmin] 예외 발생:', e);
+        console.error('[verifyClinicAdmin] ❌ 예외 발생:', e.message, e.stack);
         errorEl.style.display = 'block';
-        errorEl.textContent = '오류: ' + e.message;
+        errorEl.textContent = '❌ 오류: ' + e.message;
       }
     }
 
