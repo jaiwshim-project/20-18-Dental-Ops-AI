@@ -23,9 +23,23 @@ module.exports = async (req, res) => {
   try {
     const { data: clinic, error } = await supabase
       .from('clinics')
-      .select('id, name, director_name, region, password, tier, created_at')
+      .select('id, name, director_name, region, tier, created_at')
       .eq('id', id)
       .single();
+
+    // password 필드는 별도로 조회 시도 (스키마에 있으면 추가)
+    if (clinic) {
+      try {
+        const { data: pwdData } = await supabase
+          .from('clinics')
+          .select('password')
+          .eq('id', id)
+          .single();
+        if (pwdData?.password) clinic.password = pwdData.password;
+      } catch (e) {
+        // password 필드가 없거나 조회 실패 - 무시
+      }
+    }
 
     if (error) throw error;
     if (!clinic) return res.status(404).json({ error: '병원을 찾을 수 없습니다' });
