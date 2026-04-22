@@ -43,7 +43,30 @@ module.exports = async (req, res) => {
       body = req.body;
     }
   }
-  const { clinicName, directorName, directorEmail, directorPhone, region, password } = body;
+  let { clinicName, directorName, directorEmail, directorPhone, region, password } = body;
+
+  // 🔧 한글 인코딩 처리 (latin1 → utf8)
+  const decodeKorean = (str) => {
+    if (!str || /[^\x00-\x7F]/.test(str)) {
+      try {
+        return Buffer.from(str, 'latin1').toString('utf8');
+      } catch (e) {
+        return str;
+      }
+    }
+    return str;
+  };
+
+  clinicName = decodeKorean(clinicName);
+  directorName = decodeKorean(directorName);
+  region = decodeKorean(region);
+
+  console.log('[clinic-register] 한글 인코딩 처리:', {
+    clinicName,
+    clinicNameHex: Buffer.from(clinicName).toString('hex'),
+    directorName,
+    region
+  });
 
   if (!clinicName?.trim() || !directorName?.trim() || !directorEmail?.trim() || !directorPhone?.trim() || !region?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });

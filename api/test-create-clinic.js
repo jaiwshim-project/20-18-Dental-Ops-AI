@@ -30,7 +30,10 @@ module.exports = async (req, res) => {
       tier: 'free'
     };
 
-    console.log('[test-create-clinic] 테스트 clinic 생성 시도:', testClinic.name);
+    console.log('[test-create-clinic] 테스트 clinic 생성 시도:', {
+      name: testClinic.name,
+      nameHex: Buffer.from(testClinic.name).toString('hex')
+    });
 
     // 기존 clinic 확인
     const { data: existing, error: checkError } = await sb
