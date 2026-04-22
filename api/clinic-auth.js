@@ -42,7 +42,13 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('[clinic-auth] 요청:', { clinicName, passwordLength: password?.length });
+    const trimmed = clinicName.trim();
+    console.log('[clinic-auth] 요청:', {
+      received: clinicName,
+      trimmed: trimmed,
+      hex: Buffer.from(trimmed).toString('hex').substring(0, 40),
+      passwordLength: password?.length
+    });
 
     const passwordHash = sha256(password);
     console.log('[clinic-auth] 해시 생성 완료');
