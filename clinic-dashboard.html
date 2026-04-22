@@ -437,7 +437,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('clinicAuthModal')">취소</button>
-        <button class="btn btn-primary" onclick="verifyClinicAdmin()">✓ 인증</button>
+        <button class="btn btn-primary" id="authVerifyBtn">✓ 인증</button>
       </div>
     </div>
   </div>
@@ -504,6 +504,7 @@
     function registerAuthClinicInputListeners() {
       const authClinicInput = document.getElementById('authClinicName');
       const authSearchBtn = document.getElementById('authClinicSearchBtn');
+      const authVerifyBtn = document.getElementById('authVerifyBtn');
 
       console.log('[registerAuthClinicInputListeners] 병원명 입력 이벤트 등록');
 
@@ -528,6 +529,16 @@
           const clinics = filterAuthClinics(authClinicInput.value || '');
           showAuthClinicDropdown(clinics);
         });
+      }
+
+      // 인증 버튼 이벤트 리스너
+      if (authVerifyBtn) {
+        authVerifyBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('[authVerifyBtn] 클릭됨 → verifyClinicAdmin() 호출');
+          verifyClinicAdmin();
+        });
+        console.log('[registerAuthClinicInputListeners] ✅ 인증 버튼 리스너 등록');
       }
     }
 
