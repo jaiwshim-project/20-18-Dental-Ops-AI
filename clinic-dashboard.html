@@ -203,7 +203,10 @@
 
     <!-- 병원 정보 -->
     <div class="section">
-      <h2>🏥 병원 정보</h2>
+      <h2 style="display:flex; justify-content:space-between; align-items:center;">
+        🏥 병원 정보
+        <button class="btn btn-primary btn-sm" onclick="toggleEditClinicForm()">✏️ 수정</button>
+      </h2>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">병원명</label>
@@ -216,6 +219,52 @@
         <div class="form-group">
           <label class="form-label">지역</label>
           <input type="text" class="form-input" id="region" readonly>
+        </div>
+      </div>
+
+      <!-- 병원 정보 수정 폼 -->
+      <div id="editClinicFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-top:16px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">대표원장</label>
+            <input type="text" class="form-input" id="editDirectorName" placeholder="홍길동">
+          </div>
+          <div class="form-group">
+            <label class="form-label">지역</label>
+            <input type="text" class="form-input" id="editRegion" placeholder="예: 서울 강남">
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="updateClinicInfo()">저장</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleEditClinicForm()">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 직원로그인 비밀번호 변경 -->
+    <div class="section">
+      <h2>🔐 직원로그인 비밀번호</h2>
+      <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:16px;">
+        직원들이 로그인할 때 사용하는 6자리 비밀번호를 변경할 수 있습니다.
+      </p>
+      <button class="btn btn-primary btn-sm" onclick="togglePasswordForm()">비밀번호 변경</button>
+
+      <!-- 비밀번호 변경 폼 -->
+      <div id="passwordFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-top:16px;">
+        <div class="form-group">
+          <label class="form-label">새 비밀번호 (숫자 6자리)</label>
+          <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:16px;">
+            <input type="password" class="form-input" id="newPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="newPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="newPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="newPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="newPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+            <input type="password" class="form-input" id="newPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="updatePassword()">저장</button>
+          <button class="btn btn-secondary btn-sm" onclick="togglePasswordForm()">취소</button>
         </div>
       </div>
     </div>
@@ -442,6 +491,97 @@
       }
     }
 
+    // 병원 정보 수정
+    function toggleEditClinicForm() {
+      const form = document.getElementById('editClinicFormContainer');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        document.getElementById('editDirectorName').value = clinicData.director_name || '';
+        document.getElementById('editRegion').value = clinicData.region || '';
+      }
+    }
+
+    async function updateClinicInfo() {
+      const directorName = document.getElementById('editDirectorName').value.trim();
+      const region = document.getElementById('editRegion').value.trim();
+
+      if (!directorName || !region) {
+        showToast('모든 필드를 입력하세요', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/update-clinic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId, directorName, region })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || '업데이트 실패', 'error');
+          return;
+        }
+
+        showToast('병원 정보가 업데이트되었습니다', 'success');
+        clinicData.director_name = directorName;
+        clinicData.region = region;
+        document.getElementById('directorName').value = directorName;
+        document.getElementById('region').value = region;
+        toggleEditClinicForm();
+      } catch (e) {
+        console.error('[updateClinicInfo]', e);
+        showToast('오류: ' + e.message, 'error');
+      }
+    }
+
+    // 비밀번호 변경
+    function togglePasswordForm() {
+      const form = document.getElementById('passwordFormContainer');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        document.getElementById('newPwd1').focus();
+      }
+    }
+
+    async function updatePassword() {
+      const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`newPwd${i}`)?.value || '').join('');
+
+      if (pwd.length !== 6 || !/^\d{6}$/.test(pwd)) {
+        showToast('비밀번호는 숫자 6자리여야 합니다', 'warning');
+        return;
+      }
+
+      if (!confirm('비밀번호를 변경하시겠습니까? 직원들에게 새 비밀번호를 알려야 합니다.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/update-clinic-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId, password: pwd })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || '변경 실패', 'error');
+          return;
+        }
+
+        showToast('비밀번호가 변경되었습니다', 'success');
+        document.getElementById('newPwd1').value = '';
+        document.getElementById('newPwd2').value = '';
+        document.getElementById('newPwd3').value = '';
+        document.getElementById('newPwd4').value = '';
+        document.getElementById('newPwd5').value = '';
+        document.getElementById('newPwd6').value = '';
+        togglePasswordForm();
+      } catch (e) {
+        console.error('[updatePassword]', e);
+        showToast('오류: ' + e.message, 'error');
+      }
+    }
 
     function exitClinic() {
       if (confirm('병원 관리를 종료하시겠습니까?')) {
