@@ -287,8 +287,17 @@ async function submitClinicLogin() {
     });
 
     closeModal('loginModal');
-    console.log('🔄 페이지 새로고침 중...');
-    location.reload();
+
+    // redirect 파라미터 확인
+    const params = new URLSearchParams(window.location.search);
+    const redirectPage = params.get('redirect');
+    if (redirectPage) {
+      console.log('🔄 redirect 페이지로 이동:', redirectPage);
+      window.location.href = redirectPage;
+    } else {
+      console.log('🔄 페이지 새로고침 중...');
+      location.reload();
+    }
   } catch (e) {
     console.error('Login error:', e);
     showToast('로그인 중 오류가 발생했습니다', 'error');
