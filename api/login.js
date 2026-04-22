@@ -6,8 +6,21 @@ function sha256(str) {
 }
 
 module.exports = async (req, res) => {
-  // Vercel UTF-8 인코딩 명시
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+  // ===== DEBUG: 정확히 뭐가 들어오는가 =====
+  if (req.method === 'POST') {
+    return res.status(200).json({
+      _DEBUG: 'BODY_INSPECTION',
+      bodyDirect: req.body,
+      clinicNameReceived: req.body?.clinicName,
+      clinicNameExists: 'clinicName' in (req.body || {}),
+      emailReceived: req.body?.email,
+      passwordReceived: req.body?.password,
+      allKeys: Object.keys(req.body || {})
+    });
+  }
+  // ======================================
 
   // 모든 환경 변수 로깅 (진단용)
   const allEnvKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE')).join(', ');
