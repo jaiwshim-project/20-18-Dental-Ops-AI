@@ -246,6 +246,7 @@ function switchAuthTab(tab) {
   const registerBtn = document.getElementById('registerBtn');
 
   const clinicConfirmBtn = document.getElementById('clinicConfirmBtn');
+  const finalLoginBtn = document.getElementById('finalLoginBtn');
   const clinicDropdown = document.getElementById('clinicDropdown');
 
   const resetTabs = () => {
@@ -258,6 +259,7 @@ function switchAuthTab(tab) {
     authBtn.style.display = 'none';
     registerBtn.style.display = 'none';
     clinicConfirmBtn.style.display = 'none';
+    finalLoginBtn.style.display = 'none';
     clinicDropdown.style.display = 'none';
   };
 
@@ -271,10 +273,10 @@ function switchAuthTab(tab) {
     const clinicNameInput = document.getElementById('clinicName');
     if (clinicNameInput && clinicNameInput.value.trim()) {
       clinicConfirmBtn.style.display = 'block';
-      authBtn.style.display = 'none';
+      finalLoginBtn.style.display = 'none';
     } else {
       clinicConfirmBtn.style.display = 'block'; // 항상 확인 버튼 표시
-      authBtn.style.display = 'none';
+      finalLoginBtn.style.display = 'none';
     }
   } else if (tab === 'signup') {
     signupContent.style.display = 'block';
@@ -442,11 +444,11 @@ function confirmClinicAndProceed() {
     return;
   }
 
-  // 확인 버튼 숨기고 로그인 버튼 표시
+  // 확인 버튼 숨기고 최종 로그인 버튼 표시
   const clinicConfirmBtn = document.getElementById('clinicConfirmBtn');
-  const authBtn = document.getElementById('authBtn');
+  const finalLoginBtn = document.getElementById('finalLoginBtn');
   if (clinicConfirmBtn) clinicConfirmBtn.style.display = 'none';
-  if (authBtn) authBtn.style.display = 'block';
+  if (finalLoginBtn) finalLoginBtn.style.display = 'block';
 
   // 드롭다운 닫기
   const clinicDropdown = document.getElementById('clinicDropdown');
@@ -814,6 +816,7 @@ function renderSidebar(activePage) {
 
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
+        <button class="btn btn-primary" id="finalLoginBtn" onclick="submitClinicLogin()" style="display:none;">✓ 확인</button>
         <button class="btn btn-primary" id="clinicConfirmBtn" onclick="confirmClinicAndProceed()" style="display:none;">✓ 확인</button>
         <button class="btn btn-primary" id="authBtn" onclick="submitClinicLogin()" style="display:none;">🔐 로그인</button>
         <button class="btn btn-primary" id="registerBtn" onclick="submitClinicRegister()" style="display:none;">💾 병원 가입하기</button>
