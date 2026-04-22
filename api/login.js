@@ -60,7 +60,11 @@ module.exports = async (req, res) => {
     console.log('[/api/login] 요청 데이터:', { clinicName, email, pwdLength: password.length });
 
     // ✅ 1단계: clinicName으로 clinic 찾기
-    console.log('[/api/login] 1️⃣ clinic 검색:', clinicName);
+    console.log('[/api/login] 1️⃣ clinic 검색 시작:',{
+      searchTerm: clinicName,
+      searchTermHex: Buffer.from(clinicName).toString('hex'),
+      searchNormalized: clinicName.toLowerCase().trim()
+    });
 
     const { data: allClinics, error: listErr } = await sb
       .from('clinics')
@@ -71,19 +75,29 @@ module.exports = async (req, res) => {
       throw new Error(`clinic list: ${listErr.message}`);
     }
 
+    console.log('[/api/login] 📊 저장된 clinic:', allClinics?.map(c => ({
+      id: c.id,
+      name: c.name,
+      nameHex: Buffer.from(c.name).toString('hex'),
+      nameNormalized: c.name.toLowerCase().trim()
+    })));
+
     const normalizedSearch = clinicName.toLowerCase().trim();
     let clinic = null;
 
     if (allClinics && allClinics.length > 0) {
       // 정확한 매칭 또는 정규화 매칭
-      clinic = allClinics.find(c =>
-        c.name === clinicName ||
-        c.name.toLowerCase().trim() === normalizedSearch
-      );
+      clinic = allClinics.find(c => {
+        const isExactMatch = c.name === clinicName;
+        const isNormalizedMatch = c.name.toLowerCase().trim() === normalizedSearch;
+        console.log(`[/api/login] 매칭 확인: "${c.name}" vs "${clinicName}" => exact:${isExactMatch}, normalized:${isNormalizedMatch}`);
+        return isExactMatch || isNormalizedMatch;
+      });
     }
 
     if (!clinic) {
       console.warn('[/api/login] ❌ clinic not found:', clinicName);
+      console.warn('[/api/login] 검색 데이터:', { allClinicsCount: allClinics?.length || 0 });
       return res.status(401).json({ error: 'clinic not found' });
     }
 
