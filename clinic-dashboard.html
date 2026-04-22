@@ -489,17 +489,35 @@
 
       tbody.innerHTML = staff.map(s => `
         <tr>
-          <td><span class="staff-name">${s.name}</span></td>
-          <td><span class="staff-email">${s.email}</span></td>
-          <td>${s.phone || '-'}</td>
-          <td>${s.role || '직원'}</td>
+          <td><span class="staff-name">${escapeHTML(s.name)}</span></td>
+          <td><span class="staff-email">${escapeHTML(s.email)}</span></td>
+          <td>${escapeHTML(s.phone || '-')}</td>
+          <td>${escapeHTML(s.role || '직원')}</td>
           <td>${new Date(s.created_at).toLocaleDateString('ko-KR')}</td>
           <td style="display:flex; gap:4px;">
-            <button class="action-btn" style="background:var(--primary-bg); color:var(--primary);" onclick="showEditStaffForm('${s.id}', '${s.name}', '${s.phone || ''}', '${s.role || '직원'}')">수정</button>
-            <button class="action-btn delete" onclick="deleteStaff('${s.id}')">삭제</button>
+            <button class="action-btn edit-staff-btn" style="background:var(--primary-bg); color:var(--primary);" data-staff-id="${s.id}" data-staff-phone="${s.phone || ''}" data-staff-role="${s.role || '직원'}">수정</button>
+            <button class="action-btn delete delete-staff-btn" data-staff-id="${s.id}">삭제</button>
           </td>
         </tr>
       `).join('');
+
+      // 수정 버튼 이벤트 리스너
+      document.querySelectorAll('.edit-staff-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const staffId = this.dataset.staffId;
+          const phone = this.dataset.staffPhone;
+          const role = this.dataset.staffRole;
+          showEditStaffForm(staffId, '', phone, role);
+        });
+      });
+
+      // 삭제 버튼 이벤트 리스너
+      document.querySelectorAll('.delete-staff-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const staffId = this.dataset.staffId;
+          deleteStaff(staffId);
+        });
+      });
     }
 
     function showStaffForm() {
