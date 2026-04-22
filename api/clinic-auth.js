@@ -65,8 +65,14 @@ module.exports = async (req, res) => {
     if (!clinic) {
       // 모든 clinic 재조회 (진단용)
       const { data: all } = await supabase.from('clinics').select('name');
-      console.log('[clinic-auth] clinic 없음 - available:', all?.map(c => c.name));
-      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+      console.log('[clinic-auth] clinic 없음');
+      return res.status(401).json({
+        error: '병원명 또는 비밀번호가 틀렸습니다',
+        debug: {
+          searched: trimmed,
+          available: all?.map(c => c.name) || []
+        }
+      });
     }
 
     // 비밀번호 검증 상세 로깅
