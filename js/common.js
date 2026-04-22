@@ -606,8 +606,7 @@ async function smartLogin() {
       return;
     }
 
-    // 미등록 이메일 + 신규 폼 열린 상태 → 매직링크 발송 (기존 demoLogin 재사용)
-    await demoLogin();
+    // 이미 clinic 인증됨 → 로그인 완료 (demoLogin 제거됨)
   } catch (e) {
     console.error('로그인 확인 실패', e);
     showToast('로그인 확인 실패: ' + e.message, 'error');
