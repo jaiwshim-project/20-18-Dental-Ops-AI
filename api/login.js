@@ -33,7 +33,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('[login] 요청:', { clinicName, email, passwordLength: password?.length });
+    console.log('[login] 요청:', { clinicName: clinicName?.trim(), email, passwordLength: password?.length });
+
+    // Supabase 연결 확인
+    const { data: testClinic } = await supabase.from('clinics').select('count', { count: 'exact' });
+    console.log('[login] Supabase 연결:', { status: 'ok', clinicCount: testClinic?.length });
 
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
@@ -41,7 +45,12 @@ module.exports = async (req, res) => {
       .eq('name', clinicName.trim())
       .maybeSingle();
 
-    console.log('[login] Supabase 조회:', { found: !!clinic, error: clinicError?.message });
+    console.log('[login] Clinic 조회:', {
+      query: clinicName.trim(),
+      found: !!clinic,
+      clinicId: clinic?.id,
+      error: clinicError?.message
+    });
     if (clinic) {
       console.log('[login] 병원 데이터:', { id: clinic.id, hashLength: clinic.password_hash?.length });
     }
