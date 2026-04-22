@@ -8,16 +8,6 @@ function sha256(str) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  // 📊 진단: 요청 정보
-  console.log('[API_LOGIN_DEBUG]', {
-    method: req.method,
-    receivedClinicName: req.body?.clinicName,
-    receivedEmail: req.body?.email,
-    receivedPassword: req.body?.password,
-    hasURL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-  });
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -42,32 +32,55 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 고정 clinic ID (한글 인코딩 문제 우회)
     const CLINIC_ID = '1242772f-622d-4c2f-a2ec-16bfa11a5444';
+    
+    console.log('[LOGIN_DEBUG_1] Request:', {
+      clinicName,
+      email: email.trim(),
+      password: password,
+      CLINIC_ID
+    });
 
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
-      .select('id, password_hash, tier')
+      .select('*')
       .eq('id', CLINIC_ID)
       .maybeSingle();
 
-    console.log('[API_LOGIN_DEBUG] clinic query:', { clinic, clinicError });
+    console.log('[LOGIN_DEBUG_2] Clinic Query Result:', {
+      found: !!clinic,
+      clinic: clinic ? { id: clinic.id, name: clinic.name, password_hash: clinic.password_hash } : null,
+      error: clinicError
+    });
 
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
-    if (!clinic) return res.status(401).json({ 
-      error: '병원명 또는 비밀번호가 틀렸습니다',
-      _debug: { clinicFound: false, CLINIC_ID }
+    if (!clinic) {
+      return res.status(401).json({ 
+        error: '병원을 찾을 수 없습니다',
+        _debug: { CLINIC_ID, searched: true }
+      });
+    }
+
+    const inputPasswordHash = sha256(password);
+    const storedPasswordHash = clinic.password_hash;
+
+    console.log('[LOGIN_DEBUG_3] Password Check:', {
+      inputPassword: password,
+      inputHash: inputPasswordHash,
+      storedHash: storedPasswordHash,
+      match: inputPasswordHash === storedPasswordHash
     });
 
-    const passwordHash = sha256(password);
-    console.log('[API_LOGIN_DEBUG] password check:', {
-      inputHash: passwordHash,
-      storedHash: clinic.password_hash,
-      match: clinic.password_hash === passwordHash
-    });
-
-    if (clinic.password_hash !== passwordHash) {
-      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
+    if (storedPasswordHash !== inputPasswordHash) {
+      return res.status(401).json({ 
+        error: '병원명 또는 비밀번호가 틀렸습니다',
+        _debug: {
+          inputHash: inputPasswordHash,
+          storedHash: storedPasswordHash,
+          passwordMatch: false,
+          storedHashExists: !!storedPasswordHash
+        }
+      });
     }
 
     const { data: user, error: userError } = await supabase
@@ -76,8 +89,6 @@ module.exports = async (req, res) => {
       .eq('email', email.trim())
       .eq('clinic_id', clinic.id)
       .maybeSingle();
-
-    console.log('[API_LOGIN_DEBUG] user query:', { user, userError });
 
     if (userError) throw new Error(`직원 조회: ${userError.message}`);
 
@@ -98,7 +109,7 @@ module.exports = async (req, res) => {
 
       if (insertError) throw new Error(`직원 등록: ${insertError.message}`);
       userData = newUser;
-      console.log('[API_LOGIN_DEBUG] user created:', userData);
+      console.log('[LOGIN_DEBUG_4] New user created:', { userId: userData.id, name: userData.name });
     } else {
       const { error: updateError } = await supabase
         .from('users')
@@ -106,7 +117,7 @@ module.exports = async (req, res) => {
         .eq('id', user.id);
 
       if (updateError) throw new Error(`로그인 업데이트: ${updateError.message}`);
-      console.log('[API_LOGIN_DEBUG] user updated:', user.id);
+      console.log('[LOGIN_DEBUG_4] Existing user updated:', { userId: user.id });
     }
 
     const response = {
@@ -115,20 +126,19 @@ module.exports = async (req, res) => {
       name: userData.name,
       email: email.trim(),
       role: userData.role,
-      clinic: '디지털스마일치과',
+      clinic: clinic.name || '디지털스마일치과',
       clinic_id: clinic.id,
-      tier: clinic.tier,
+      tier: clinic.tier || 'free',
       is_admin: userData.is_admin || false
     };
 
-    console.log('[API_LOGIN_DEBUG] success response:', response);
+    console.log('[LOGIN_DEBUG_5] Success:', response);
     res.status(200).json(response);
 
   } catch (error) {
-    console.error('[login] ERROR:', error);
+    console.error('[LOGIN_ERROR]', error.message);
     res.status(500).json({ 
-      error: error.message || 'Internal server error',
-      _debug: error.message
+      error: error.message || 'Internal server error'
     });
   }
 };
