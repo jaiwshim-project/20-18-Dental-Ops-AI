@@ -137,11 +137,32 @@ const Store = {
   get(key, fallback = null) {
     try {
       const val = localStorage.getItem('dops_' + key);
-      return val ? JSON.parse(val) : fallback;
-    } catch { return fallback; }
+      const result = val ? JSON.parse(val) : fallback;
+      if (key === 'session') {
+        console.log('[Store.get] session:', result);
+      }
+      return result;
+    } catch (e) {
+      console.error('[Store.get] 에러:', key, e);
+      return fallback;
+    }
   },
-  set(key, val) { localStorage.setItem('dops_' + key, JSON.stringify(val)); },
-  remove(key) { localStorage.removeItem('dops_' + key); }
+  set(key, val) {
+    try {
+      localStorage.setItem('dops_' + key, JSON.stringify(val));
+      if (key === 'session') {
+        console.log('[Store.set] session 저장:', val);
+      }
+    } catch (e) {
+      console.error('[Store.set] 에러:', key, e);
+    }
+  },
+  remove(key) {
+    localStorage.removeItem('dops_' + key);
+    if (key === 'session') {
+      console.log('[Store.remove] session 제거됨');
+    }
+  }
 };
 
 // ============================================================
@@ -169,7 +190,10 @@ const PUBLIC_PAGES = ['index.html', 'manual.html', 'architecture.html', ''];
 function gateSessionOrRedirect() {
   const path = window.location.pathname.split('/').pop() || 'index.html';
   const isPublic = PUBLIC_PAGES.includes(path);
-  if (!isPublic && !Session.isLoggedIn()) {
+  const isLoggedIn = Session.isLoggedIn();
+  console.log('[gateSessionOrRedirect]', { path, isPublic, isLoggedIn });
+  if (!isPublic && !isLoggedIn) {
+    console.warn('[gateSessionOrRedirect] 세션 없음 → redirect 파라미터로 이동:', path);
     window.location.href = 'index.html?redirect=' + encodeURIComponent(path);
   }
 }
@@ -272,7 +296,9 @@ async function submitClinicLogin() {
     }
 
     const user = await res.json();
-    console.log('✅ 응답:', user);
+    console.log('✅ API 응답:', user);
+
+    console.log('💾 Session.login 호출...');
     Session.login({
       userId: user.userId,
       name: user.name,
@@ -284,11 +310,15 @@ async function submitClinicLogin() {
       is_admin: user.is_admin
     });
 
+    console.log('✅ Session.login 완료. 저장된 세션:', Session.get());
+
     closeModal('loginModal');
 
     // redirect 파라미터 확인
     const params = new URLSearchParams(window.location.search);
     const redirectPage = params.get('redirect');
+    console.log('[submitClinicLogin] redirect 파라미터:', redirectPage);
+
     if (redirectPage) {
       console.log('🔄 redirect 페이지로 이동:', redirectPage);
       window.location.href = redirectPage;
