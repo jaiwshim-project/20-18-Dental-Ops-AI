@@ -255,6 +255,7 @@ async function submitClinicAdmin() {
     console.log('[submitClinicAdmin] API 응답 상태:', res.status);
 
     if (!res.ok) {
+      console.log('❌ API 실패:', res.status);
       const err = await res.json();
       console.error('[submitClinicAdmin] API 오류 (상태: ' + res.status + '):', err);
       console.error('[submitClinicAdmin] 오류 메시지:', err.error);
@@ -266,6 +267,7 @@ async function submitClinicAdmin() {
     const clinic_info = await res.json();
     console.log('[submitClinicAdmin] 로그인 데이터:', clinic_info);
 
+    console.log('💾 Session 저장 중...');
     Session.login({
       clinic_id: clinic_info.clinicId,
       clinic: clinic_info.name,
@@ -289,11 +291,16 @@ async function submitClinicAdmin() {
 
 // 로그인: 병원명 + 이메일 + 비밀번호(6자리)
 async function submitClinicLogin() {
+  console.log('🔐 submitClinicLogin 호출됨');
   const clinic = (document.getElementById('clinicName')?.value || '').trim();
+  console.log('병원명:', clinic);
   const email = (document.getElementById('loginEmail')?.value || '').trim();
+  console.log('이메일:', email);
   const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`loginPwd${i}`)?.value || '').join('');
+  console.log('비밀번호:', pwd ? '입력됨' : '빈값');
 
   if (!clinic || !email || pwd.length !== 6) {
+    console.log('❌ 검증 실패:', {clinic: !!clinic, email: !!email, pwdLen: pwd.length});
     showToast('모든 필드를 입력하세요', 'warning');
     return;
   }
@@ -304,6 +311,7 @@ async function submitClinicLogin() {
   }
 
   try {
+    console.log('📡 /api/login 호출 중...');
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -317,6 +325,7 @@ async function submitClinicLogin() {
     }
 
     const user = await res.json();
+    console.log('✅ 응답:', user);
     Session.login({
       userId: user.userId,
       name: user.name,
@@ -329,6 +338,7 @@ async function submitClinicLogin() {
     });
 
     closeModal('loginModal');
+    console.log('🔄 페이지 새로고침 중...');
     location.reload();
   } catch (e) {
     console.error('Login error:', e);
