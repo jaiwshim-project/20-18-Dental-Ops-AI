@@ -17,13 +17,38 @@ module.exports = async (req, res) => {
   const email = (req.body?.email || '').trim();
   const password = req.body?.password || '';
 
+  console.log('[/api/login] 원본 clinicName:', {
+    value: clinicName,
+    type: typeof clinicName,
+    length: clinicName.length,
+    hex: Buffer.from(clinicName).toString('hex'),
+    hasNonASCII: clinicName && /[^\x00-\x7F]/.test(clinicName)
+  });
+
+  // 한글 인코딩 처리
   if (clinicName && /[^\x00-\x7F]/.test(clinicName)) {
+    console.log('[/api/login] 한글 감지, latin1 → utf8 변환 시도');
     try {
-      clinicName = Buffer.from(clinicName, 'latin1').toString('utf8');
-    } catch (e) {}
+      const decoded = Buffer.from(clinicName, 'latin1').toString('utf8');
+      console.log('[/api/login] 변환 결과:', {
+        before: clinicName,
+        after: decoded,
+        beforeHex: Buffer.from(clinicName).toString('hex'),
+        afterHex: Buffer.from(decoded).toString('hex')
+      });
+      clinicName = decoded;
+    } catch (e) {
+      console.warn('[/api/login] 변환 실패:', e.message);
+    }
   }
 
   clinicName = clinicName.trim();
+
+  console.log('[/api/login] 최종 clinicName:', {
+    value: clinicName,
+    length: clinicName.length,
+    hex: Buffer.from(clinicName).toString('hex')
+  });
 
   if (!clinicName || !email || !/^\d{6}$/.test(password)) {
     return res.status(400).json({ error: 'missing fields' });
@@ -35,13 +60,24 @@ module.exports = async (req, res) => {
     console.log('[/api/login] 요청 데이터:', { clinicName, email, pwdLength: password.length });
 
     // ✅ clinicName으로 병원 찾기
+    console.log('[/api/login] clinic 검색 시작:', {
+      searchTerm: clinicName,
+      searchTermHex: Buffer.from(clinicName).toString('hex'),
+      searchTermLength: clinicName.length
+    });
+
     const { data: clinic, error: cErr } = await sb
       .from('clinics')
       .select('*')
       .eq('name', clinicName)
       .maybeSingle();
 
-    console.log('[/api/login] clinic 조회:', { found: !!clinic, error: cErr?.message });
+    console.log('[/api/login] clinic 조회 결과:', {
+      found: !!clinic,
+      error: cErr?.message,
+      clinicName: clinic?.name,
+      clinicNameHex: clinic?.name ? Buffer.from(clinic.name).toString('hex') : 'N/A'
+    });
 
     if (cErr) throw new Error(`clinic: ${cErr.message}`);
     if (!clinic) {
