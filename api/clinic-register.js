@@ -24,6 +24,9 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: '서버 환경 변수 미설정', debug: { hasUrl, hasKey } });
   }
 
+  // Vercel UTF-8 인코딩 명시
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -32,7 +35,15 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { clinicName, directorName, region, password } = req.body;
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(Buffer.from(body, 'utf8').toString('utf8'));
+    } catch (e) {
+      body = req.body;
+    }
+  }
+  const { clinicName, directorName, region, password } = body;
 
   if (!clinicName?.trim() || !directorName?.trim() || !region?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });

@@ -6,6 +6,9 @@ function sha256(str) {
 }
 
 module.exports = async (req, res) => {
+  // Vercel UTF-8 인코딩 명시
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[login] 환경 변수 미설정', {
       url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -22,7 +25,15 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { clinicName, email, password } = req.body;
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(Buffer.from(body, 'utf8').toString('utf8'));
+    } catch (e) {
+      body = req.body;
+    }
+  }
+  const { clinicName, email, password } = body;
 
   if (!clinicName?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });
