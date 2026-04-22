@@ -59,64 +59,35 @@ module.exports = async (req, res) => {
 
     console.log('[/api/login] 요청 데이터:', { clinicName, email, pwdLength: password.length });
 
-    // ✅ 전략 변경: 이메일로 user를 찾은 후 clinic_id 추출
-    console.log('[/api/login] 1️⃣ 이메일로 user 검색:', email);
+    // ✅ 1단계: clinicName으로 clinic 찾기
+    console.log('[/api/login] 1️⃣ clinic 검색:', clinicName);
 
-    const { data: user, error: userErr } = await sb
-      .from('users')
-      .select('clinic_id')
-      .eq('email', email)
-      .maybeSingle();
+    const { data: allClinics, error: listErr } = await sb
+      .from('clinics')
+      .select('*');
 
-    console.log('[/api/login] user 검색 결과:', { found: !!user, clinic_id: user?.clinic_id, error: userErr?.message });
+    if (listErr) {
+      console.error('[/api/login] clinic 목록 조회 오류:', listErr.message);
+      throw new Error(`clinic list: ${listErr.message}`);
+    }
 
+    const normalizedSearch = clinicName.toLowerCase().trim();
     let clinic = null;
 
-    if (user?.clinic_id) {
-      console.log('[/api/login] 2️⃣ clinic_id로 clinic 검색:', user.clinic_id);
-
-      const { data: foundClinic, error: cErr } = await sb
-        .from('clinics')
-        .select('*')
-        .eq('id', user.clinic_id)
-        .maybeSingle();
-
-      if (cErr) {
-        console.error('[/api/login] clinic 검색 오류:', cErr.message);
-        throw new Error(`clinic: ${cErr.message}`);
-      }
-
-      clinic = foundClinic;
-      console.log('[/api/login] ✅ clinic 찾음 (user 경로):', clinic?.id);
-    } else {
-      console.log('[/api/login] 2️⃣ user 없음, clinic명으로 재검색');
-
-      // user가 없으면 clinicName으로 검색 시도
-      const { data: allClinics, error: listErr } = await sb
-        .from('clinics')
-        .select('*');
-
-      if (listErr) {
-        console.error('[/api/login] clinic 목록 조회 오류:', listErr.message);
-        throw new Error(`clinic list: ${listErr.message}`);
-      }
-
-      const normalizedSearch = clinicName.toLowerCase().trim();
-      console.log('[/api/login] 정규화 검색:', normalizedSearch);
-
-      if (allClinics && allClinics.length > 0) {
-        clinic = allClinics.find(c =>
-          c.name.toLowerCase().trim() === normalizedSearch
-        );
-      }
+    if (allClinics && allClinics.length > 0) {
+      // 정확한 매칭 또는 정규화 매칭
+      clinic = allClinics.find(c =>
+        c.name === clinicName ||
+        c.name.toLowerCase().trim() === normalizedSearch
+      );
     }
 
     if (!clinic) {
-      console.warn('[/api/login] ❌ clinic not found');
+      console.warn('[/api/login] ❌ clinic not found:', clinicName);
       return res.status(401).json({ error: 'clinic not found' });
     }
 
-    console.log('[/api/login] ✅ clinic 최종 확인:', {
+    console.log('[/api/login] ✅ clinic 찾음:', {
       id: clinic.id,
       name: clinic.name
     });
