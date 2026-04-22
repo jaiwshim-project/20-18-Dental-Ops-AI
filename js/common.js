@@ -1,20 +1,20 @@
 
-// === Enter 키 로그인 리스너 ===
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const loginModal = document.getElementById('loginModal');
-    if (loginModal && loginModal.classList.contains('active')) {
-      const loginTab = document.getElementById('loginTab');
-      const loginContent = document.getElementById('loginTabContent');
-      
-      // 로그인 탭이 활성화되어 있으면
-      if (loginTab.style.background && loginContent.style.display === 'block') {
-        e.preventDefault();
-        console.log('⌨️ Enter 키 감지 → submitClinicLogin 호출');
-        submitClinicLogin();
-      }
+
+
+// === Enter 키 로그인 (간단함) ===
+document.addEventListener('DOMContentLoaded', () => {
+  // 비밀번호 입력 필드들에 Enter 키 리스너 추가
+  ['loginPwd1', 'loginPwd2', 'loginPwd3', 'loginPwd4', 'loginPwd5', 'loginPwd6'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          console.log('⌨️ Enter 키 감지 → 로그인 시도');
+          submitClinicLogin();
+        }
+      });
     }
-  }
+  });
 });
 
 /* ============================================================
