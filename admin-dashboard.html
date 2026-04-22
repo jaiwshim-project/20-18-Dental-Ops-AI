@@ -116,6 +116,59 @@
             </div>
           </div>
 
+          <!-- 🔑 AI API 키 관리 -->
+          <div class="card mt-24">
+            <div class="card-header flex justify-between items-center">
+              <h3>🔑 AI API 키 관리</h3>
+              <button class="btn btn-secondary btn-sm" onclick="checkAIStatus()">🔄 상태 확인</button>
+            </div>
+            <div class="card-body">
+              <div id="aiStatusInfo" style="background: var(--gray-50); padding: 16px; border-radius: var(--radius-md); margin-bottom: 16px;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                  <p><strong>사용 가능한 AI:</strong> <span id="availableAIs">확인 중...</span></p>
+                  <p><strong>현재 사용 중:</strong> <span id="selectedAI">확인 중...</span></p>
+                </div>
+              </div>
+
+              <div class="form-group mb-16">
+                <label>🌐 Google Gemini API 키</label>
+                <input type="password" id="geminApiKey" class="form-input" placeholder="AIzaSy..." style="font-family: monospace; font-size: 0.875rem;">
+                <small style="color: var(--text-tertiary); margin-top: 4px; display: block;">
+                  → <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--primary); text-decoration: underline;">Google AI Studio에서 발급 받기</a>
+                </small>
+              </div>
+
+              <div class="form-group mb-16">
+                <label>🧠 Claude (Anthropic) API 키</label>
+                <input type="password" id="claudeApiKey" class="form-input" placeholder="sk-ant-..." style="font-family: monospace; font-size: 0.875rem;">
+                <small style="color: var(--text-tertiary); margin-top: 4px; display: block;">
+                  → <a href="https://console.anthropic.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">Anthropic Console에서 발급 받기</a>
+                </small>
+              </div>
+
+              <div class="form-group mb-16">
+                <label>⚡ Geo-AIO API 키</label>
+                <input type="password" id="geoAioApiKey" class="form-input" placeholder="geo_..." style="font-family: monospace; font-size: 0.875rem;">
+                <small style="color: var(--text-tertiary); margin-top: 4px; display: block;">
+                  → <a href="https://www.geo-aio.com/generate" target="_blank" style="color: var(--primary); text-decoration: underline;">Geo-AIO에서 발급 받기</a>
+                </small>
+              </div>
+
+              <div style="background: var(--warning-bg); border: 1px solid var(--warning); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px;">
+                <p style="font-size: 0.875rem; color: var(--warning-text); margin: 0;">
+                  <strong>⚠️ 주의:</strong> API 키는 <strong>로컬에만 저장</strong>됩니다. Vercel 배포를 위해서는 <code>vercel env add</code>를 사용하세요.
+                </p>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" onclick="saveAIKeys()">💾 로컬 저장</button>
+                <button class="btn btn-secondary" onclick="clearAIKeys()">🗑️ 삭제</button>
+              </div>
+
+              <div id="aiKeyStatus" style="margin-top: 12px; font-size: 0.875rem; color: var(--text-tertiary);"></div>
+            </div>
+          </div>
+
           <!-- 최근 API 호출 로그 -->
           <div class="card mt-24">
             <div class="card-header flex justify-between items-center">
@@ -357,6 +410,83 @@
         tbody.innerHTML = `<tr><td colspan="9" style="color:var(--danger); padding:20px;">조회 실패: ${e.message}</td></tr>`;
       }
     }
+
+    // ==================== AI API 키 관리 ====================
+    const AI_KEYS_STORAGE = 'ai_keys_v1';
+
+    // AI 키 저장
+    function saveAIKeys() {
+      const keys = {
+        gemini: document.getElementById('geminApiKey').value.trim(),
+        claude: document.getElementById('claudeApiKey').value.trim(),
+        geoAio: document.getElementById('geoAioApiKey').value.trim()
+      };
+
+      if (!keys.gemini && !keys.claude && !keys.geoAio) {
+        showToast('최소 하나의 API 키를 입력해주세요', 'warning');
+        return;
+      }
+
+      localStorage.setItem(AI_KEYS_STORAGE, JSON.stringify(keys));
+      showToast('✅ API 키 저장됨', 'success');
+      document.getElementById('aiKeyStatus').textContent = '저장 완료: ' + new Date().toLocaleTimeString();
+      checkAIStatus();
+    }
+
+    // AI 키 삭제
+    function clearAIKeys() {
+      if (confirm('⚠️ 저장된 모든 API 키를 삭제하시겠습니까?')) {
+        localStorage.removeItem(AI_KEYS_STORAGE);
+        document.getElementById('geminApiKey').value = '';
+        document.getElementById('claudeApiKey').value = '';
+        document.getElementById('geoAioApiKey').value = '';
+        showToast('✅ API 키 삭제됨', 'success');
+        checkAIStatus();
+      }
+    }
+
+    // AI 상태 확인
+    async function checkAIStatus() {
+      try {
+        const keys = JSON.parse(localStorage.getItem(AI_KEYS_STORAGE) || '{}');
+
+        const available = [];
+        if (keys.gemini) available.push('🌐 Gemini');
+        if (keys.claude) available.push('🧠 Claude');
+        if (keys.geoAio) available.push('⚡ Geo-AIO');
+
+        // Vercel 배포 상태 확인
+        try {
+          const res = await fetch('/api/ai-status');
+          if (res.ok) {
+            const data = await res.json();
+            document.getElementById('availableAIs').textContent = data.availableModels?.length > 0
+              ? data.availableModels.join(' / ')
+              : '(배포 환경변수 미설정)';
+            document.getElementById('selectedAI').textContent = data.selectedModel || '선택 불가';
+          } else {
+            document.getElementById('availableAIs').textContent = available.length > 0 ? available.join(' / ') : '없음';
+            document.getElementById('selectedAI').textContent = available[0] || '없음';
+          }
+        } catch {
+          document.getElementById('availableAIs').textContent = available.length > 0 ? available.join(' / ') : '확인 불가';
+          document.getElementById('selectedAI').textContent = available[0] || '확인 불가';
+        }
+
+        // 입력 필드 채우기
+        if (keys.gemini) document.getElementById('geminApiKey').value = keys.gemini;
+        if (keys.claude) document.getElementById('claudeApiKey').value = keys.claude;
+        if (keys.geoAio) document.getElementById('geoAioApiKey').value = keys.geoAio;
+
+      } catch (e) {
+        console.error('[checkAIStatus]', e);
+      }
+    }
+
+    // 페이지 로드 시 AI 상태 확인
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAIStatus();
+    });
   </script>
 </body>
 </html>
