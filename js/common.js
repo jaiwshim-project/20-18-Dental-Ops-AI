@@ -261,6 +261,85 @@ function switchAuthTab(tab) {
 }
 
 
+// ============================================================
+// 병원명 자동완성 및 검색
+// ============================================================
+let allClinics = [];
+
+async function loadClinicsList() {
+  try {
+    const res = await fetch('/api/clinics');
+    if (!res.ok) return;
+    const data = await res.json();
+    allClinics = data.clinics || [];
+  } catch (e) {
+    console.error('[loadClinicsList]', e);
+  }
+}
+
+function filterClinicsList(searchTerm) {
+  if (!searchTerm) return allClinics.slice(0, 10);
+  const term = searchTerm.toLowerCase();
+  return allClinics.filter(c => c.name.toLowerCase().includes(term)).slice(0, 10);
+}
+
+function showClinicDropdown(clinics) {
+  const dropdown = document.getElementById('clinicDropdown');
+  if (!clinics.length) {
+    dropdown.style.display = 'none';
+    return;
+  }
+  dropdown.innerHTML = clinics.map(c => `
+    <div style="padding:10px 12px; border-bottom:1px solid var(--gray-100); cursor:pointer; hover:background:var(--gray-50);" onclick="setClinicName('${c.name.replace(/'/g, "\\'")}')">
+      <div style="font-weight:500; color:var(--text-primary);">${c.name}</div>
+      <div style="font-size:0.75rem; color:var(--text-tertiary);">${c.director_name || ''} · ${c.region || ''}</div>
+    </div>
+  `).join('');
+  dropdown.style.display = 'block';
+}
+
+function setClinicName(name) {
+  document.getElementById('clinicName').value = name;
+  document.getElementById('clinicDropdown').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadClinicsList();
+
+  const clinicInput = document.getElementById('clinicName');
+  const searchBtn = document.getElementById('clinicSearchBtn');
+
+  if (clinicInput) {
+    clinicInput.addEventListener('input', (e) => {
+      const clinics = filterClinicsList(e.target.value);
+      showClinicDropdown(clinics);
+    });
+
+    clinicInput.addEventListener('focus', (e) => {
+      if (e.target.value) {
+        const clinics = filterClinicsList(e.target.value);
+        showClinicDropdown(clinics);
+      }
+    });
+  }
+
+  if (searchBtn) {
+    searchBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const clinicInput = document.getElementById('clinicName');
+      clinicInput.focus();
+      const clinics = filterClinicsList(clinicInput.value || '');
+      showClinicDropdown(clinics);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.form-group') && !e.target.closest('#clinicDropdown')) {
+      document.getElementById('clinicDropdown').style.display = 'none';
+    }
+  });
+});
+
 // 로그인: 병원명 + 이메일 + 비밀번호(6자리)
 async function submitClinicLogin() {
   console.log('🔐 submitClinicLogin 호출됨');
@@ -599,7 +678,11 @@ function renderSidebar(activePage) {
         <div id="loginTabContent">
           <div class="form-group">
             <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일치과" autocomplete="organization">
+            <div style="position:relative;">
+              <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일치과" autocomplete="off" style="width:100%;">
+              <button type="button" id="clinicSearchBtn" style="position:absolute; right:12px; top:12px; background:none; border:none; cursor:pointer; font-size:1.25rem; padding:0; color:var(--text-secondary);" title="병원 목록">🔍</button>
+            </div>
+            <div id="clinicDropdown" style="position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--gray-200); border-radius:var(--radius-md); max-height:200px; overflow-y:auto; display:none; z-index:1000; box-shadow:var(--shadow-md); margin-top:4px;"></div>
           </div>
           <div class="form-group">
             <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
