@@ -172,60 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// Supabase Auth 매직링크 로그인 — Phase 3
+// 주: 이전 매직링크 로그인(demoLogin) 제거됨 → submitClinicLogin 사용
 // ============================================================
-// 흐름:
-//   1) 사용자가 이름·병원·이메일·역할 입력 → "매직링크 받기"
-//   2) 입력값을 pending_login에 임시 저장
-//   3) supabase.auth.signInWithOtp({email}) 호출 — 이메일 발송
-//   4) 사용자가 이메일 링크 클릭 → /index.html#access_token=... 로 복귀
-//   5) onAuthStateChange 리스너가 SIGNED_IN 이벤트 받음
-//   6) pending_login 읽어 public.users upsert + Session.login
-//   7) redirect 쿼리 있으면 해당 페이지로 이동
-async function demoLogin() {
-  const name = (document.getElementById('loginName')?.value || '').trim();
-  const clinic = (document.getElementById('loginClinic')?.value || '').trim();
-  const email = (document.getElementById('loginEmail')?.value || '').trim();
-  const role = document.getElementById('loginRole')?.value || 'staff';
-
-  if (!name) { showToast('이름을 입력하세요', 'warning'); return; }
-  if (name.length > 20) { showToast('이름은 20자 이내로 입력하세요', 'warning'); return; }
-  if (!clinic) { showToast('병원명을 입력하세요', 'warning'); return; }
-  if (clinic.length > 40) { showToast('병원명은 40자 이내로 입력하세요', 'warning'); return; }
-  if (!email) { showToast('이메일을 입력하세요', 'warning'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('이메일 형식이 올바르지 않습니다', 'warning'); return; }
-
-  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
-    showToast('Supabase 미연결 — 로그인 불가', 'error');
-    return;
-  }
-
-  // pending 저장 (링크 클릭 후 돌아왔을 때 쓰기 위함)
-  Store.set('pending_login', { name, clinic, email, role, requestedAt: Date.now() });
-
-  const btn = document.querySelector('#loginModal .btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = '📤 발송 중...'; }
-
-  const params = new URLSearchParams(window.location.search);
-  const redirect = params.get('redirect');
-  const emailRedirectTo = location.origin + '/index.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
-
-  try {
-    const { error } = await SupabaseDB.client.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo, shouldCreateUser: true }
-    });
-    if (error) throw error;
-    closeModal('loginModal');
-    showToast(`✉️ ${email} 로 매직링크를 보냈습니다. 이메일을 확인하고 링크를 클릭하세요.`, 'success', 6000);
-    // 모달 내용을 "이메일 확인" 안내로 바꿀 수도 있지만 일단 토스트로 충분
-  } catch (e) {
-    console.error('매직링크 발송 실패', e);
-    showToast('매직링크 발송 실패: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '✉️ 매직링크 받기'; }
-  }
-}
 
 // 페이지 로드 시 Supabase Auth 세션 복구 + pending upsert
 async function initAuthBridge() {
@@ -1085,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderConnectionBanner();
   // Supabase Auth 세션 복원 + onAuthStateChange 구독
   // SupabaseDB.init()이 DOMContentLoaded에서 실행되므로 약간의 딜레이
-  setTimeout(() => { initAuthBridge().catch(e => console.warn('authBridge init 실패', e)); }, 100);
+  // initAuthBridge 제거됨 - 이전 매직링크 방식
 });
 
 // --- 연결 상태 배너 (엔진 페이지 한정) ---
