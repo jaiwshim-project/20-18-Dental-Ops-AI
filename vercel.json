@@ -1,6 +1,9 @@
 {
-  "buildCommand": "",
+  "buildCommand": "echo 'Static site'",
   "outputDirectory": ".",
+  "env": {
+    "FORCE_REBUILD": "true"
+  },
   "routes": [
     {
       "src": "/api/(.*)",
