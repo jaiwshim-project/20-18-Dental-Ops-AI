@@ -873,10 +873,18 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // DOMContentLoaded 또는 즉시 실행
+    function initClinicDashboard() {
+      console.log('[initClinicDashboard] 실행됨. readyState:', document.readyState);
       checkAuth();
-      // loadClinicInfo()는 verifyClinicAdmin() 이후에 호출됨
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initClinicDashboard);
+    } else {
+      // DOMContentLoaded이 이미 발생한 경우 (js 파일이 로드된 후)
+      initClinicDashboard();
+    }
   </script>
 </body>
 </html>
