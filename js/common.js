@@ -412,7 +412,9 @@ async function submitClinicAdmin() {
 
     if (!res.ok) {
       const err = await res.json();
-      console.error('[submitClinicAdmin] API 오류:', err);
+      console.error('[submitClinicAdmin] API 오류 (상태: ' + res.status + '):', err);
+      console.error('[submitClinicAdmin] 오류 메시지:', err.error);
+      console.error('[submitClinicAdmin] 전체 응답:', JSON.stringify(err, null, 2));
       showToast(err.error || '인증 실패', 'error');
       return;
     }
