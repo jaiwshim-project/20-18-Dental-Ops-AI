@@ -332,35 +332,56 @@ function setClinicName(name) {
   document.getElementById('clinicDropdown').style.display = 'none';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadClinicsList();
-
+// 병원명 입력 이벤트 리스너 등록 함수
+function registerClinicInputListeners() {
   const clinicInput = document.getElementById('clinicName');
   const searchBtn = document.getElementById('clinicSearchBtn');
 
+  console.log('[registerClinicInputListeners] 병원명 입력 이벤트 등록');
+
   if (clinicInput) {
     clinicInput.addEventListener('input', (e) => {
+      console.log('[clinicInput] input 이벤트:', e.target.value);
       const clinics = filterClinicsList(e.target.value);
       showClinicDropdown(clinics);
     });
 
     clinicInput.addEventListener('focus', (e) => {
+      console.log('[clinicInput] focus 이벤트');
       if (e.target.value) {
         const clinics = filterClinicsList(e.target.value);
         showClinicDropdown(clinics);
       }
     });
+  } else {
+    console.warn('[registerClinicInputListeners] clinicName 요소 없음');
   }
 
   if (searchBtn) {
     searchBtn.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('[clinicSearchBtn] click 이벤트');
       const clinicInput = document.getElementById('clinicName');
       const clinics = filterClinicsList(clinicInput.value || '');
       showClinicDropdown(clinics);
     });
   }
-});
+}
+
+// DOMContentLoaded 또는 즉시 실행 (이미 발생한 경우 대비)
+function initClinicInputs() {
+  console.log('[initClinicInputs] 실행. readyState:', document.readyState);
+  loadClinicsList();
+  registerClinicInputListeners();
+}
+
+if (document.readyState === 'loading') {
+  console.log('[clinic-input-init] DOMContentLoaded 대기');
+  document.addEventListener('DOMContentLoaded', initClinicInputs);
+} else {
+  console.log('[clinic-input-init] DOMContentLoaded 이미 발생 → 즉시 실행');
+  initClinicInputs();
+}
 
 // 로그인: 병원명 + 이메일 + 비밀번호(6자리)
 async function submitClinicLogin() {
