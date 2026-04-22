@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
       // return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
 
-    console.log('[clinic-auth] 인증 성공:', clinic.id);
+    console.log('[clinic-auth] ✅ 인증 성공:', clinic.id);
 
     res.status(200).json({
       success: true,
@@ -117,7 +117,12 @@ module.exports = async (req, res) => {
       directorName: clinic.director_name,
       region: clinic.region,
       tier: clinic.tier,
-      message: '병원 관리자로 입장했습니다.'
+      message: '병원 관리자로 입장했습니다.',
+      debug: {
+        receivedClinicName: clinicName,
+        trimmed: trimmed,
+        passwordMatch: hashMatch
+      }
     });
 
   } catch (error) {
