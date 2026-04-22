@@ -176,61 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 
 // 페이지 로드 시 Supabase Auth 세션 복구 + pending upsert
-async function initAuthBridge() {
-  if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
-  const authClient = SupabaseDB.client.auth;
-  if (!authClient) return;
-
-  // 현재 auth 세션 확인
-  try {
-    const { data: { session } } = await authClient.getSession();
-    if (session && session.user) {
-      await applyAuthSession(session);
-    }
-  } catch (e) { console.warn('getSession 실패', e); }
-
-  // 이후 로그인/로그아웃 이벤트 구독
-  authClient.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      await applyAuthSession(session);
-      // URL 해시 정리
-      if (location.hash && location.hash.includes('access_token')) {
-        history.replaceState(null, '', location.pathname + location.search);
-      }
-      updateSessionUI();
-      // redirect 쿼리 있으면 이동
-      const params = new URLSearchParams(location.search);
-      const redirect = params.get('redirect');
-      if (redirect) {
-        const safePath = /^[a-z0-9_-]+\.html$/i.test(redirect) ? redirect : 'index.html';
-        setTimeout(() => { location.href = safePath; }, 300);
-      }
-    }
-    if (event === 'SIGNED_OUT') {
-      Session.logout();
-      updateSessionUI();
-    }
-  });
-}
-
-
-// Enter 키로 로그인 제출
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const loginModal = document.getElementById('loginModal');
-    if (loginModal && loginModal.classList.contains('active')) {
-      e.preventDefault();
-      submitClinicLogin();
-    }
-  }
-});
-
-// 신규 가입 필드 토글
-// ============================================================
-// 병원 단위 인증 시스템 (SaaS 다중 테넌트)
-// ============================================================
-
-// SHA256 해시 (비밀번호 저장용)
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
