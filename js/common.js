@@ -234,6 +234,9 @@ function switchAuthTab(tab) {
   const authBtn = document.getElementById('authBtn');
   const registerBtn = document.getElementById('registerBtn');
 
+  const clinicConfirmBtn = document.getElementById('clinicConfirmBtn');
+  const clinicDropdown = document.getElementById('clinicDropdown');
+
   const resetTabs = () => {
     loginContent.style.display = 'none';
     signupContent.style.display = 'none';
@@ -243,6 +246,8 @@ function switchAuthTab(tab) {
     signupTab.style.color = 'var(--text-secondary)';
     authBtn.style.display = 'none';
     registerBtn.style.display = 'none';
+    clinicConfirmBtn.style.display = 'none';
+    clinicDropdown.style.display = 'none';
   };
 
   resetTabs();
@@ -290,9 +295,12 @@ function showClinicDropdown(clinics) {
     return;
   }
   dropdown.innerHTML = clinics.map(c => `
-    <div style="padding:10px 12px; border-bottom:1px solid var(--gray-100); cursor:pointer; hover:background:var(--gray-50);" onclick="setClinicName('${c.name.replace(/'/g, "\\'")}')">
-      <div style="font-weight:500; color:var(--text-primary);">${c.name}</div>
-      <div style="font-size:0.75rem; color:var(--text-tertiary);">${c.director_name || ''} · ${c.region || ''}</div>
+    <div style="padding:12px 16px; border-bottom:1px solid var(--gray-100); cursor:pointer; transition:background 0.2s;"
+         onmouseover="this.style.background='var(--gray-50)'"
+         onmouseout="this.style.background='transparent'"
+         onclick="setClinicName('${c.name.replace(/'/g, "\\'")}')">
+      <div style="font-weight:500; color:var(--text-primary); margin-bottom:4px;">${c.name}</div>
+      <div style="font-size:0.75rem; color:var(--text-tertiary);">${c.director_name || ''} ${c.director_name && c.region ? '·' : ''} ${c.region || ''}</div>
     </div>
   `).join('');
   dropdown.style.display = 'block';
@@ -327,17 +335,10 @@ document.addEventListener('DOMContentLoaded', () => {
     searchBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const clinicInput = document.getElementById('clinicName');
-      clinicInput.focus();
       const clinics = filterClinicsList(clinicInput.value || '');
       showClinicDropdown(clinics);
     });
   }
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.form-group') && !e.target.closest('#clinicDropdown')) {
-      document.getElementById('clinicDropdown').style.display = 'none';
-    }
-  });
 });
 
 // 로그인: 병원명 + 이메일 + 비밀번호(6자리)
@@ -678,11 +679,10 @@ function renderSidebar(activePage) {
         <div id="loginTabContent">
           <div class="form-group">
             <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
-            <div style="position:relative;">
-              <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일치과" autocomplete="off" style="width:100%;">
-              <button type="button" id="clinicSearchBtn" style="position:absolute; right:12px; top:12px; background:none; border:none; cursor:pointer; font-size:1.25rem; padding:0; color:var(--text-secondary);" title="병원 목록">🔍</button>
+            <div style="display:flex; gap:8px;">
+              <input type="text" class="form-input" id="clinicName" placeholder="예: 디지털스마일치과" autocomplete="off" style="flex:1;">
+              <button type="button" id="clinicSearchBtn" class="btn btn-secondary" style="padding:8px 12px; font-size:1.25rem; white-space:nowrap;" title="병원 목록">🔍</button>
             </div>
-            <div id="clinicDropdown" style="position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--gray-200); border-radius:var(--radius-md); max-height:200px; overflow-y:auto; display:none; z-index:1000; box-shadow:var(--shadow-md); margin-top:4px;"></div>
           </div>
           <div class="form-group">
             <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
@@ -733,10 +733,14 @@ function renderSidebar(activePage) {
             </div>
           </div>
         </div>
-
       </div>
+
+      <!-- 병원 검색 드롭다운 -->
+      <div id="clinicDropdown" style="background:var(--surface); border-top:1px solid var(--gray-200); max-height:250px; overflow-y:auto; display:none;"></div>
+
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('loginModal')">취소</button>
+        <button class="btn btn-primary" id="clinicConfirmBtn" onclick="submitClinicLogin()" style="display:none;">✓ 확인</button>
         <button class="btn btn-primary" id="authBtn" onclick="submitClinicLogin()" style="display:none;">🔐 로그인</button>
         <button class="btn btn-primary" id="registerBtn" onclick="submitClinicRegister()" style="display:none;">💾 병원 가입하기</button>
       </div>
