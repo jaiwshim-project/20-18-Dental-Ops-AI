@@ -371,7 +371,7 @@
         document.getElementById('directorName').value = clinicData.director_name || '-';
         document.getElementById('region').value = clinicData.region || '-';
         document.getElementById('tierDisplay').textContent = clinicData.tier.toUpperCase();
-        document.getElementById('tierSelect').value = clinicData.tier;
+        document.getElementById('tierInfo').textContent = clinicData.tier.toUpperCase();
         document.getElementById('createdAtDisplay').textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
 
         loadStaffList();
