@@ -400,19 +400,26 @@ async function submitClinicAdmin() {
   }
 
   try {
+    console.log('[submitClinicAdmin] 요청:', { clinicName: clinic, passwordLength: pwd.length });
+
     const res = await fetch('/api/clinic-auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clinicName: clinic, password: pwd })
     });
 
+    console.log('[submitClinicAdmin] API 응답 상태:', res.status);
+
     if (!res.ok) {
       const err = await res.json();
+      console.error('[submitClinicAdmin] API 오류:', err);
       showToast(err.error || '인증 실패', 'error');
       return;
     }
 
     const clinic_info = await res.json();
+    console.log('[submitClinicAdmin] 로그인 데이터:', clinic_info);
+
     Session.login({
       clinic_id: clinic_info.clinicId,
       clinic: clinic_info.name,
@@ -420,10 +427,16 @@ async function submitClinicAdmin() {
       is_admin: true
     });
 
+    console.log('[submitClinicAdmin] Session 저장됨:', Session.get());
+
     closeModal('loginModal');
-    setTimeout(() => window.location.href = 'clinic-dashboard.html', 300);
+    console.log('[submitClinicAdmin] 모달 닫음, clinic-dashboard.html로 이동...');
+    setTimeout(() => {
+      console.log('[submitClinicAdmin] 리다이렉트 시작');
+      window.location.href = 'clinic-dashboard.html';
+    }, 300);
   } catch (e) {
-    console.error('[submitClinicAdmin]', e);
+    console.error('[submitClinicAdmin] 예외 발생:', e);
     showToast('인증 중 오류 발생: ' + e.message, 'error');
   }
 }
