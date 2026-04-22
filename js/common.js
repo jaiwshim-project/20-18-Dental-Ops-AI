@@ -386,11 +386,20 @@ async function initClinicInputs() {
 
 if (document.readyState === 'loading') {
   console.log('[clinic-input-init] DOMContentLoaded 대기');
-  document.addEventListener('DOMContentLoaded', initClinicInputs);
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('[clinic-input-init] DOMContentLoaded 발생 → 초기화 시작');
+    initClinicInputs();
+  });
 } else {
   console.log('[clinic-input-init] DOMContentLoaded 이미 발생 → 즉시 실행');
   initClinicInputs();
 }
+
+// 추가: window load 후에도 한 번 더 실행
+window.addEventListener('load', () => {
+  console.log('[clinic-input-init] window load 발생 → loadClinicsList 재실행');
+  loadClinicsList();
+});
 
 // 로그인: 병원명 + 이메일 + 비밀번호(6자리)
 async function submitClinicLogin() {
