@@ -419,7 +419,7 @@
         }
 
         clinicData = await res.json();
-        document.getElementById('clinicTitle').textContent = `${clinicData.name} 관리`;
+        document.getElementById('clinicTitle').textContent = `${clinicData.name} 관리 대시보드`;
         document.getElementById('clinicName').value = clinicData.name;
         document.getElementById('directorName').value = clinicData.director_name || '-';
         document.getElementById('region').value = clinicData.region || '-';
