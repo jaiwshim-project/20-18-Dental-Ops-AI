@@ -43,10 +43,15 @@ module.exports = async (req, res) => {
       body = req.body;
     }
   }
-  const { clinicName, directorName, region, password } = body;
+  const { clinicName, directorName, directorEmail, directorPhone, region, password } = body;
 
-  if (!clinicName?.trim() || !directorName?.trim() || !region?.trim() || !password) {
+  if (!clinicName?.trim() || !directorName?.trim() || !directorEmail?.trim() || !directorPhone?.trim() || !region?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });
+  }
+
+  // 이메일 형식 검증
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(directorEmail.trim())) {
+    return res.status(400).json({ error: '유효한 이메일 주소를 입력하세요' });
   }
 
   if (!/^\d{6}$/.test(password)) {
@@ -79,9 +84,26 @@ module.exports = async (req, res) => {
 
     if (clinicError) throw new Error(`병원 등록: ${clinicError.message}`);
 
+    // 대표원장을 users 테이블에 추가
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .insert([{
+        clinic_id: clinic.id,
+        email: directorEmail.trim(),
+        name: directorName.trim(),
+        phone: directorPhone.trim(),
+        role: '원장',
+        is_admin: true
+      }])
+      .select()
+      .single();
+
+    if (userError) throw new Error(`사용자 등록: ${userError.message}`);
+
     res.status(201).json({
       success: true,
       clinicId: clinic.id,
+      userId: user.id,
       message: '병원 회원가입이 완료되었습니다. 로그인해주세요.'
     });
 

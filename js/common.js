@@ -418,16 +418,23 @@ async function submitClinicLogin() {
 async function submitClinicRegister() {
   const clinic = (document.getElementById('signupClinicName')?.value || '').trim();
   const director = (document.getElementById('signupDirector')?.value || '').trim();
+  const email = (document.getElementById('signupEmail')?.value || '').trim();
+  const phone = (document.getElementById('signupPhone')?.value || '').trim();
   const region = (document.getElementById('signupRegion')?.value || '').trim();
   const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`signupPwd${i}`)?.value || '').join('');
 
-  if (!clinic || !director || !region || pwd.length !== 6) {
+  if (!clinic || !director || !email || !phone || !region || pwd.length !== 6) {
     showToast('모든 필드를 입력하세요', 'warning');
     return;
   }
 
   if (!/^\d{6}$/.test(pwd)) {
     showToast('비밀번호는 숫자 6자리입니다', 'warning');
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('유효한 이메일 주소를 입력하세요', 'warning');
     return;
   }
 
@@ -438,6 +445,8 @@ async function submitClinicRegister() {
       body: JSON.stringify({
         clinicName: clinic,
         directorName: director,
+        directorEmail: email,
+        directorPhone: phone,
         region,
         password: pwd
       })
@@ -723,6 +732,14 @@ function renderSidebar(activePage) {
           <div class="form-group">
             <label class="form-label">대표원장 이름 <span style="color:var(--danger);">*</span></label>
             <input type="text" class="form-input" id="signupDirector" placeholder="홍길동" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">대표원장 이메일 <span style="color:var(--danger);">*</span></label>
+            <input type="email" class="form-input" id="signupEmail" placeholder="director@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">휴대폰 번호 <span style="color:var(--danger);">*</span></label>
+            <input type="tel" class="form-input" id="signupPhone" placeholder="010-1234-5678" autocomplete="tel">
           </div>
           <div class="form-group">
             <label class="form-label">지역명 <span style="color:var(--danger);">*</span></label>
