@@ -33,16 +33,29 @@ module.exports = async (req, res) => {
   }
 
   try {
+    console.log('[login] 요청:', { clinicName, email, passwordLength: password?.length });
+
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
       .select('id, password_hash, tier')
       .eq('name', clinicName.trim())
       .maybeSingle();
 
+    console.log('[login] Supabase 조회:', { found: !!clinic, error: clinicError?.message });
+    if (clinic) {
+      console.log('[login] 병원 데이터:', { id: clinic.id, hashLength: clinic.password_hash?.length });
+    }
+
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
     if (!clinic) return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
 
     const passwordHash = sha256(password);
+    console.log('[login] 비밀번호 검증:', {
+      inputHash: passwordHash,
+      storedHash: clinic.password_hash,
+      match: passwordHash === clinic.password_hash
+    });
+
     if (clinic.password_hash !== passwordHash) {
       return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
