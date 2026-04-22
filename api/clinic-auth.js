@@ -72,13 +72,18 @@ module.exports = async (req, res) => {
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
     if (!clinic) {
       // 모든 clinic 재조회 (진단용)
-      const { data: all } = await supabase.from('clinics').select('name');
-      console.log('[clinic-auth] clinic 없음');
+      const { data: all } = await supabase.from('clinics').select('name, id');
+      console.log('[clinic-auth] clinic 없음:', { searched: trimmed, allCount: all?.length });
+      // 직접 매칭 시도
+      const directMatch = all?.find(c => c.name === trimmed);
       return res.status(401).json({
-        error: '병원명 또는 비밀번호가 틀렸습니다',
+        error: 'NOT_FOUND',
         debug: {
           searched: trimmed,
-          available: all?.map(c => c.name) || []
+          searchLength: trimmed.length,
+          allClinicCount: all?.length || 0,
+          allClinics: all?.map(c => ({ name: c.name, length: c.name.length })) || [],
+          directMatch: !!directMatch
         }
       });
     }
