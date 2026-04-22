@@ -290,8 +290,7 @@ function switchAuthTab(tab) {
 // ============================================================
 // 병원명 자동완성 및 검색
 // ============================================================
-let allClinics = [];
-window.allClinics = allClinics;
+var allClinics = [];  // 전역 변수 (let 대신 var 사용)
 
 async function loadClinicsList() {
   try {

@@ -335,32 +335,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/common.js"></script>
-  <script>
-    // 병원 목록 직접 로드 (common.js 로드 후 즉시 실행)
-    (async () => {
-      console.log('[inline-init] 병원 목록 로드 시작');
-      try {
-        // 방법 1: loadClinicsList 함수 사용 (존재하면)
-        if (typeof loadClinicsList === 'function') {
-          await loadClinicsList();
-          console.log('[inline-init] ✅ loadClinicsList 완료');
-        } else {
-          // 방법 2: 직접 fetch (함수가 없으면)
-          console.log('[inline-init] ℹ️ loadClinicsList 없음, fetch로 직접 로드');
-          const res = await fetch('/api/clinics');
-          if (res.ok) {
-            const data = await res.json();
-            window.allClinics = data.clinics || [];
-            console.log('[inline-init] ✅ fetch 완료, allClinics:', window.allClinics.length, '개');
-          } else {
-            console.warn('[inline-init] ❌ fetch 실패:', res.status);
-          }
-        }
-      } catch (e) {
-        console.error('[inline-init] ❌ 에러:', e.message);
-      }
-    })();
-  </script>
   <script src="js/supabase.js"></script>
   <script src="js/qlrcq-framework.js"></script>
   <script src="js/dental-engines.js"></script>
