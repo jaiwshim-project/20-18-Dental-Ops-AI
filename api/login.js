@@ -7,6 +7,8 @@ function sha256(str) {
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -16,12 +18,30 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: '서버 환경 변수 미설정' });
   }
 
+  // ===== FIX: 한글 깨짐 자동 복구 (latin1 → UTF-8) =====
+  if (req.body?.clinicName && typeof req.body.clinicName === 'string') {
+    if (/[^\x00-\x7F]/.test(req.body.clinicName)) {
+      try {
+        req.body.clinicName = Buffer.from(req.body.clinicName, 'latin1').toString('utf8');
+      } catch (e) {
+        console.warn('[login] 한글 복구 실패:', e.message);
+      }
+    }
+  }
+  // ===============================================
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
   const { clinicName, email, password } = req.body;
+
+  console.log('[LOGIN] 수신 데이터:', {
+    clinicName: clinicName ? clinicName.substring(0, 10) : null,
+    email: email ? email.substring(0, 10) : null,
+    password: password ? '***' : null
+  });
 
   if (!clinicName?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ error: '모든 필드가 필요합니다' });
@@ -33,13 +53,6 @@ module.exports = async (req, res) => {
 
   try {
     const CLINIC_ID = '1242772f-622d-4c2f-a2ec-16bfa11a5444';
-    
-    console.log('[LOGIN_DEBUG_1] Request:', {
-      clinicName,
-      email: email.trim(),
-      password: password,
-      CLINIC_ID
-    });
 
     const { data: clinic, error: clinicError } = await supabase
       .from('clinics')
@@ -47,40 +60,21 @@ module.exports = async (req, res) => {
       .eq('id', CLINIC_ID)
       .maybeSingle();
 
-    console.log('[LOGIN_DEBUG_2] Clinic Query Result:', {
-      found: !!clinic,
-      clinic: clinic ? { id: clinic.id, name: clinic.name, password_hash: clinic.password_hash } : null,
-      error: clinicError
-    });
-
     if (clinicError) throw new Error(`병원 조회: ${clinicError.message}`);
     if (!clinic) {
-      return res.status(401).json({ 
-        error: '병원을 찾을 수 없습니다',
-        _debug: { CLINIC_ID, searched: true }
-      });
+      return res.status(401).json({ error: '병원을 찾을 수 없습니다' });
     }
 
     const inputPasswordHash = sha256(password);
-    const storedPasswordHash = clinic.password_hash;
 
-    console.log('[LOGIN_DEBUG_3] Password Check:', {
-      inputPassword: password,
-      inputHash: inputPasswordHash,
-      storedHash: storedPasswordHash,
-      match: inputPasswordHash === storedPasswordHash
+    console.log('[LOGIN] 비밀번호 검증:', {
+      input: inputPasswordHash.substring(0, 8),
+      stored: clinic.password_hash ? clinic.password_hash.substring(0, 8) : 'null',
+      match: clinic.password_hash === inputPasswordHash
     });
 
-    if (storedPasswordHash !== inputPasswordHash) {
-      return res.status(401).json({ 
-        error: '병원명 또는 비밀번호가 틀렸습니다',
-        _debug: {
-          inputHash: inputPasswordHash,
-          storedHash: storedPasswordHash,
-          passwordMatch: false,
-          storedHashExists: !!storedPasswordHash
-        }
-      });
+    if (clinic.password_hash !== inputPasswordHash) {
+      return res.status(401).json({ error: '병원명 또는 비밀번호가 틀렸습니다' });
     }
 
     const { data: user, error: userError } = await supabase
@@ -109,7 +103,6 @@ module.exports = async (req, res) => {
 
       if (insertError) throw new Error(`직원 등록: ${insertError.message}`);
       userData = newUser;
-      console.log('[LOGIN_DEBUG_4] New user created:', { userId: userData.id, name: userData.name });
     } else {
       const { error: updateError } = await supabase
         .from('users')
@@ -117,29 +110,25 @@ module.exports = async (req, res) => {
         .eq('id', user.id);
 
       if (updateError) throw new Error(`로그인 업데이트: ${updateError.message}`);
-      console.log('[LOGIN_DEBUG_4] Existing user updated:', { userId: user.id });
     }
 
     const response = {
       success: true,
       userId: userData.id,
-      name: userData.name,
+      name: userData.name || email.split('@')[0],
       email: email.trim(),
-      role: userData.role,
+      role: userData.role || '상담실장',
       clinic: clinic.name || '디지털스마일치과',
       clinic_id: clinic.id,
       tier: clinic.tier || 'free',
       is_admin: userData.is_admin || false
     };
 
-    console.log('[LOGIN_DEBUG_5] Success:', response);
+    console.log('[LOGIN] 성공:', response.email);
     res.status(200).json(response);
 
   } catch (error) {
-    console.error('[LOGIN_ERROR]', error.message);
-    res.status(500).json({ 
-      error: error.message || 'Internal server error'
-    });
+    console.error('[LOGIN] 오류:', error.message);
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
-
