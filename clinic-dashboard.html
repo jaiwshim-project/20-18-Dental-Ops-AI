@@ -220,6 +220,10 @@
           <label class="form-label">지역</label>
           <input type="text" class="form-input" id="region" readonly>
         </div>
+        <div class="form-group">
+          <label class="form-label">가입일</label>
+          <input type="text" class="form-input" id="createdAt" readonly>
+        </div>
       </div>
 
       <!-- 병원 정보 수정 폼 -->
@@ -247,6 +251,13 @@
       <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:16px;">
         직원들이 로그인할 때 사용하는 6자리 비밀번호를 변경할 수 있습니다.
       </p>
+      <div style="background:var(--gray-50); padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:4px;">현재 설정</div>
+          <div style="font-weight:600;">• • • • • •</div>
+        </div>
+        <div style="font-size:0.875rem; color:var(--text-secondary);">설정됨</div>
+      </div>
       <button class="btn btn-primary btn-sm" onclick="togglePasswordForm()">비밀번호 변경</button>
 
       <!-- 비밀번호 변경 폼 -->
@@ -304,6 +315,30 @@
         <div style="display:flex; gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="addStaff()">저장</button>
           <button class="btn btn-secondary btn-sm" onclick="hideStaffForm()">취소</button>
+        </div>
+      </div>
+
+      <!-- 직원 수정 폼 -->
+      <div id="editStaffFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:20px;">
+        <h3 style="margin-top:0; font-size:1rem;">직원 정보 수정</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">휴대폰</label>
+            <input type="tel" class="form-input" id="editStaffPhone" placeholder="010-1234-5678">
+          </div>
+          <div class="form-group">
+            <label class="form-label">직급</label>
+            <select class="form-input" id="editStaffRole">
+              <option value="상담실장">상담실장</option>
+              <option value="의사">의사</option>
+              <option value="위생사">위생사</option>
+              <option value="직원">직원</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="updateStaff()">저장</button>
+          <button class="btn btn-secondary btn-sm" onclick="hideEditStaffForm()">취소</button>
         </div>
       </div>
 
@@ -370,6 +405,7 @@
         document.getElementById('clinicName').value = clinicData.name;
         document.getElementById('directorName').value = clinicData.director_name || '-';
         document.getElementById('region').value = clinicData.region || '-';
+        document.getElementById('createdAt').value = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
         document.getElementById('tierDisplay').textContent = clinicData.tier.toUpperCase();
         document.getElementById('tierInfo').textContent = clinicData.tier.toUpperCase();
         document.getElementById('createdAtDisplay').textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
@@ -416,7 +452,8 @@
           <td>${s.phone || '-'}</td>
           <td>${s.role || '직원'}</td>
           <td>${new Date(s.created_at).toLocaleDateString('ko-KR')}</td>
-          <td>
+          <td style="display:flex; gap:4px;">
+            <button class="action-btn" style="background:var(--primary-bg); color:var(--primary);" onclick="showEditStaffForm('${s.id}', '${s.name}', '${s.phone || ''}', '${s.role || '직원'}')">수정</button>
             <button class="action-btn delete" onclick="deleteStaff('${s.id}')">삭제</button>
           </td>
         </tr>
@@ -487,6 +524,48 @@
         loadStaffList();
       } catch (e) {
         console.error('[deleteStaff]', e);
+        showToast('오류: ' + e.message, 'error');
+      }
+    }
+
+    // 직원 수정
+    let editingStaffId = null;
+    function showEditStaffForm(staffId, name, phone, role) {
+      editingStaffId = staffId;
+      document.getElementById('editStaffFormContainer').style.display = 'block';
+      document.getElementById('editStaffPhone').value = phone;
+      document.getElementById('editStaffRole').value = role;
+      document.getElementById('editStaffFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideEditStaffForm() {
+      document.getElementById('editStaffFormContainer').style.display = 'none';
+      document.getElementById('editStaffPhone').value = '';
+      editingStaffId = null;
+    }
+
+    async function updateStaff() {
+      const phone = document.getElementById('editStaffPhone').value.trim();
+      const role = document.getElementById('editStaffRole').value;
+
+      try {
+        const res = await fetch('/api/update-staff', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ staffId: editingStaffId, phone, role })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || '업데이트 실패', 'error');
+          return;
+        }
+
+        showToast('직원 정보가 업데이트되었습니다', 'success');
+        hideEditStaffForm();
+        loadStaffList();
+      } catch (e) {
+        console.error('[updateStaff]', e);
         showToast('오류: ' + e.message, 'error');
       }
     }
