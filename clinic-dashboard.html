@@ -301,7 +301,7 @@
     </div>
 
     <!-- 병원관리 로그인 비밀번호 변경 -->
-    <div class="section">
+    <div class="section" id="clinicPasswordSection">
       <h2>🏥 병원관리 로그인 비밀번호</h2>
       <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:16px;">
         병원 관리 대시보드에 접근할 때 사용하는 6자리 비밀번호입니다. 이 비밀번호를 변경할 수 있습니다.
@@ -344,7 +344,7 @@
     </div>
 
     <!-- 직원로그인 비밀번호 변경 -->
-    <div class="section">
+    <div class="section" id="staffPasswordSection">
       <h2>🔐 직원로그인 비밀번호</h2>
       <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:16px;">
         직원들이 로그인할 때 사용하는 6자리 비밀번호를 변경할 수 있습니다.
@@ -1043,24 +1043,32 @@
     // 비밀번호 표시 토글
     let isPasswordDisplaying = false;
     function togglePasswordDisplay() {
+      console.log('[togglePasswordDisplay] 호출됨, clinicData:', clinicData);
       isPasswordDisplaying = !isPasswordDisplaying;
-      const btn = event.target;
+      const btn = document.querySelector('#staffPasswordSection .btn-secondary') || event.target;
+
+      console.log('[togglePasswordDisplay] 버튼:', btn, 'visible:', isPasswordDisplaying);
 
       if (isPasswordDisplaying) {
         // 숫자 표시
+        console.log('[togglePasswordDisplay] 비밀번호 표시');
         if (clinicData?.password) {
+          console.log('[togglePasswordDisplay] clinicData.password:', clinicData.password);
           const pwdChars = clinicData.password.split('');
           for (let i = 1; i <= 6; i++) {
-            document.getElementById(`currentPwd${i}`).value = pwdChars[i - 1] || '';
+            const el = document.getElementById(`currentPwd${i}`);
+            if (el) el.value = pwdChars[i - 1] || '';
           }
         }
-        btn.textContent = '숨김';
+        if (btn) btn.textContent = '숨김';
       } else {
         // 마스킹 표시
+        console.log('[togglePasswordDisplay] 비밀번호 숨김');
         for (let i = 1; i <= 6; i++) {
-          document.getElementById(`currentPwd${i}`).value = '•';
+          const el = document.getElementById(`currentPwd${i}`);
+          if (el) el.value = '•';
         }
-        btn.textContent = '보임';
+        if (btn) btn.textContent = '보임';
       }
     }
 
@@ -1199,16 +1207,23 @@
 
     // 비밀번호 표시/숨김
     function toggleClinicPasswordDisplay() {
+      console.log('[toggleClinicPasswordDisplay] 호출됨');
       clinicPasswordVisible = !clinicPasswordVisible;
       const pwd = loadClinicPassword();
-      const btn = event.target;
+      const btn = document.querySelector('#clinicPasswordSection .btn-secondary') || event.target;
+
+      console.log('[toggleClinicPasswordDisplay] 버튼:', btn, 'visible:', clinicPasswordVisible);
 
       for (let i = 1; i <= 6; i++) {
         const el = document.getElementById(`clinicCurrentPwd${i}`);
-        el.value = clinicPasswordVisible ? pwd[i - 1] : '•';
+        if (el) {
+          el.value = clinicPasswordVisible ? pwd[i - 1] : '•';
+        }
       }
 
-      btn.textContent = clinicPasswordVisible ? '숨김' : '표시';
+      if (btn) {
+        btn.textContent = clinicPasswordVisible ? '숨김' : '표시';
+      }
     }
 
     // 폼 열기/닫기
