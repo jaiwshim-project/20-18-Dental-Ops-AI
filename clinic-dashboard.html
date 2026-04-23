@@ -508,7 +508,7 @@
         </p>
         <div class="form-group">
           <label class="form-label">비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></label>
-          <input type="password" class="form-input" id="authPassword" placeholder="••••••" maxlength="6" pattern="\\d{6}" style="font-size:1.5rem; font-weight:700; letter-spacing:0.3em; text-align:center;" autocomplete="off">
+          <input type="text" class="form-input" id="authPassword" placeholder="000000" maxlength="6" inputmode="numeric" pattern="\\d{6}" style="font-size:1.5rem; font-weight:700; letter-spacing:0.3em; text-align:center;" autocomplete="off">
         </div>
         <div id="authError" style="margin-top:12px; padding:10px 12px; background:var(--danger-bg); color:var(--danger); border-radius:6px; display:none; font-size:0.875rem;"></div>
       </div>
@@ -734,9 +734,10 @@
       console.log('[verifyClinicAdmin] ▶️ 시작');
 
       const errorEl = document.getElementById('authError');
+      const pwdInput = document.getElementById('authPassword');
       const CLINIC_PASSWORD = '123456';
 
-      const pwd = (document.getElementById('authPassword')?.value || '').trim();
+      const pwd = (pwdInput?.value || '').trim();
 
       console.log('[verifyClinicAdmin] 입력값:', {
         pwdLength: pwd.length,
@@ -798,10 +799,29 @@
         showToast('병원 관리자 인증 성공', 'success');
         console.log('[verifyClinicAdmin] ✅ showToast() 완료');
 
+        // 비밀번호 입력 필드 초기화
+        if (pwdInput) {
+          pwdInput.value = '';
+          console.log('[verifyClinicAdmin] ✅ 비밀번호 입력 필드 초기화');
+        }
+
+        // 🔥 clinic_id 확보 (세션 또는 환경에서)
+        if (!clinicId) {
+          const session = Session.get();
+          if (session?.clinic_id) {
+            clinicId = session.clinic_id;
+            console.log('[verifyClinicAdmin] ✅ Session에서 clinicId 설정:', clinicId);
+          }
+        }
+
         // 인증 후 병원 정보 로드
-        console.log('[verifyClinicAdmin] 병원 정보 로드 중... (clinicId:', clinicId, ')');
-        await loadClinicInfo();
-        console.log('[verifyClinicAdmin] ✅✅✅ 모든 작업 완료');
+        if (clinicId) {
+          console.log('[verifyClinicAdmin] 병원 정보 로드 중... (clinicId:', clinicId, ')');
+          await loadClinicInfo();
+          console.log('[verifyClinicAdmin] ✅✅✅ 모든 작업 완료');
+        } else {
+          console.warn('[verifyClinicAdmin] ⚠️ clinicId 없음 - 병원 정보 로드 스킵');
+        }
 
       } catch (e) {
         console.error('[verifyClinicAdmin] ❌ 예외 발생:', e.message, e.stack);
