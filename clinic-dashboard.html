@@ -1413,6 +1413,9 @@
     // sessionStorage의 clinicAuthVerified는 clinic_id 검증 후에만 유지
     // (checkAuth에서 처리함)
 
+    // 🔥 디버그: 페이지 로드 확인
+    alert('clinic-dashboard.html이 로드되었습니다. 확인을 클릭하세요.');
+
     // 즉시 실행 + DOMContentLoaded 대기 (중복 방지)
     console.log('[clinic-dashboard] ▶️ 초기화 시작');
     console.log('[clinic-dashboard] document.readyState:', document.readyState);
