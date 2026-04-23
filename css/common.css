@@ -190,7 +190,7 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
   padding: 9px 12px;
   margin: 2px 0;
   border-radius: var(--radius-sm);
-  color: rgba(255,255,255,0.48);
+  color: #FFFFFF;
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -215,14 +215,14 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
 
 .nav-item:hover {
   background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.96);
+  color: #FFD700;
   border-color: rgba(255,255,255,0.15);
   transform: translateX(4px);
 }
 
 .nav-item.active {
   background: rgba(0, 102, 255, 0.25);
-  color: #FFFFFF;
+  color: #FFD700;
   border-color: rgba(0, 102, 255, 0.4);
   font-weight: 600;
 }
