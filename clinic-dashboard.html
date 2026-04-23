@@ -514,7 +514,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('clinicAuthModal')">취소</button>
-        <button class="btn btn-primary" id="authVerifyBtn" onclick="verifyClinicAdmin();" style="cursor:pointer;">✓ 인증</button>
+        <button class="btn btn-primary" id="authVerifyBtn" style="cursor:pointer;">✓ 인증</button>
       </div>
     </div>
   </div>
@@ -647,12 +647,20 @@
 
       // 인증 버튼 이벤트 리스너
       if (authVerifyBtn) {
-        authVerifyBtn.addEventListener('click', (e) => {
+        authVerifyBtn.addEventListener('click', async (e) => {
           e.preventDefault();
-          console.log('[authVerifyBtn] 클릭됨 → verifyClinicAdmin() 호출');
-          verifyClinicAdmin();
+          console.log('═══════════════════════════════════════');
+          console.log('[authVerifyBtn] 🔐 클릭됨 → verifyClinicAdmin() 호출');
+          console.log('═══════════════════════════════════════');
+          try {
+            await window.verifyClinicAdmin();
+          } catch (err) {
+            console.error('[authVerifyBtn] ❌ 오류:', err.message);
+          }
         });
         console.log('[registerAuthClinicInputListeners] ✅ 인증 버튼 리스너 등록');
+      } else {
+        console.error('[registerAuthClinicInputListeners] ❌ authVerifyBtn 요소를 찾을 수 없음!');
       }
     }
 
