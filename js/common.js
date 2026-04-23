@@ -886,6 +886,7 @@ function renderFooter() {
         </div>
         <div class="footer-section">
           <h4>Docs</h4>
+          <a href="brand-story.html" class="footer-link">브랜드 스토리</a>
           <a href="manual.html" class="footer-link">매뉴얼</a>
           <a href="architecture.html" class="footer-link">아키텍처</a>
         </div>
