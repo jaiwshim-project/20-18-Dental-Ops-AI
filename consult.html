@@ -2488,7 +2488,7 @@
 
         // 화자 미구분 발화 배열 구성 (녹음된 turns 또는 수동 입력 1개)
         const utterances = hasTurns
-          ? turns.map(t => ({ text: t.text, at: t.at }))
+          ? turns.map(t => ({ text: t.text, at: t.at, speaker: t.speaker }))
           : [{ text: manualQ, at: Date.now() }];
 
         // 현재 선택된 언어 전달
@@ -2519,18 +2519,37 @@
         quickBox.appendChild(replyEl);
         area.appendChild(quickBox);
 
-        // 2단계: 상세 응답
-        const coachRes = await fullPromise;
-        const data = coachRes.data;
+        // 2단계: 상세 응답 (30초 타임아웃 추가)
+        let coachRes;
+        try {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('AI 응답 타임아웃 (30초 초과)')), 30000)
+          );
+          coachRes = await Promise.race([fullPromise, timeoutPromise]);
+        } catch (timeoutErr) {
+          console.error('[runCoach] AI 응답 실패:', timeoutErr);
+          showToast('⚠️ AI 응답이 지연됩니다. 다시 시도해주세요.', 'warning');
+          coachArea.innerHTML = '<div style="padding:12px; color:var(--danger);">⚠️ 상세 분석 실패 · 다시 시도해주세요</div>';
+          throw timeoutErr;
+        }
+
+        console.log('[runCoach] AI 응답 수신:', coachRes);
+        const data = coachRes?.data;
+        if (!data) throw new Error('AI 응답 데이터 없음');
 
         // ① AI가 분리한 화자 라벨을 대화창에 반영
         if (data.diarized_turns && data.diarized_turns.length) {
+          console.log('[runCoach] 화자 구분 적용:', data.diarized_turns.length);
           applyDiarization(data.diarized_turns);
+        } else {
+          console.warn('[runCoach] 화자 구분 데이터 없음');
         }
 
         // ② QLRCQ 트래커 + 코칭 카드 렌더
+        console.log('[runCoach] 렌더링 시작');
         renderQlrcqTracker(data);
         renderCoach(data, coachRes.demo);
+        console.log('[runCoach] 렌더링 완료');
         if (coachRes.demo) badge.innerHTML = '<span class="demo-badge">DEMO</span>';
 
 
