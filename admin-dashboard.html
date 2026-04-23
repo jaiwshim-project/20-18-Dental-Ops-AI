@@ -55,6 +55,7 @@
 </head>
 <body>
   <!-- 🔒 비밀번호 잠금 화면 -->
+  <!-- 인증 잠금 제거됨 (콘텐츠 바로 표시)
   <div id="authLock" class="auth-lock">
     <div class="auth-card">
       <div style="font-size:3rem; margin-bottom:12px;">🔒</div>
@@ -69,9 +70,10 @@
       </div>
     </div>
   </div>
+  -->
 
-  <!-- 인증 완료 후 표시 -->
-  <div id="authedContent" style="display:none;">
+  <!-- 인증 완료 후 표시 (인증 제거 - 처음부터 표시) -->
+  <div id="authedContent" style="display:block;">
     <div class="layout" id="app">
       <div class="main">
         <header class="header">
