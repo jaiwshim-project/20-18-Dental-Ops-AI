@@ -51,3 +51,33 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(tryLoadSidebar, 100);
   }
 })();
+
+// ===== 사이드바 지속적 유지 (강력한 방식) =====
+(function maintainSidebar() {
+  function ensureSidebar() {
+    const appDiv = document.getElementById('app');
+    const sidebar = document.getElementById('sidebar');
+    const renderFunc = window.renderSidebar;
+    
+    // 사이드바가 없으면 추가
+    if (appDiv && !sidebar && renderFunc) {
+      const pageName = document.body.getAttribute('data-page') || 'page';
+      try {
+        appDiv.insertAdjacentHTML('afterbegin', renderFunc(pageName));
+        console.log('[✅ Sidebar maintained]', pageName);
+      } catch (e) {
+        console.error('[Sidebar error]', e);
+      }
+    }
+  }
+  
+  // 초기 로드
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureSidebar);
+  } else {
+    setTimeout(ensureSidebar, 100);
+  }
+  
+  // 주기적 확인 (1초마다 - 사이드바가 사라지면 다시 추가)
+  setInterval(ensureSidebar, 1000);
+})();
