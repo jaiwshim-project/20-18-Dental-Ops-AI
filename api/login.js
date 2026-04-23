@@ -99,10 +99,10 @@ module.exports = async (req, res) => {
     console.log('[LOGIN] ✅ 비밀번호 일치');
 
     // 4️⃣ LAST LOGIN 업데이트
-    await sb
-      .from('users')
+    sb.from('users')
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id)
+      .then(() => {})
       .catch(() => {});
 
     // ✅ SUCCESS
