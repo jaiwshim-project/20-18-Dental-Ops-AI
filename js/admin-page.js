@@ -1,0 +1,513 @@
+document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('admin'));
+
+// ---- 권한 체크 ----
+function checkAccess() {
+  const s = Session.get();
+  if (!s) return false;
+  const role = s.role || '';
+  return role.includes('원장') || role.includes('관리자') || role.includes('CEO');
+}
+
+function renderAccessDenied() {
+  document.getElementById('contentArea').innerHTML = `
+    <div class="access-denied">
+      <div style="font-size:3rem; margin-bottom:16px;">&#x1F510;</div>
+      <h2>CEO 권한이 필요합니다</h2>
+      <p style="margin-top:12px; margin-bottom:24px;">이 페이지는 <strong>원장</strong> 또는 <strong>관리자 (CEO)</strong> 역할만 접근할 수 있습니다.</p>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <a href="index.html" class="btn btn-primary">&#x1F3E0; 홈으로 돌아가기</a>
+        <button class="btn btn-secondary" onclick="logoutAndRefresh()">로그아웃 후 재로그인</button>
+      </div>
+    </div>`;
+}
+
+function renderCEO() {
+  const kpi = SampleData.kpi;
+  document.getElementById('contentArea').innerHTML = `
+    <div class="ceo-hero">
+      <div>
+        <h2>&#x1F454; CEO Advisory</h2>
+        <p>AI가 KPI와 컨텍스트를 분석해 실행 가능한 전략을 제안합니다</p>
+      </div>
+      <div>
+        <span class="state-badge" id="stateBadge">분석 대기</span>
+      </div>
+    </div>
+
+    <!-- KPI 요약 -->
+    <div class="kpi-grid mt-24">
+      <div class="kpi-card">
+        <div class="kpi-label">전환율</div>
+        <div class="kpi-value">${kpi.conversionRate}%</div>
+        <div class="kpi-change up">&#8593; ${kpi.conversionRateDelta}% vs 지난주</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">평균 상담시간</div>
+        <div class="kpi-value">${kpi.avgConsultMin}분</div>
+        <div class="kpi-change up">&#8595; ${Math.abs(kpi.avgConsultMinDelta)}분</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">재방문율</div>
+        <div class="kpi-value">${kpi.revisitRate}%</div>
+        <div class="kpi-change up">&#8593; ${kpi.revisitRateDelta}%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">AI 활용률</div>
+        <div class="kpi-value">${kpi.aiUsageRate}%</div>
+        <div class="kpi-change up">&#8593; ${kpi.aiUsageRateDelta}%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">월 매출</div>
+        <div class="kpi-value" style="font-size:1.5rem;">${formatCurrency(kpi.monthlyRevenue)}</div>
+        <div class="kpi-change up">&#8593; ${kpi.monthlyRevenueDelta}%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">관리 환자</div>
+        <div class="kpi-value">${SampleData.patients.length}</div>
+        <div class="kpi-change up">활성</div>
+      </div>
+    </div>
+
+    <div class="grid-2 mt-24">
+      <!-- CEO 전략 조언 -->
+      <div class="card">
+        <div class="card-header flex justify-between items-center">
+          <h3>&#x1F9E0; AI 전략 조언</h3>
+          <button class="btn btn-primary btn-sm" onclick="generateAdvice()" id="adviceBtn">&#x2728; 전략 조언 생성</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">컨텍스트 (선택)</label>
+            <textarea class="form-input" id="contextInput" rows="3" placeholder="예: 이번 달 경쟁 병원 오픈, 상담실장 1명 휴직 예정..."></textarea>
+          </div>
+          <div id="adviceResult">
+            <div style="text-align:center; padding:32px; color:var(--text-tertiary); font-size:0.875rem;">
+              <div style="font-size:2rem; margin-bottom:8px;">&#x1F4A1;</div>
+              위 버튼을 눌러 AI 전략 조언을 생성하세요.<br>
+              <span style="font-size:0.75rem;">(Gemini API 키 미설정 시 데모 응답)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ontology Graph -->
+      <div class="card">
+        <div class="card-header flex justify-between items-center">
+          <h3>&#x1F5FA; 조직 온톨로지</h3>
+          <button class="btn btn-accent btn-sm" onclick="generateAutomation()" id="autoBtn">&#x2699; 자동화 제안</button>
+        </div>
+        <div class="card-body">
+          <svg class="ontology-graph" id="ontoGraph" viewBox="0 0 600 280"></svg>
+          <div id="autoResult" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 팀 성과 -->
+    <div class="card mt-24">
+      <div class="card-header"><h3>&#x1F465; 팀 성과</h3></div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>팀원</th>
+                <th>역할</th>
+                <th>상담 수</th>
+                <th>전환율</th>
+                <th>평균 상담시간</th>
+                <th>환자 만족도</th>
+                <th>AI 활용</th>
+              </tr>
+            </thead>
+            <tbody id="teamTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    ${isSuperAdmin() ? `
+    <!-- 👥 회원 관리 (SaaS 본사 전용) -->
+    <div class="card mt-24">
+      <div class="card-header flex justify-between items-center">
+        <h3>👥 회원 관리 (SaaS 본사 전용)</h3>
+        <button class="btn btn-secondary btn-sm" onclick="renderMembersTable()">🔄 새로고침</button>
+      </div>
+      <div class="card-body">
+        <div id="membersSummary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>이메일</th>
+                <th>이름</th>
+                <th>병원</th>
+                <th>역할</th>
+                <th>요금제</th>
+                <th>이번달 사용</th>
+                <th>본사 관리자</th>
+                <th>가입일</th>
+              </tr>
+            </thead>
+            <tbody id="membersTable">
+              <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+  `;
+
+  drawOntology();
+  renderTeam();
+  if (isSuperAdmin()) renderMembersTable();
+}
+
+// ---- 본사 관리자(SaaS) 권한 확인 ----
+function isSuperAdmin() {
+  const s = Session.get();
+  return s && s.is_admin === true;
+}
+
+// ---- 회원 관리 테이블 렌더 ----
+async function renderMembersTable() {
+  const tbody = document.getElementById('membersTable');
+  const summary = document.getElementById('membersSummary');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
+
+  try {
+    const [users, usage] = await Promise.all([
+      SupabaseDB.listUsers(),
+      SupabaseDB.getAllMonthlyUsage()
+    ]);
+
+    const tierLimits = { free: 3, pro: 20, max: 60 };
+    let free = 0, pro = 0, max = 0;
+
+    const rows = users.map(u => {
+      const used = usage[u.id] || 0;
+      const tier = u.tier || 'free';
+      const limit = tierLimits[tier];
+      const ratio = limit ? used / limit : 0;
+      const isOver = !u.is_admin && used >= limit;
+      const isNear = !u.is_admin && !isOver && ratio >= 0.8;
+      const usageColor = isOver ? 'var(--danger)' : isNear ? 'var(--warning)' : 'var(--text-primary)';
+      const usageWeight = (isOver || isNear) ? '700' : '500';
+      const usageIcon = isOver ? ' 🔴' : isNear ? ' ⚠️' : '';
+
+      if (tier === 'free') free++;
+      else if (tier === 'pro') pro++;
+      else if (tier === 'max') max++;
+
+      const safeEmail = (u.email || '').replace(/</g, '&lt;');
+      const safeName = (u.name || '').replace(/</g, '&lt;');
+      const safeClinic = (u.clinic || '').replace(/</g, '&lt;');
+      const safeRole = (u.role || '').replace(/</g, '&lt;');
+
+      return `
+        <tr>
+          <td style="font-family:monospace; font-size:0.8125rem;">${safeEmail}</td>
+          <td>${safeName}</td>
+          <td>${safeClinic}</td>
+          <td style="font-size:0.8125rem;">${safeRole}</td>
+          <td>
+            <select onchange="changeTier('${u.id}', this.value)" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
+              <option value="free" ${tier === 'free' ? 'selected' : ''}>🆓 Free (3/월)</option>
+              <option value="pro" ${tier === 'pro' ? 'selected' : ''}>⭐ Pro (20/월)</option>
+              <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60/월)</option>
+            </select>
+          </td>
+          <td style="color:${usageColor}; font-weight:${usageWeight};">
+            ${used} / ${u.is_admin ? '∞' : limit}${usageIcon}
+          </td>
+          <td>${u.is_admin ? '✅' : '—'}</td>
+          <td style="font-size:0.75rem; color:var(--text-tertiary);">${(u.created_at || '').slice(0, 10)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.innerHTML = rows || '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">등록된 회원이 없습니다</td></tr>';
+
+    if (summary) {
+      summary.innerHTML = `
+        <div style="display:flex; gap:20px; padding:12px 16px; background:var(--primary-bg); border-radius:var(--radius-md); margin-bottom:16px; font-size:0.875rem; flex-wrap:wrap;">
+          <span><strong>전체:</strong> ${users.length}명</span>
+          <span>🆓 Free <strong>${free}</strong></span>
+          <span>⭐ Pro <strong>${pro}</strong></span>
+          <span>🚀 Max <strong>${max}</strong></span>
+        </div>
+      `;
+    }
+  } catch (e) {
+    console.error('회원 조회 실패', e);
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:20px; color:var(--danger);">회원 조회 실패: ${e.message}</td></tr>`;
+  }
+}
+
+// ---- tier 변경 ----
+async function changeTier(userId, tier) {
+  try {
+    await SupabaseDB.updateUserTier(userId, tier);
+    showToast('요금제 변경 완료', 'success');
+    renderMembersTable();
+  } catch (e) {
+    showToast('변경 실패: ' + e.message, 'error');
+  }
+}
+
+// ---- Ontology SVG ----
+function drawOntology() {
+  const structure = OntologyEngine.defaultStructure;
+  const svg = document.getElementById('ontoGraph');
+  if (!svg) return;
+
+  const roles = structure.roles;
+  const processes = structure.processes;
+  const flows = structure.flows;
+
+  // 프로세스 가로 배치 (상단)
+  const procPositions = {};
+  const procY = 60;
+  const procSpacing = 560 / (processes.length - 1);
+  processes.forEach((p, i) => {
+    procPositions[p] = { x: 20 + i * procSpacing, y: procY };
+  });
+
+  // 역할 가로 배치 (하단)
+  const rolePositions = {};
+  const roleY = 210;
+  const roleSpacing = 560 / (roles.length - 1);
+  roles.forEach((r, i) => {
+    rolePositions[r] = { x: 20 + i * roleSpacing, y: roleY };
+  });
+
+  let html = '';
+
+  // 플로우 (프로세스 간 화살표)
+  flows.forEach(f => {
+    const from = procPositions[f.from];
+    const to = procPositions[f.to];
+    if (from && to) {
+      html += `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"
+        stroke="var(--gray-400)" stroke-width="1.5" marker-end="url(#arrow)"/>`;
+    }
+  });
+
+  // 역할 → 프로세스 (담당) 연결
+  flows.forEach(f => {
+    const role = rolePositions[f.role];
+    const proc = procPositions[f.to];
+    if (role && proc) {
+      html += `<line x1="${role.x}" y1="${role.y}" x2="${proc.x}" y2="${proc.y}"
+        stroke="var(--gray-300)" stroke-width="1" stroke-dasharray="3,3"/>`;
+    }
+  });
+
+  // 프로세스 노드
+  Object.entries(procPositions).forEach(([name, pos]) => {
+    html += `<g class="onto-node">
+      <circle cx="${pos.x}" cy="${pos.y}" r="22" fill="var(--primary)" stroke="#FFF" stroke-width="2"/>
+      <text x="${pos.x}" y="${pos.y + 4}" text-anchor="middle" fill="#FFF">${name}</text>
+    </g>`;
+  });
+
+  // 역할 노드
+  Object.entries(rolePositions).forEach(([name, pos]) => {
+    html += `<g class="onto-node">
+      <circle cx="${pos.x}" cy="${pos.y}" r="20" fill="var(--accent)" stroke="#FFF" stroke-width="2"/>
+      <text x="${pos.x}" y="${pos.y + 4}" text-anchor="middle" fill="#FFF" style="font-size:10px;">${name}</text>
+    </g>`;
+  });
+
+  // 라벨
+  html += `<text x="300" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="var(--gray-600)">프로세스 (Process)</text>`;
+  html += `<text x="300" y="268" text-anchor="middle" font-size="11" font-weight="700" fill="#0F766E">역할 (Role)</text>`;
+
+  // 마커
+  html += `<defs><marker id="arrow" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--gray-400)"/></marker></defs>`;
+
+  svg.innerHTML = html;
+}
+
+// ---- Team Performance ----
+function renderTeam() {
+  const team = [
+    { name: '김원장', role: '원장', consults: 42, conversion: 74, avgMin: 16, satisfaction: 4.8, ai: 78 },
+    { name: '박실장', role: '상담실장', consults: 128, conversion: 68, avgMin: 14, satisfaction: 4.7, ai: 92 },
+    { name: '이코디', role: '코디네이터', consults: 86, conversion: 62, avgMin: 12, satisfaction: 4.5, ai: 85 },
+    { name: '정코디', role: '코디네이터', consults: 74, conversion: 58, avgMin: 13, satisfaction: 4.4, ai: 71 },
+    { name: '최위생', role: '치위생사', consults: 38, conversion: 52, avgMin: 15, satisfaction: 4.6, ai: 64 },
+  ];
+  document.getElementById('teamTable').innerHTML = team.map(t => {
+    const convColor = t.conversion >= 65 ? 'var(--success)' : t.conversion >= 55 ? 'var(--warning)' : 'var(--danger)';
+    return `<tr>
+      <td><strong>${t.name}</strong></td>
+      <td><span class="badge badge-primary">${t.role}</span></td>
+      <td>${t.consults}건</td>
+      <td style="font-weight:700; color:${convColor};">${t.conversion}%</td>
+      <td>${t.avgMin}분</td>
+      <td>${'&#11088;'.repeat(Math.floor(t.satisfaction))} ${t.satisfaction}</td>
+      <td>${t.ai}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- CEO Advise ----
+async function generateAdvice() {
+  const btn = document.getElementById('adviceBtn');
+  const ctx = document.getElementById('contextInput').value.trim();
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:14px; height:14px; border-width:2px; display:inline-block;"></div> 분석 중...';
+  document.getElementById('adviceResult').innerHTML = `<div style="text-align:center; padding:28px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:12px; font-size:0.8125rem;">Gemini로 전략 분석 중...</p></div>`;
+
+  try {
+    // 실데이터 우선: Supabase KPI 스냅샷 최신 1건 or 대시보드 집계 → 없으면 SampleData.kpi
+    let kpis = SampleData.kpi;
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+      try {
+        const agg = await SupabaseDB.getDashboardAggregates();
+        if (agg && agg.kpi) kpis = agg.kpi;
+      } catch (_) {}
+    }
+    const res = await CEOEngine.advise({ kpis, context: ctx });
+    const data = res.data || res;
+    renderAdvice(data, res.demo);
+
+    // Supabase 저장 — consult_logs engine='ceo'
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+      try {
+        await SupabaseDB.saveConsultLog({
+          engine: 'ceo',
+          input: ctx,
+          output: (data.top_3_actions || []).map((a,i)=>`${i+1}. ${a.action}`).join(' / '),
+          metadata: {
+            state: data.state,
+            top_3_actions: data.top_3_actions,
+            risks: data.risks,
+            roi_estimate: data.roi_estimate,
+            author: Session.get()?.name,
+            clinic: Session.get()?.clinic,
+            kpis
+          }
+        });
+      } catch (e) { console.warn('CEO 조언 저장 실패', e); }
+    }
+  } catch (e) {
+    const r = document.getElementById('adviceResult');
+    r.textContent = '';
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'padding:16px; color:var(--danger);';
+    errEl.textContent = '오류: ' + e.message;
+    r.appendChild(errEl);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#x2728; 다시 생성';
+  }
+}
+
+function renderAdvice(data, isDemo) {
+  // State badge
+  const stateBadge = document.getElementById('stateBadge');
+  const stateLabel = { growth: '&#x1F680; 성장 (Growth)', steady: '&#x1F6EC; 안정 (Steady)', caution: '&#x26A0; 주의 (Caution)', danger: '&#x1F6A8; 위험 (Danger)' };
+  stateBadge.className = 'state-badge ' + (data.state || 'steady');
+  stateBadge.innerHTML = stateLabel[data.state] || '&#x1F6EC; 안정';
+
+  const actions = data.top_3_actions || [];
+  const risks = data.risks || [];
+
+  let html = '';
+  if (isDemo) {
+    html += `<div style="padding:10px 14px; background:var(--warning-bg); color:var(--warning-text); border-radius:var(--radius-sm); margin-bottom:14px; font-size:0.75rem;">&#x26A0; Gemini API 미연결 — 데모 응답입니다</div>`;
+  }
+
+  html += `<h4 style="margin-bottom:12px;">&#x1F3AF; 우선순위 Top 3 액션</h4>`;
+  actions.forEach((a, i) => {
+    html += `<div class="priority-card p${i + 1}">
+      <div style="display:flex; align-items:center; margin-bottom:10px;">
+        <span class="priority-num">${a.priority || i + 1}</span>
+        <strong style="font-size:1rem;">${a.action}</strong>
+      </div>
+      <div style="font-size:0.8125rem; color:var(--text-secondary); line-height:1.7;">
+        <div><strong>근거:</strong> ${a.why || '-'}</div>
+        <div><strong>예상 효과:</strong> <span style="color:var(--success); font-weight:600;">${a.expected_impact || '-'}</span></div>
+        <div><strong>기간:</strong> ${a.timeframe || '-'}</div>
+      </div>
+    </div>`;
+  });
+
+  if (risks.length) {
+    html += `<h4 style="margin-top:20px; margin-bottom:10px;">&#x26A0; 리스크</h4>`;
+    html += `<div>${risks.map(r => `<span class="risk-chip">${r}</span>`).join('')}</div>`;
+  }
+
+  if (data.roi_estimate) {
+    html += `<div class="roi-box mt-16">
+      <div style="font-size:0.75rem; color:var(--success-text); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">예상 ROI</div>
+      <div class="roi-value mt-8">${data.roi_estimate}</div>
+    </div>`;
+  }
+
+  document.getElementById('adviceResult').innerHTML = html;
+}
+
+// ---- Ontology Automation ----
+async function generateAutomation() {
+  const btn = document.getElementById('autoBtn');
+  btn.disabled = true;
+  btn.innerHTML = '분석 중...';
+  document.getElementById('autoResult').innerHTML = `<div style="text-align:center; padding:20px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:8px; font-size:0.75rem;">자동화 후보 분석 중...</p></div>`;
+
+  try {
+    const res = await OntologyEngine.suggestAutomation(OntologyEngine.defaultStructure);
+    const data = res.data || res;
+    const candidates = data.automation_candidates || [];
+
+    // Supabase 저장 — consult_logs engine='ontology'
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+      try {
+        await SupabaseDB.saveConsultLog({
+          engine: 'ontology',
+          input: '자동화 후보 분석 요청',
+          output: candidates.map(c => `${c.process}:${c.automation_type}`).join(' / '),
+          metadata: { candidates, author: Session.get()?.name, clinic: Session.get()?.clinic }
+        });
+      } catch (e) { console.warn('자동화 제안 저장 실패', e); }
+    }
+    const priorityBadge = { high: 'badge-danger', mid: 'badge-warning', low: 'badge-primary' };
+
+    let html = `<h4 style="margin-bottom:10px; font-size:0.875rem;">${res.demo ? '&#x26A0; 데모 응답' : '&#x1F4A1; AI 제안'} — 자동화 후보</h4>`;
+    html += `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>프로세스</th><th>현재 담당</th><th>자동화 유형</th><th>절감</th><th>우선순위</th>
+      </tr></thead><tbody>`;
+    candidates.forEach(c => {
+      html += `<tr>
+        <td><strong>${c.process}</strong></td>
+        <td>${c.current_role}</td>
+        <td>${c.automation_type}</td>
+        <td>${c.expected_saving_hours_per_week}h/주</td>
+        <td><span class="badge ${priorityBadge[c.priority] || 'badge-primary'}">${c.priority}</span></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    document.getElementById('autoResult').innerHTML = html;
+  } catch (e) {
+    const r = document.getElementById('autoResult');
+    r.textContent = '';
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'color:var(--danger); padding:12px; font-size:0.8125rem;';
+    errEl.textContent = '오류: ' + e.message;
+    r.appendChild(errEl);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#x2699; 다시 분석';
+  }
+}
+
+// ---- 초기화 ----
+setTimeout(() => {
+  if (checkAccess()) renderCEO();
+  else renderAccessDenied();
+}, 100);

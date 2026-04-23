@@ -991,7 +991,7 @@
   <script src="js/supabase.js"></script>
   <script src="js/qlrcq-framework.js"></script>
   <script src="js/dental-engines.js"></script>
-  <script src="js/consult-page.js"></script>
+  <script>
     // 30개 언어 지원
     // 🧪 테스트 모드 (URL ?test=true 파라미터로 활성화)
     const isTestMode = new URLSearchParams(window.location.search).has("test");
@@ -2621,5 +2621,6 @@
       }
     }
 
+  </script>
 </body>
 </html>

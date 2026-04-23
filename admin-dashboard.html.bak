@@ -497,6 +497,7 @@
             throw new Error(err.error || '삭제 실패');
           } catch {
             throw new Error(`API 오류 (${res.status}): ${responseText}`);
+          }
         }
 
         const data = JSON.parse(responseText);
