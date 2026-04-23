@@ -453,6 +453,12 @@ async function submitClinicLogin() {
 
     if (!res.ok) {
       const err = await res.json();
+      console.error('[submitClinicLogin] ❌ API 에러:', {
+        status: res.status,
+        error: err.error,
+        debug: err.debug,
+        fullResponse: err
+      });
       showToast(err.error || '로그인 실패', 'error');
       return;
     }
