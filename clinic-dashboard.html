@@ -1154,7 +1154,7 @@
     }
 
     // DOMContentLoaded 또는 즉시 실행
-    function initClinicDashboard() {
+    async function initClinicDashboard() {
       console.log('[initClinicDashboard] ▶️ 실행 시작');
       console.log('[initClinicDashboard] document.readyState:', document.readyState);
 
@@ -1164,8 +1164,47 @@
       if (adminClinicId) {
         clinicId = adminClinicId;
         console.log('[initClinicDashboard] ✅ URL 파라미터에서 clinic_id 설정:', clinicId);
+
+        // 관리자 접속 경우 자동 인증 통과 + 정보 로드
+        try {
+          console.log('[initClinicDashboard] 관리자 접속 감지 → 자동 인증 통과');
+          isClinicAuthVerified = true;
+          sessionStorage.setItem('clinicAuthVerified', 'true');
+
+          // 모달 숨김 + 대시보드 표시
+          const modal = document.getElementById('clinicAuthModal');
+          if (modal) modal.classList.add('hidden');
+          const container = document.querySelector('.clinic-container');
+          if (container) container.style.display = 'block';
+
+          // 병원 정보 자동 로드
+          console.log('[initClinicDashboard] 병원 정보 로드 중...');
+          await loadClinicInfo();
+          console.log('[initClinicDashboard] ✅ 병원 정보 로드 완료');
+        } catch (e) {
+          console.error('[initClinicDashboard] ❌ 자동 로드 실패:', e);
+        }
+
+        // 나머지 초기화
+        try {
+          loadAllClinics();
+          console.log('[initClinicDashboard] ✅ loadAllClinics() 완료');
+        } catch (e) {
+          console.error('[initClinicDashboard] ⚠️ loadAllClinics() 에러:', e);
+        }
+
+        try {
+          registerAuthClinicInputListeners();
+          console.log('[initClinicDashboard] ✅ registerAuthClinicInputListeners() 완료');
+        } catch (e) {
+          console.error('[initClinicDashboard] ⚠️ registerAuthClinicInputListeners() 에러:', e);
+        }
+
+        console.log('[initClinicDashboard] ✅✅✅ 초기화 완료 (관리자 모드)');
+        return;
       }
 
+      // 일반 사용자 접속 경우
       try {
         checkAuth();
         console.log('[initClinicDashboard] ✅ checkAuth() 완료');
@@ -1187,7 +1226,7 @@
         console.error('[initClinicDashboard] ⚠️ registerAuthClinicInputListeners() 에러:', e);
       }
 
-      console.log('[initClinicDashboard] ✅✅✅ 초기화 완료');
+      console.log('[initClinicDashboard] ✅✅✅ 초기화 완료 (일반 모드)');
     }
 
     // 즉시 실행 + DOMContentLoaded 대기 (중복 방지)
