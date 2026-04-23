@@ -223,6 +223,19 @@ const Session = {
   isLoggedIn() { return !!this.get(); }
 };
 
+// 🔄 캐시 버전 - 변경 시 로컬스토리지 마이그레이션 트리거
+const CACHE_VERSION = '1.0.3';
+const storedVersion = localStorage.getItem('cache_version');
+if (storedVersion !== CACHE_VERSION) {
+  console.log('[cache] 버전 변경 감지:', storedVersion, '→', CACHE_VERSION);
+  // clinic-dashboard 관련 세션만 유지, 나머지는 검증
+  const session = localStorage.getItem('dops_session');
+  localStorage.clear();
+  if (session) localStorage.setItem('dops_session', session);
+  localStorage.setItem('cache_version', CACHE_VERSION);
+  console.log('[cache] ✅ 캐시 마이그레이션 완료');
+}
+
 // 화이트리스트 (로그인 없이 공개)
 const PUBLIC_PAGES = ['index.html', 'manual.html', 'architecture.html', 'clinic-dashboard.html', 'admin-dashboard.html', ''];
 

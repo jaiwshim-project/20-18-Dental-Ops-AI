@@ -1377,6 +1377,18 @@
       console.log('[initClinicDashboard] ✅✅✅ 초기화 완료 (일반 모드)');
     }
 
+    // 캐시 문제 진단 및 초기화
+    console.log('[clinic-dashboard] 캐시 상태 진단:');
+    console.log('[clinic-dashboard] - localStorage keys:', Object.keys(localStorage).join(', '));
+    console.log('[clinic-dashboard] - sessionStorage keys:', Object.keys(sessionStorage).join(', '));
+
+    // clinic-dashboard 로드 시 이전 인증 정보만 유지, 나머지 캐시는 검증
+    const stored_session = localStorage.getItem('dops_session');
+    console.log('[clinic-dashboard] - localStorage session:', !!stored_session);
+
+    // sessionStorage의 clinicAuthVerified는 clinic_id 검증 후에만 유지
+    // (checkAuth에서 처리함)
+
     // 즉시 실행 + DOMContentLoaded 대기 (중복 방지)
     console.log('[clinic-dashboard] ▶️ 초기화 시작');
     console.log('[clinic-dashboard] document.readyState:', document.readyState);
