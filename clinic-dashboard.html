@@ -812,6 +812,18 @@
         const createdDisplayEl = document.getElementById('createdAtDisplay');
         if (createdDisplayEl) createdDisplayEl.textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
 
+        // 🔄 세션의 tier 업데이트 (실시간 배지 동기화)
+        const currentSession = Session.get();
+        if (currentSession) {
+          currentSession.tier = clinicData.tier || 'free';
+          Session.login(currentSession);
+          console.log('[loadClinicInfo] 세션 tier 업데이트:', clinicData.tier);
+          // updateSessionUI를 다시 호출하여 배지 갱신
+          if (typeof updateSessionUI === 'function') {
+            updateSessionUI();
+          }
+        }
+
         // 직원로그인 비밀번호 표시 (localStorage에서 로드)
         const staffPwd = loadStaffPassword();
         const staffPwdChars = staffPwd.split('');
