@@ -109,11 +109,25 @@ function showToast(message, type = 'info', duration = 3000) {
 // --- Modal Helpers ---
 function openModal(id) {
   const overlay = document.getElementById(id);
-  if (overlay) overlay.classList.add('active');
+  if (overlay) {
+    overlay.classList.add('active');
+    overlay.classList.remove('hidden');
+    // clinic-dashboard의 !important를 처리하기 위해 인라인 스타일도 설정
+    overlay.style.setProperty('display', 'flex', 'important');
+    overlay.style.setProperty('opacity', '1', 'important');
+    overlay.style.setProperty('pointer-events', 'all', 'important');
+  }
 }
 function closeModal(id) {
   const overlay = document.getElementById(id);
-  if (overlay) overlay.classList.remove('active');
+  if (overlay) {
+    overlay.classList.remove('active');
+    overlay.classList.add('hidden');
+    // clinic-dashboard의 !important를 처리하기 위해 인라인 스타일도 설정
+    overlay.style.setProperty('display', 'none', 'important');
+    overlay.style.setProperty('opacity', '0', 'important');
+    overlay.style.setProperty('pointer-events', 'none', 'important');
+  }
 }
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('active');

@@ -11,7 +11,8 @@
     .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none !important; }
 
     /* 🔐 clinic-dashboard에서는 인증 모달을 기본으로 활성화 */
-    #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; }
+    #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; display: flex !important; }
+    #clinicAuthModal.hidden { opacity: 0 !important; pointer-events: none !important; display: none !important; }
 
     .clinic-header {
       background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
