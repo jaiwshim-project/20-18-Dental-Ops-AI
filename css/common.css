@@ -178,7 +178,7 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.32);
   padding: 14px 12px 8px;
   margin-top: 4px;
 }
@@ -190,12 +190,12 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
   padding: 9px 12px;
   margin: 2px 0;
   border-radius: var(--radius-sm);
-  color: rgba(255,255,255,0.68);
+  color: rgba(255,255,255,0.48);
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
   position: relative;
   cursor: pointer;
 }
@@ -245,7 +245,7 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
 .nav-subitem {
   padding-left: 38px;
   font-size: 0.8rem;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.38);
   margin: 1px 0;
 }
 .nav-subitem .nav-item-icon { font-size: 0.9rem; }
@@ -261,11 +261,11 @@ small, .caption { font-size: 0.8125rem; color: var(--text-tertiary); }
   align-items: center;
   gap: 9px;
   width: 100%;
-  padding: 9px 11px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.68);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.48);
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
