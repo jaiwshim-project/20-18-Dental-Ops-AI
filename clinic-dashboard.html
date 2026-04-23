@@ -412,14 +412,7 @@
         </p>
         <div class="form-group">
           <label class="form-label">비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></label>
-          <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
-            <input type="password" class="form-input" id="authPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="password" class="form-input" id="authPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="password" class="form-input" id="authPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="password" class="form-input" id="authPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="password" class="form-input" id="authPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="password" class="form-input" id="authPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-          </div>
+          <input type="password" class="form-input" id="authPassword" placeholder="••••••" maxlength="6" pattern="\\d{6}" style="font-size:1.5rem; font-weight:700; letter-spacing:0.3em; text-align:center;" autocomplete="off">
         </div>
         <div id="authError" style="margin-top:12px; padding:10px 12px; background:var(--danger-bg); color:var(--danger); border-radius:6px; display:none; font-size:0.875rem;"></div>
       </div>
@@ -571,7 +564,7 @@
       const errorEl = document.getElementById('authError');
       const CLINIC_PASSWORD = '123456';
 
-      const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`authPwd${i}`)?.value || '').join('');
+      const pwd = (document.getElementById('authPassword')?.value || '').trim();
 
       console.log('[verifyClinicAdmin] 입력값:', {
         pwdLength: pwd.length,
