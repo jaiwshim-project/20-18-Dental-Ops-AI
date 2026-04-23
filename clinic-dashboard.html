@@ -533,8 +533,16 @@
     function checkAuth() {
       console.log('[checkAuth] ▶️ 시작');
 
+      // 세션에서 clinic_id 가져오기
       const session = Session.get();
       console.log('[checkAuth] 세션 상태:', { session: !!session, clinic_id: session?.clinic_id });
+
+      if (session?.clinic_id) {
+        clinicId = session.clinic_id;
+        console.log('[checkAuth] ✅ clinicId 설정:', clinicId);
+      } else {
+        console.warn('[checkAuth] ⚠️  세션에서 clinic_id 없음');
+      }
 
       // 1단계: 대시보드 콘텐츠 숨김
       const container = document.querySelector('.clinic-container');
