@@ -14,49 +14,82 @@
     #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; display: flex !important; }
     #clinicAuthModal.hidden { opacity: 0 !important; pointer-events: none !important; display: none !important; }
 
+    /* 🎨 프리미엄 헤더 */
     .clinic-header {
-      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
       color: white;
-      padding: 32px 24px;
+      padding: 40px 32px;
       border-radius: var(--radius-lg);
-      margin-bottom: 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 24px rgba(30, 58, 138, 0.2);
+      position: relative;
+      overflow: hidden;
     }
 
-    .clinic-header h1 { font-size: 2rem; margin: 0 0 8px 0; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    .clinic-header p { margin: 4px 0; opacity: 1; font-weight: 500; }
+    .clinic-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
 
+    .clinic-header * { position: relative; z-index: 1; }
+    .clinic-header h1 { font-size: 2.125rem; margin: 0 0 12px 0; font-weight: 700; letter-spacing: -0.5px; }
+    .clinic-header p { margin: 4px 0; opacity: 0.95; font-weight: 500; font-size: 1rem; }
+
+    /* 🎨 프리미엄 정보 카드 */
     .clinic-info {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
-      margin-top: 16px;
+      margin-top: 20px;
     }
 
     .info-card {
-      background: rgba(255, 255, 255, 0.15);
-      padding: 12px 16px;
-      border-radius: 8px;
-      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.3s ease;
     }
 
-    .info-label { font-size: 0.8125rem; opacity: 0.8; margin-bottom: 4px; }
-    .info-value { font-size: 1.125rem; font-weight: 600; }
+    .info-card:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
+    .info-label { font-size: 0.75rem; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .info-value { font-size: 1.25rem; font-weight: 700; }
+
+    /* 🎨 프리미엄 섹션 */
     .section {
-      background: var(--surface);
-      border: 1px solid var(--gray-200);
+      background: var(--bg-surface);
+      border: 1px solid #e5e7eb;
       border-radius: var(--radius-lg);
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-sm);
+      padding: 28px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .section:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
 
     .section h2 {
-      font-size: 1.375rem;
-      margin: 0 0 20px 0;
+      font-size: 1.5rem;
+      margin: 0 0 24px 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      font-weight: 700;
+      color: #1f2937;
     }
 
     .section-toolbar {
@@ -66,31 +99,40 @@
       flex-wrap: wrap;
     }
 
+    /* 🎨 프리미엄 테이블 */
     .staff-table {
       width: 100%;
       border-collapse: collapse;
     }
 
     .staff-table thead {
-      background: var(--gray-50);
+      background: #f9fafb;
+      border-bottom: 2px solid #e5e7eb;
     }
 
     .staff-table th {
-      padding: 12px;
+      padding: 14px 12px;
       text-align: left;
-      font-weight: 600;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      border-bottom: 1px solid var(--gray-200);
+      font-weight: 700;
+      font-size: 0.8125rem;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: linear-gradient(to right, #f9fafb, #f3f4f6);
     }
 
     .staff-table td {
-      padding: 12px;
-      border-bottom: 1px solid var(--gray-100);
+      padding: 14px 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .staff-table tbody tr {
+      transition: all 0.2s ease;
     }
 
     .staff-table tbody tr:hover {
-      background: var(--gray-50);
+      background: #f9fafb;
+      box-shadow: inset 0 0 0 1px #e5e7eb;
     }
 
     .staff-name { font-weight: 500; }
