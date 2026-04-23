@@ -615,7 +615,7 @@
     }
 
     // 인증 모달의 병원명 입력 이벤트 리스너 등록
-    function registerAuthClinicInputListeners() {
+    window.registerAuthClinicInputListeners = function registerAuthClinicInputListeners() {
       const authClinicInput = document.getElementById('authClinicName');
       const authSearchBtn = document.getElementById('authClinicSearchBtn');
       const authVerifyBtn = document.getElementById('authVerifyBtn');
@@ -656,7 +656,7 @@
       }
     }
 
-    function checkAuth() {
+    window.checkAuth = function checkAuth() {
       console.log('[checkAuth] ▶️ 시작');
 
       // 🔑 1단계: sessionStorage에서 인증 정보 확인 (페이지 새로고침 후에도 유지)
@@ -730,7 +730,7 @@
       console.log('[checkAuth] ✅ 인증 모달 표시 완료');
     }
 
-    async function verifyClinicAdmin() {
+    window.verifyClinicAdmin = async function verifyClinicAdmin() {
       console.log('═══════════════════════════════════════');
       console.log('[verifyClinicAdmin] 🔐 인증 시작');
       console.log('═══════════════════════════════════════');
@@ -846,7 +846,7 @@
       }
     }
 
-    async function loadClinicInfo() {
+    window.loadClinicInfo = async function loadClinicInfo() {
       try {
         console.log('[loadClinicInfo] 시작. clinicId:', clinicId);
 
@@ -1298,7 +1298,7 @@
     }
 
     // DOMContentLoaded 또는 즉시 실행
-    async function initClinicDashboard() {
+    window.initClinicDashboard = async function initClinicDashboard() {
       console.log('[initClinicDashboard] ▶️ 실행 시작');
       console.log('[initClinicDashboard] document.readyState:', document.readyState);
       console.log('[initClinicDashboard] window.location.href:', window.location.href);
