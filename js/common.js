@@ -726,9 +726,6 @@ function renderSidebar(activePage) {
       </a>
 
       <div class="nav-section-label">관리</div>
-      <a href="clinic-dashboard.html?redirect=dashboard.html" class="nav-item ${activePage === 'clinic-dashboard' ? 'active' : ''}">
-        <span class="nav-item-icon">🏥</span> 병원 관리
-      </a>
       <a href="admin.html" class="nav-item ${activePage === 'admin' ? 'active' : ''}">
         <span class="nav-item-icon">👔</span> 관리자 (CEO)
       </a>
