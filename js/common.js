@@ -678,7 +678,7 @@ async function refreshSessionFromDb() {
       role: u.role || s.role,
       clinic: u.clinic || s.clinic,
       email: u.email,
-      tier: u.tier || 'free',
+      tier: s.tier,  // 🔥 tier는 api/login에서 설정한 값 유지 (clinic-dashboard에서 업데이트)
       is_admin: u.is_admin === true
     });
     updateSessionUI();
