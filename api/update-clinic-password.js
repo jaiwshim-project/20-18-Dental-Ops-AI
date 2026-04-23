@@ -1,50 +1,61 @@
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 
-function sha256(str) {
-  return crypto.createHash('sha256').update(str).digest('hex');
-}
+const sha256 = (str) => crypto.createHash('sha256').update(str).digest('hex');
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: '서버 환경 변수 미설정' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return res.status(500).json({ error: 'No env' });
 
-  const { clinicId, password } = req.body;
+  const { clinicName, newPassword } = req.body || {};
 
-  if (!clinicId || !password) {
-    return res.status(400).json({ error: '필수 필드가 누락되었습니다' });
-  }
+  console.log('[update-clinic-password] 요청:', { clinicName, newPassword: newPassword ? '입력됨' : '없음' });
 
-  if (!/^\d{6}$/.test(password)) {
-    return res.status(400).json({ error: '비밀번호는 숫자 6자리여야 합니다' });
+  if (!clinicName || !newPassword || !/^\d{6}$/.test(newPassword)) {
+    return res.status(400).json({ error: '병원명과 6자리 숫자 비밀번호 필요' });
   }
 
   try {
-    const passwordHash = sha256(password);
+    const sb = createClient(url, key);
 
-    const { error } = await supabase
+    // 병원 찾기
+    const { data: clinic, error: clinicErr } = await sb
       .from('clinics')
-      .update({ password_hash: passwordHash, password })
-      .eq('id', clinicId);
+      .select('*')
+      .eq('name', clinicName.trim())
+      .maybeSingle();
 
-    if (error) throw error;
+    if (clinicErr) throw new Error(`clinic lookup: ${clinicErr.message}`);
+    if (!clinic) return res.status(404).json({ error: 'clinic not found' });
 
-    res.status(200).json({
-      success: true,
-      message: '비밀번호가 변경되었습니다'
+    // 비밀번호 해시 생성 및 업데이트
+    const passwordHash = sha256(newPassword);
+    console.log('[update-clinic-password] 해시 계산:', {
+      input: newPassword,
+      hash: passwordHash.substring(0, 16) + '...'
     });
-  } catch (error) {
-    console.error('[update-clinic-password]', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+
+    const { error: updateErr } = await sb
+      .from('clinics')
+      .update({ password_hash: passwordHash })
+      .eq('id', clinic.id);
+
+    if (updateErr) throw new Error(`update failed: ${updateErr.message}`);
+
+    console.log('[update-clinic-password] ✅ 완료:', { clinic_id: clinic.id, clinic_name: clinic.name });
+
+    return res.status(200).json({
+      success: true,
+      message: `"${clinic.name}" 병원의 비밀번호가 ${newPassword}로 설정되었습니다`
+    });
+
+  } catch (e) {
+    console.error('[update-clinic-password] ❌', e.message);
+    return res.status(500).json({ error: e.message });
   }
 };
