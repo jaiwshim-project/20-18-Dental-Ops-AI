@@ -1,5 +1,5 @@
   <script>
-document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('automation'));
+// [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('automation'));
 
 const TPL_META = {
   new_patient_greeting: { icon: '👋', title: '신규 환자 인사', desc: '첫 방문 감사 메시지' },
@@ -212,3 +212,13 @@ renderTemplates();
 renderSettings();
 refreshLogs();
   </script>
+
+// ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
+document.addEventListener('DOMContentLoaded', function() {
+  const appDiv = document.getElementById('app');
+  const pageName = document.body.getAttribute('data-page') || 'consult';
+  if (appDiv && !document.getElementById('sidebar')) {
+    appDiv.insertAdjacentHTML('afterbegin', renderSidebar(pageName));
+    console.log('[✅ Sidebar loaded]', pageName);
+  }
+});

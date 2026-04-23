@@ -57,7 +57,7 @@ function onLangChange() {
   }
 }
 
-document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('consult'));
+// [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('consult'));
 
 // 환자 옵션 채우기 — Supabase 전용
 // 상담 이력 있는 환자를 위쪽 optgroup에, 신규 환자를 아래 optgroup에 배치
@@ -1627,3 +1627,13 @@ async function runCoach() {
   }
 }
 
+
+// ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
+document.addEventListener('DOMContentLoaded', function() {
+  const appDiv = document.getElementById('app');
+  const pageName = document.body.getAttribute('data-page') || 'consult';
+  if (appDiv && !document.getElementById('sidebar')) {
+    appDiv.insertAdjacentHTML('afterbegin', renderSidebar(pageName));
+    console.log('[✅ Sidebar loaded]', pageName);
+  }
+});

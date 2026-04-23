@@ -1,5 +1,5 @@
   <script>
-document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('conversion'));
+// [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('conversion'));
 
 const QUICK_OBJECTIONS = [
   { icon: '💸', label: '비싸요', text: '가격이 너무 비싸서 부담됩니다. 생각보다 훨씬 많은 금액이네요.' },
@@ -263,3 +263,13 @@ fillPatientSelect();
 fillQuickGrid();
 renderHistory();
   </script>
+
+// ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
+document.addEventListener('DOMContentLoaded', function() {
+  const appDiv = document.getElementById('app');
+  const pageName = document.body.getAttribute('data-page') || 'consult';
+  if (appDiv && !document.getElementById('sidebar')) {
+    appDiv.insertAdjacentHTML('afterbegin', renderSidebar(pageName));
+    console.log('[✅ Sidebar loaded]', pageName);
+  }
+});

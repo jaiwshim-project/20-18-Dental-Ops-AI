@@ -1,5 +1,5 @@
   <script>
-document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('insight'));
+// [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('insight'));
 
 let currentReport = null;
 
@@ -456,3 +456,13 @@ function renderHarnessReport(topic, h) {
 // 초기화
 renderReportList();
   </script>
+
+// ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
+document.addEventListener('DOMContentLoaded', function() {
+  const appDiv = document.getElementById('app');
+  const pageName = document.body.getAttribute('data-page') || 'consult';
+  if (appDiv && !document.getElementById('sidebar')) {
+    appDiv.insertAdjacentHTML('afterbegin', renderSidebar(pageName));
+    console.log('[✅ Sidebar loaded]', pageName);
+  }
+});

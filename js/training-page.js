@@ -1,5 +1,5 @@
   <script>
-document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('training'));
+// [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('training'));
 
 // ============================================================
 // QLRCQ 스킬 카드 라이브러리 렌더
@@ -271,3 +271,13 @@ renderHistory();
 // 기본 첫 시나리오 선택
 if (TrainingEngine.scenarios.length > 0) selectScenario(TrainingEngine.scenarios[0].id);
   </script>
+
+// ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
+document.addEventListener('DOMContentLoaded', function() {
+  const appDiv = document.getElementById('app');
+  const pageName = document.body.getAttribute('data-page') || 'consult';
+  if (appDiv && !document.getElementById('sidebar')) {
+    appDiv.insertAdjacentHTML('afterbegin', renderSidebar(pageName));
+    console.log('[✅ Sidebar loaded]', pageName);
+  }
+});

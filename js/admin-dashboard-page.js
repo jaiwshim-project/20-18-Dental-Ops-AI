@@ -249,3 +249,12 @@ async function deleteClinic(clinicId, clinicName) {
       } catch {
         throw new Error(`API 오류 (${res.status}): ${responseText}`);
       }
+
+// ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
+document.addEventListener('DOMContentLoaded', function() {
+  const appDiv = document.getElementById('app');
+  if (appDiv && !document.getElementById('sidebar')) {
+    appDiv.insertAdjacentHTML('afterbegin', renderSidebar('admin-dash'));
+    console.log('[✅ Sidebar loaded] admin-dashboard');
+  }
+});
