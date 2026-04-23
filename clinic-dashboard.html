@@ -786,6 +786,18 @@
         clinicData = await res.json();
         console.log('[loadClinicInfo] 병원 데이터 로드 완료:', clinicData.name);
 
+        // 🔥 localStorage의 세션 tier도 업데이트 (100% 동기화)
+        try {
+          const storedSession = Store.get('session', null);
+          if (storedSession) {
+            storedSession.tier = clinicData.tier || 'free';
+            Store.set('session', storedSession);
+            console.log('[loadClinicInfo] ✅ localStorage 세션 tier 업데이트:', clinicData.tier);
+          }
+        } catch (e) {
+          console.error('[loadClinicInfo] localStorage 업데이트 실패:', e);
+        }
+
         // 대시보드 제목 업데이트
         const titleEl = document.getElementById('clinicTitle');
         if (titleEl) titleEl.textContent = `${clinicData.name} 관리 대시보드`;
@@ -819,28 +831,29 @@
           Session.login(currentSession);
           console.log('[loadClinicInfo] 세션 tier 업데이트:', clinicData.tier);
 
-          // 배지를 직접 업데이트 (확실한 동기화)
+          // 배지를 강제로 업데이트 (updateSessionUI 덮어쓰기 방지)
           const badge = document.getElementById('sessionBadge');
           if (badge) {
-            // 기존 배지 제거
-            badge.innerHTML = '';
+            // 100ms 후에 배지 업데이트 (DOMContentLoaded 이후 확실히 실행)
+            setTimeout(() => {
+              badge.innerHTML = '';
 
-            // 새 배지 생성
-            const tierMap = {
-              'free': { label: '🆓 Free', bg: '#e5e7eb', fg: '#374151' },
-              'pro': { label: '⭐ Pro', bg: '#dbeafe', fg: '#1e40af' },
-              'max': { label: '🚀 Max', bg: '#ddd6fe', fg: '#4c1d95' }
-            };
+              const tierMap = {
+                'free': { label: '🆓 Free', bg: '#e5e7eb', fg: '#374151' },
+                'pro': { label: '⭐ Pro', bg: '#dbeafe', fg: '#1e40af' },
+                'max': { label: '🚀 Max', bg: '#ddd6fe', fg: '#4c1d95' }
+              };
 
-            const tier = (clinicData.tier || 'free').toLowerCase();
-            const tm = tierMap[tier] || tierMap.free;
+              const tier = (clinicData.tier || 'free').toLowerCase();
+              const tm = tierMap[tier] || tierMap.free;
 
-            const tierEl = document.createElement('span');
-            tierEl.style.cssText = `padding:2px 8px; background:${tm.bg}; color:${tm.fg}; border-radius:var(--radius-full); font-size:0.6875rem; font-weight:700; letter-spacing:0.03em;`;
-            tierEl.textContent = tm.label;
-            badge.appendChild(tierEl);
+              const tierEl = document.createElement('span');
+              tierEl.style.cssText = `padding:2px 8px; background:${tm.bg}; color:${tm.fg}; border-radius:var(--radius-full); font-size:0.6875rem; font-weight:700; letter-spacing:0.03em;`;
+              tierEl.textContent = tm.label;
+              badge.appendChild(tierEl);
 
-            console.log('[loadClinicInfo] ✅ 배지 직접 업데이트 완료:', tier);
+              console.log('[loadClinicInfo] ✅ 배지 강제 업데이트 완료:', tier, '(100ms 후)');
+            }, 100);
           }
         }
 
