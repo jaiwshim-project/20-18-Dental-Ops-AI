@@ -147,9 +147,10 @@ const SupabaseDB = {
   async updateClinicTier(clinicId, tier) {
     if (!this.client) throw new Error('Supabase 미연결');
     const { data, error } = await this.client.from('clinics')
-      .update({ tier }).eq('id', clinicId).select().single();
+      .update({ tier }).eq('id', clinicId).select();
     if (error) throw error;
-    return data;
+    console.log('[updateClinicTier] 요금제 변경 완료:', { clinicId, tier, data });
+    return data && data.length > 0 ? data[0] : null;
   },
 
   async listClinics() {
