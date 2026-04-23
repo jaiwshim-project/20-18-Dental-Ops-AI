@@ -1517,6 +1517,51 @@
     } else {
       document.addEventListener('DOMContentLoaded', initClinicPassword);
     }
+
+    // 🔥 인증 버튼 직접 바인딩 (registerAuthClinicInputListeners 백업)
+    console.log('[clinic-dashboard] 인증 버튼 직접 바인딩 시작');
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        const authVerifyBtn = document.getElementById('authVerifyBtn');
+        console.log('[clinic-dashboard] DOMContentLoaded: authVerifyBtn 찾음?', !!authVerifyBtn);
+        if (authVerifyBtn) {
+          authVerifyBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log('═══════════════════════════════════════');
+            console.log('[authVerifyBtn-direct] 🔐 직접 바인딩 클릭됨!');
+            console.log('═══════════════════════════════════════');
+            if (typeof window.verifyClinicAdmin === 'function') {
+              await window.verifyClinicAdmin();
+            } else {
+              console.error('[authVerifyBtn-direct] ❌ verifyClinicAdmin 함수 없음');
+            }
+          });
+          console.log('[clinic-dashboard] ✅ 인증 버튼 이벤트 리스너 등록 완료');
+        } else {
+          console.error('[clinic-dashboard] ❌ authVerifyBtn 요소 찾을 수 없음!');
+        }
+      });
+    } else {
+      // 이미 로드됨
+      const authVerifyBtn = document.getElementById('authVerifyBtn');
+      console.log('[clinic-dashboard] 즉시: authVerifyBtn 찾음?', !!authVerifyBtn);
+      if (authVerifyBtn) {
+        authVerifyBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          console.log('═══════════════════════════════════════');
+          console.log('[authVerifyBtn-direct] 🔐 직접 바인딩 클릭됨!');
+          console.log('═══════════════════════════════════════');
+          if (typeof window.verifyClinicAdmin === 'function') {
+            await window.verifyClinicAdmin();
+          } else {
+            console.error('[authVerifyBtn-direct] ❌ verifyClinicAdmin 함수 없음');
+          }
+        });
+        console.log('[clinic-dashboard] ✅ 인증 버튼 이벤트 리스너 등록 완료');
+      } else {
+        console.error('[clinic-dashboard] ❌ authVerifyBtn 요소 찾을 수 없음!');
+      }
+    }
   </script>
 </body>
 </html>
