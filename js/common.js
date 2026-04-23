@@ -677,6 +677,7 @@ async function refreshSessionFromDb() {
       name: u.name || s.name,
       role: u.role || s.role,
       clinic: u.clinic || s.clinic,
+      clinic_id: s.clinic_id,  // 🔥 clinic_id 유지 (api/login 응답값 유지 - clinic-dashboard에서 필수)
       email: u.email,
       tier: s.tier,  // 🔥 tier는 api/login에서 설정한 값 유지 (clinic-dashboard에서 업데이트)
       is_admin: u.is_admin === true
