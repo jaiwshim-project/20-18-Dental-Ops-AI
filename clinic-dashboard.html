@@ -808,14 +808,14 @@
         const createdDisplayEl = document.getElementById('createdAtDisplay');
         if (createdDisplayEl) createdDisplayEl.textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
 
-        // 현재 비밀번호 표시
-        if (clinicData.password) {
-          const pwdChars = clinicData.password.split('');
-          for (let i = 1; i <= 6; i++) {
-            const elem = document.getElementById(`currentPwd${i}`);
-            if (elem) elem.value = pwdChars[i - 1] || '';
-          }
+        // 직원로그인 비밀번호 표시 (localStorage에서 로드)
+        const staffPwd = loadStaffPassword();
+        const staffPwdChars = staffPwd.split('');
+        for (let i = 1; i <= 6; i++) {
+          const elem = document.getElementById(`currentPwd${i}`);
+          if (elem) elem.value = staffPwdChars[i - 1] || '•';
         }
+        console.log('[loadClinicInfo] 직원로그인 비밀번호 로드:', staffPwd);
 
         loadStaffList();
         console.log('[loadClinicInfo] ✅ 완료');
@@ -1042,27 +1042,29 @@
 
     // 비밀번호 표시 토글
     let isPasswordDisplaying = false;
-    function togglePasswordDisplay(btn) {
-      console.log('[togglePasswordDisplay] 호출됨, btn:', btn, 'clinicData:', clinicData);
-      isPasswordDisplaying = !isPasswordDisplaying;
+    // 직원 로그인 비밀번호를 localStorage에서 로드
+    function loadStaffPassword() {
+      const stored = localStorage.getItem('staffPassword');
+      return stored || '123456';
+    }
 
-      console.log('[togglePasswordDisplay] 상태:', isPasswordDisplaying);
+    function togglePasswordDisplay(btn) {
+      console.log('[togglePasswordDisplay] 호출됨, btn:', btn);
+      isPasswordDisplaying = !isPasswordDisplaying;
+      const pwd = loadStaffPassword();
+
+      console.log('[togglePasswordDisplay] 상태:', isPasswordDisplaying, 'pwd:', pwd);
 
       if (isPasswordDisplaying) {
         // 숫자 표시
         console.log('[togglePasswordDisplay] 비밀번호 표시 시작');
-        if (clinicData?.password) {
-          console.log('[togglePasswordDisplay] clinicData.password:', clinicData.password);
-          const pwdChars = clinicData.password.split('');
-          for (let i = 1; i <= 6; i++) {
-            const el = document.getElementById(`currentPwd${i}`);
-            if (el) {
-              el.value = pwdChars[i - 1] || '';
-              console.log(`[togglePasswordDisplay] currentPwd${i} = ${el.value}`);
-            }
+        const pwdChars = pwd.split('');
+        for (let i = 1; i <= 6; i++) {
+          const el = document.getElementById(`currentPwd${i}`);
+          if (el) {
+            el.value = pwdChars[i - 1] || '';
+            console.log(`[togglePasswordDisplay] currentPwd${i} = ${el.value}`);
           }
-        } else {
-          console.warn('[togglePasswordDisplay] clinicData.password 없음');
         }
         if (btn) {
           btn.textContent = '숨김';
