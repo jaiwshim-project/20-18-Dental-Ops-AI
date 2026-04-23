@@ -661,16 +661,17 @@
 
       // 🔑 1단계: sessionStorage에서 인증 정보 확인 (페이지 새로고침 후에도 유지)
       const clinicAuthVerifiedSession = sessionStorage.getItem('clinicAuthVerified');
-      if (clinicAuthVerifiedSession === 'true') {
-        console.log('[checkAuth] ✅ sessionStorage에서 인증 정보 발견 → 모달 건너뜀');
+
+      // 세션에서 clinic_id 가져오기 (필수 조건)
+      const session = Session.get();
+      const hasClinicId = !!session?.clinic_id;
+
+      if (clinicAuthVerifiedSession === 'true' && hasClinicId) {
+        console.log('[checkAuth] ✅ sessionStorage에서 인증 정보 발견 + clinic_id 존재 → 모달 건너뜀');
         isClinicAuthVerified = true;
 
-        // 세션에서 clinic_id 가져오기
-        const session = Session.get();
-        if (session?.clinic_id) {
-          clinicId = session.clinic_id;
-          console.log('[checkAuth] ✅ clinicId 설정:', clinicId);
-        }
+        clinicId = session.clinic_id;
+        console.log('[checkAuth] ✅ clinicId 설정:', clinicId);
 
         // 대시보드 콘텐츠 표시
         const container = document.querySelector('.clinic-container');
@@ -687,6 +688,12 @@
         }
 
         return;  // 여기서 종료
+      }
+
+      // clinic_id가 없으면 sessionStorage 제거 (인증 정보 초기화)
+      if (!hasClinicId && clinicAuthVerifiedSession === 'true') {
+        console.log('[checkAuth] ⚠️ clinic_id 없음 → sessionStorage 인증 정보 제거');
+        sessionStorage.removeItem('clinicAuthVerified');
       }
 
       console.log('[checkAuth] 인증 정보 없음 → 모달 표시');
