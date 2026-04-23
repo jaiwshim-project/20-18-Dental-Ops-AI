@@ -459,31 +459,29 @@
       try {
         console.log('[deleteClinic] 병원 삭제 중...', { clinicId, clinicName });
 
-        // Supabase에서 직접 삭제
-        // 1. 해당 clinic의 users 삭제
-        const { error: usersErr } = await SupabaseDB.client
-          .from('users')
-          .delete()
-          .eq('clinic_id', clinicId);
+        // /api/delete-clinic API 호출 (SERVICE_ROLE_KEY 사용)
+        const res = await fetch('/api/delete-clinic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId })
+        });
 
-        if (usersErr) throw new Error(`직원 삭제 실패: ${usersErr.message}`);
-        console.log('[deleteClinic] ✅ 직원 삭제 완료');
+        console.log('[deleteClinic] API 응답:', res.status, res.statusText);
 
-        // 2. clinic 삭제
-        const { error: clinicErr } = await SupabaseDB.client
-          .from('clinics')
-          .delete()
-          .eq('id', clinicId);
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || '삭제 실패');
+        }
 
-        if (clinicErr) throw new Error(`병원 삭제 실패: ${clinicErr.message}`);
-        console.log('[deleteClinic] ✅ 병원 삭제 완료');
+        const data = await res.json();
+        console.log('[deleteClinic] ✅ API 삭제 완료:', data);
 
         showToast('병원이 삭제되었습니다', 'success');
         await renderMembersTable();
         await renderKpi();
 
       } catch (e) {
-        console.error('[deleteClinic] ❌ 에러:', e);
+        console.error('[deleteClinic] ❌ 에러:', e.message);
         showToast('삭제 실패: ' + e.message, 'error');
       }
     }
