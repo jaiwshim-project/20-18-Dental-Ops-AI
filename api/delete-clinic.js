@@ -20,31 +20,37 @@ module.exports = async (req, res) => {
   try {
     const sb = createClient(url, key);
 
-    console.log('[/api/delete-clinic] 시작. clinicId:', clinicId);
+    console.log('[/api/delete-clinic] ▶️ 시작. clinicId:', clinicId);
+    console.log('[/api/delete-clinic] Supabase URL:', url ? '✅ 설정됨' : '❌ 없음');
+    console.log('[/api/delete-clinic] SERVICE_ROLE_KEY:', key ? '✅ 설정됨 (' + key.substring(0, 20) + '...)' : '❌ 없음');
 
     // 1단계: 해당 clinic의 모든 users 삭제
     console.log('[/api/delete-clinic] 1️⃣ users 삭제 중...');
-    const { error: usersErr } = await sb
+    const usersResult = await sb
       .from('users')
       .delete()
       .eq('clinic_id', clinicId);
 
-    if (usersErr) {
-      console.error('[/api/delete-clinic] ❌ users 삭제 실패:', usersErr);
-      throw new Error(`users 삭제 실패: ${usersErr.message}`);
+    console.log('[/api/delete-clinic] users 삭제 결과:', { error: usersResult.error, count: usersResult.count, status: usersResult.status });
+
+    if (usersResult.error) {
+      console.error('[/api/delete-clinic] ❌ users 삭제 실패:', usersResult.error);
+      throw new Error(`users 삭제 실패: ${usersResult.error.message}`);
     }
     console.log('[/api/delete-clinic] ✅ users 삭제 완료');
 
     // 2단계: clinic 삭제
     console.log('[/api/delete-clinic] 2️⃣ clinic 삭제 중...');
-    const { error: clinicErr } = await sb
+    const clinicResult = await sb
       .from('clinics')
       .delete()
       .eq('id', clinicId);
 
-    if (clinicErr) {
-      console.error('[/api/delete-clinic] ❌ clinic 삭제 실패:', clinicErr);
-      throw new Error(`clinic 삭제 실패: ${clinicErr.message}`);
+    console.log('[/api/delete-clinic] clinic 삭제 결과:', { error: clinicResult.error, count: clinicResult.count, status: clinicResult.status });
+
+    if (clinicResult.error) {
+      console.error('[/api/delete-clinic] ❌ clinic 삭제 실패:', clinicResult.error);
+      throw new Error(`clinic 삭제 실패: ${clinicResult.error.message}`);
     }
     console.log('[/api/delete-clinic] ✅ clinic 삭제 완료');
 

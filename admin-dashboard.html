@@ -460,28 +460,41 @@
         console.log('[deleteClinic] 병원 삭제 중...', { clinicId, clinicName });
 
         // /api/delete-clinic API 호출 (SERVICE_ROLE_KEY 사용)
+        console.log('[deleteClinic] API 요청:', { method: 'POST', url: '/api/delete-clinic', body: { clinicId } });
+
         const res = await fetch('/api/delete-clinic', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clinicId })
         });
 
-        console.log('[deleteClinic] API 응답:', res.status, res.statusText);
+        console.log('[deleteClinic] API 응답 수신:', { status: res.status, statusText: res.statusText });
+
+        const responseText = await res.text();
+        console.log('[deleteClinic] API 응답 본문:', responseText);
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || '삭제 실패');
+          try {
+            const err = JSON.parse(responseText);
+            throw new Error(err.error || '삭제 실패');
+          } catch {
+            throw new Error(`API 오류 (${res.status}): ${responseText}`);
+          }
         }
 
-        const data = await res.json();
+        const data = JSON.parse(responseText);
         console.log('[deleteClinic] ✅ API 삭제 완료:', data);
 
         showToast('병원이 삭제되었습니다', 'success');
+
+        // 1초 대기 후 테이블 새로고침 (DB 반영 대기)
+        await new Promise(r => setTimeout(r, 1000));
+
         await renderMembersTable();
         await renderKpi();
 
       } catch (e) {
-        console.error('[deleteClinic] ❌ 에러:', e.message);
+        console.error('[deleteClinic] ❌ 에러:', e.message, e.stack);
         showToast('삭제 실패: ' + e.message, 'error');
       }
     }
