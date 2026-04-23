@@ -443,7 +443,7 @@ async function submitClinicLogin() {
   }
 
   try {
-    const loginUrl = `${API_BASE_URL}/api/login`;
+    const loginUrl = `${API_BASE_URL}/api/cliniclogin`;
     console.log('📡 API 호출:', { url: loginUrl, baseUrl: API_BASE_URL });
     const res = await fetch(loginUrl, {
       method: 'POST',
