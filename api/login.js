@@ -130,7 +130,7 @@ module.exports = async (req, res) => {
 
     console.log('[/api/login] ✅ 비밀번호 일치');
 
-    // user 조회
+    // user 조회 (clinic에서 찾기)
     const { data: user, error: uErr } = await sb
       .from('users')
       .select('*')
@@ -138,32 +138,51 @@ module.exports = async (req, res) => {
       .eq('clinic_id', clinic.id)
       .maybeSingle();
 
-    console.log('[/api/login] user 조회:', { found: !!user, error: uErr?.message });
+    console.log('[/api/login] clinic.id로 user 조회:', { found: !!user, error: uErr?.message });
 
     if (uErr) throw new Error(`user: ${uErr.message}`);
 
     let userData = user;
+    let resolvedClinicId = clinic.id;  // ✅ clinic에서 찾은 user 사용
+
     if (!user) {
-      console.log('[/api/login] 새 user 생성 중...');
-      const { data: nu, error: nErr } = await sb
+      console.log('[/api/login] clinic에서 user 못 찾음, email로 직원 조회 시도...');
+      // 직원이 clinic명을 모르고 로그인한 경우, email로 직원 찾기
+      const { data: staffUser, error: staffErr } = await sb
         .from('users')
-        .insert([{
-          email,
-          name: email.split('@')[0],
-          clinic_id: clinic.id,
-          role: '상담실장',
-          is_admin: false,
-          last_login_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (staffErr) throw new Error(`user lookup: ${staffErr.message}`);
+
+      if (staffUser) {
+        console.log('[/api/login] ✅ email로 직원 찾음:', { id: staffUser.id, clinic_id: staffUser.clinic_id });
+        userData = staffUser;
+        resolvedClinicId = staffUser.clinic_id;  // ✅ 직원의 clinic_id 사용
+      } else {
+        // 새 user 생성 (기존 로직 유지)
+        console.log('[/api/login] 새 user 생성 중...');
+        const { data: nu, error: nErr } = await sb
+          .from('users')
+          .insert([{
+            email,
+            name: email.split('@')[0],
+            clinic_id: clinic.id,
+            role: '상담실장',
+            is_admin: false,
+            last_login_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
 
       if (nErr) {
         console.error('[/api/login] ❌ user insert 실패:', nErr.message);
         throw new Error(`insert: ${nErr.message}`);
       }
-      userData = nu;
-      console.log('[/api/login] ✅ user 생성 완료:', userData.id);
+        userData = nu;
+        console.log('[/api/login] ✅ user 생성 완료:', userData.id);
+      }
     } else {
       console.log('[/api/login] 기존 user 업데이트 중...');
       const { error: uuErr } = await sb
@@ -175,7 +194,14 @@ module.exports = async (req, res) => {
       console.log('[/api/login] ✅ user 업데이트 완료');
     }
 
-    console.log('[/api/login] ✅✅✅ 로그인 성공:', { clinic_id: clinic.id, user_id: userData.id, email });
+    console.log('[/api/login] ✅✅✅ 로그인 성공:', { clinic_id: resolvedClinicId, user_id: userData.id, email });
+
+    // Supabase에서 clinic 정보 조회 (clinic_id로)
+    const { data: selectedClinic } = await sb
+      .from('clinics')
+      .select('*')
+      .eq('id', resolvedClinicId)
+      .single();
 
     return res.status(200).json({
       success: true,
@@ -183,9 +209,9 @@ module.exports = async (req, res) => {
       name: userData.name || email.split('@')[0],
       email,
       role: userData.role || '상담실장',
-      clinic: clinic.name,
-      clinic_id: clinic.id,
-      tier: clinic.tier || 'free',
+      clinic: selectedClinic?.name || clinic.name,
+      clinic_id: resolvedClinicId,  // ✅ resolvedClinicId 사용
+      tier: selectedClinic?.tier || clinic.tier || 'free',
       is_admin: userData.is_admin || false
     });
 
