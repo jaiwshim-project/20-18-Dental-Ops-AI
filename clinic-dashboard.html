@@ -608,6 +608,7 @@
         const modal = document.getElementById('clinicAuthModal');
         if (modal) {
           modal.classList.remove('active');
+          modal.style.display = 'none';
           modal.style.opacity = '0';
           modal.style.pointerEvents = 'none';
           console.log('[verifyClinicAdmin] ✅ 모달 닫음');
