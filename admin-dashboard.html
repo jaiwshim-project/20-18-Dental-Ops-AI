@@ -232,24 +232,49 @@
 
     function unlockDash() {
       console.log('[Admin Auth] unlockDash 실행...');
-      const lock = document.getElementById('authLock');
-      const content = document.getElementById('authedContent');
-      const app = document.getElementById('app');
+      try {
+        const lock = document.getElementById('authLock');
+        const content = document.getElementById('authedContent');
+        const app = document.getElementById('app');
 
-      console.log('[Admin Auth] authLock 요소:', lock, '| display:', lock?.style.display);
-      console.log('[Admin Auth] authedContent 요소:', content, '| display:', content?.style.display);
-      console.log('[Admin Auth] app 요소:', app);
+        console.log('[Admin Auth] authLock 요소:', lock);
+        console.log('[Admin Auth] authedContent 요소:', content);
+        console.log('[Admin Auth] app 요소:', app);
 
-      lock.style.display = 'none';
-      content.style.display = 'block';
+        lock.style.display = 'none';
+        content.style.display = 'block';
 
-      console.log('[Admin Auth] ✅ unlockDash 완료');
-      console.log('[Admin Auth] authLock display 변경 후:', lock.style.display);
-      console.log('[Admin Auth] authedContent display 변경 후:', content.style.display);
+        console.log('[Admin Auth] ✅ Display 변경 완료');
+        console.log('[Admin Auth] authLock display:', lock.style.display);
+        console.log('[Admin Auth] authedContent display:', content.style.display);
 
-      app.insertAdjacentHTML('afterbegin', renderSidebar(''));
-      updateSessionUI && updateSessionUI();
-      loadDashData();
+        // renderSidebar 호출 전 확인
+        console.log('[Admin Auth] renderSidebar 함수:', typeof renderSidebar);
+        const sidebarHtml = renderSidebar('');
+        console.log('[Admin Auth] renderSidebar 결과:', sidebarHtml?.substring(0, 100));
+
+        app.insertAdjacentHTML('afterbegin', sidebarHtml);
+        console.log('[Admin Auth] ✅ Sidebar 렌더링 완료');
+
+        // updateSessionUI 호출
+        if (typeof updateSessionUI === 'function') {
+          updateSessionUI();
+          console.log('[Admin Auth] ✅ updateSessionUI 완료');
+        } else {
+          console.log('[Admin Auth] ⚠️  updateSessionUI 함수 없음');
+        }
+
+        // loadDashData 호출
+        console.log('[Admin Auth] loadDashData 시작...');
+        loadDashData().then(() => {
+          console.log('[Admin Auth] ✅ loadDashData 완료');
+        }).catch(e => {
+          console.error('[Admin Auth] ❌ loadDashData 에러:', e);
+        });
+
+      } catch (e) {
+        console.error('[Admin Auth] ❌ unlockDash 에러:', e.message, e.stack);
+      }
     }
 
     function lockDash() {
