@@ -21,19 +21,38 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // consult_logs 테이블에서 해당 직원의 상담 목록 조회
-    const { data: consults, error } = await supabase
+    // consult_logs 테이블에서 해당 직원의 세션 상담 목록 조회
+    // metadata.staff_id와 metadata.clinic_id로 필터링
+    // type='session'만 (중간 coach_turn 제외)
+    const { data: logs, error } = await supabase
       .from('consult_logs')
-      .select('id, title, patient_name, status, created_at, content')
-      .eq('staff_id', staffId)
-      .eq('clinic_id', clinicId)
-      .order('created_at', { ascending: false });
+      .select('id, created_at, metadata')
+      .eq('engine', 'consult')
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) throw error;
 
-    res.status(200).json({
-      consults: consults || []
-    });
+    // 클라이언트 측 필터링: metadata.staff_id, metadata.clinic_id, metadata.type='session'
+    const consults = (logs || [])
+      .filter(log =>
+        log.metadata &&
+        log.metadata.staff_id === staffId &&
+        log.metadata.clinic_id === clinicId &&
+        (log.metadata.type === 'session' || !log.metadata.type)
+      )
+      .map(log => ({
+        id: log.id,
+        title: log.metadata.patient_name ? `${log.metadata.patient_name}님 상담` : '제목 없음',
+        patient_name: log.metadata.patient_name || '-',
+        status: log.metadata.evaluation ? 'completed' : 'pending',
+        created_at: log.created_at,
+        session_id: log.metadata.session_id,
+        duration_sec: log.metadata.duration_sec || 0,
+        turns_count: log.metadata.turns_count || 0
+      }));
+
+    res.status(200).json({ consults });
   } catch (error) {
     console.error('[staff-consults]', error);
 

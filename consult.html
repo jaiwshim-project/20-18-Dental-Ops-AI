@@ -1828,6 +1828,8 @@
         patientName: patient?.name || '익명',
         author: author?.name || '익명',
         clinic: author?.clinic || '',
+        clinic_id: author?.clinic_id || '',
+        staff_id: author?.userId || '',
         startedAt: Date.now(),
         endedAt: null,
         turns: [],
@@ -1928,6 +1930,8 @@
           metadata: {
             type: 'session',                        // coach_turn과 구분
             session_id: currentSession.id,
+            staff_id: currentSession.staff_id,
+            clinic_id: currentSession.clinic_id,
             started_at: currentSession.startedAt,
             ended_at: currentSession.endedAt,
             duration_sec: currentSession.durationSec,
@@ -2551,6 +2555,8 @@
                 metadata: {
                   type: 'coach_turn',
                   session_id: currentSession.id,
+                  staff_id: currentSession.staff_id,
+                  clinic_id: currentSession.clinic_id,
                   turn_index: turnIndex,
                   at: Date.now(),
                   turns_snapshot: turnsSnapshot,
