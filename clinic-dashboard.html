@@ -317,7 +317,7 @@
           <input type="text" readonly class="form-input" id="clinicCurrentPwd6" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
         </div>
         <div style="display:flex; gap:12px;">
-          <button class="btn btn-secondary btn-sm" onclick="toggleClinicPasswordDisplay()">숨김</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleClinicPasswordDisplay(this)">숨김</button>
           <span style="font-size:0.875rem; color:var(--text-secondary);">설정됨</span>
         </div>
       </div>
@@ -360,7 +360,7 @@
           <input type="text" readonly class="form-input" id="currentPwd6" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
         </div>
         <div style="display:flex; gap:12px;">
-          <button class="btn btn-secondary btn-sm" onclick="togglePasswordDisplay()">숨김</button>
+          <button class="btn btn-secondary btn-sm" onclick="togglePasswordDisplay(this)">숨김</button>
           <span style="font-size:0.875rem; color:var(--text-secondary);">설정됨</span>
         </div>
       </div>
@@ -1042,33 +1042,46 @@
 
     // 비밀번호 표시 토글
     let isPasswordDisplaying = false;
-    function togglePasswordDisplay() {
-      console.log('[togglePasswordDisplay] 호출됨, clinicData:', clinicData);
+    function togglePasswordDisplay(btn) {
+      console.log('[togglePasswordDisplay] 호출됨, btn:', btn, 'clinicData:', clinicData);
       isPasswordDisplaying = !isPasswordDisplaying;
-      const btn = document.querySelector('#staffPasswordSection .btn-secondary') || event.target;
 
-      console.log('[togglePasswordDisplay] 버튼:', btn, 'visible:', isPasswordDisplaying);
+      console.log('[togglePasswordDisplay] 상태:', isPasswordDisplaying);
 
       if (isPasswordDisplaying) {
         // 숫자 표시
-        console.log('[togglePasswordDisplay] 비밀번호 표시');
+        console.log('[togglePasswordDisplay] 비밀번호 표시 시작');
         if (clinicData?.password) {
           console.log('[togglePasswordDisplay] clinicData.password:', clinicData.password);
           const pwdChars = clinicData.password.split('');
           for (let i = 1; i <= 6; i++) {
             const el = document.getElementById(`currentPwd${i}`);
-            if (el) el.value = pwdChars[i - 1] || '';
+            if (el) {
+              el.value = pwdChars[i - 1] || '';
+              console.log(`[togglePasswordDisplay] currentPwd${i} = ${el.value}`);
+            }
           }
+        } else {
+          console.warn('[togglePasswordDisplay] clinicData.password 없음');
         }
-        if (btn) btn.textContent = '숨김';
+        if (btn) {
+          btn.textContent = '숨김';
+          console.log('[togglePasswordDisplay] 버튼 텍스트 변경: 숨김');
+        }
       } else {
         // 마스킹 표시
         console.log('[togglePasswordDisplay] 비밀번호 숨김');
         for (let i = 1; i <= 6; i++) {
           const el = document.getElementById(`currentPwd${i}`);
-          if (el) el.value = '•';
+          if (el) {
+            el.value = '•';
+            console.log(`[togglePasswordDisplay] currentPwd${i} = •`);
+          }
         }
-        if (btn) btn.textContent = '보임';
+        if (btn) {
+          btn.textContent = '보임';
+          console.log('[togglePasswordDisplay] 버튼 텍스트 변경: 보임');
+        }
       }
     }
 
@@ -1206,23 +1219,24 @@
     }
 
     // 비밀번호 표시/숨김
-    function toggleClinicPasswordDisplay() {
-      console.log('[toggleClinicPasswordDisplay] 호출됨');
+    function toggleClinicPasswordDisplay(btn) {
+      console.log('[toggleClinicPasswordDisplay] 호출됨, btn:', btn);
       clinicPasswordVisible = !clinicPasswordVisible;
       const pwd = loadClinicPassword();
-      const btn = document.querySelector('#clinicPasswordSection .btn-secondary') || event.target;
 
-      console.log('[toggleClinicPasswordDisplay] 버튼:', btn, 'visible:', clinicPasswordVisible);
+      console.log('[toggleClinicPasswordDisplay] 상태:', clinicPasswordVisible, 'pwd:', pwd);
 
       for (let i = 1; i <= 6; i++) {
         const el = document.getElementById(`clinicCurrentPwd${i}`);
         if (el) {
           el.value = clinicPasswordVisible ? pwd[i - 1] : '•';
+          console.log(`[toggleClinicPasswordDisplay] clinicCurrentPwd${i} = ${el.value}`);
         }
       }
 
       if (btn) {
         btn.textContent = clinicPasswordVisible ? '숨김' : '표시';
+        console.log('[toggleClinicPasswordDisplay] 버튼 텍스트:', btn.textContent);
       }
     }
 
