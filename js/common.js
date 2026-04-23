@@ -1,5 +1,15 @@
-
-
+// === API 환경 감지 ===
+const API_BASE_URL = (() => {
+  // Vercel 배포 환경
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.protocol.includes('file')) {
+    return window.location.origin;
+  }
+  // 로컬 개발 환경: Python 서버 또는 로컬 호스트
+  if (window.location.protocol.includes('file')) {
+    return 'http://localhost:3000';
+  }
+  return '';
+})();
 
 // === Enter 키 로그인 (간단함) ===
 document.addEventListener('DOMContentLoaded', () => {
@@ -298,7 +308,7 @@ window.allClinics = [];
 
 async function loadClinicsList() {
   try {
-    const res = await fetch('/api/clinics');
+    const res = await fetch(`${API_BASE_URL}/api/clinics`);
     if (!res.ok) return;
     const data = await res.json();
 
@@ -419,8 +429,9 @@ async function submitClinicLogin() {
   }
 
   try {
-    console.log('📡 /api/login 호출 중...');
-    const res = await fetch('/api/login', {
+    const loginUrl = `${API_BASE_URL}/api/login`;
+    console.log('📡 API 호출:', { url: loginUrl, baseUrl: API_BASE_URL });
+    const res = await fetch(loginUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clinicName: clinic, email, password: pwd })
@@ -523,7 +534,7 @@ async function submitClinicRegister() {
   }
 
   try {
-    const res = await fetch('/api/clinic-register', {
+    const res = await fetch(`${API_BASE_URL}/api/clinic-register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -998,7 +1009,7 @@ const GeminiAPI = {
   // 서버 키 등록 여부 진단용 (선택)
   async checkServerStatus() {
     try {
-      const res = await fetch('/api/gemini', { method: 'GET' });
+      const res = await fetch(`${API_BASE_URL}/api/gemini`, { method: 'GET' });
       if (!res.ok) return { ok: false };
       return await res.json();
     } catch {
