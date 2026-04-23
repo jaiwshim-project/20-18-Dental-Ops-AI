@@ -608,9 +608,7 @@
         const modal = document.getElementById('clinicAuthModal');
         if (modal) {
           modal.classList.remove('active');
-          modal.style.display = 'none';
-          modal.style.opacity = '0';
-          modal.style.pointerEvents = 'none';
+          modal.classList.add('hidden');  // ✅ CSS .hidden 클래스 적용 (!important로 override)
           console.log('[verifyClinicAdmin] ✅ 모달 닫음');
         }
 
