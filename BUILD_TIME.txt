@@ -1,0 +1,3 @@
+Build: 2026-04-23 13:47:00
+Fix: admin-dashboard table click -병원명 칼럼만 클릭 가능
+Status: Vercel force rebuild trigger
