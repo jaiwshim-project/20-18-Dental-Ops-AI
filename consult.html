@@ -2278,8 +2278,16 @@
     }
 
     function renderCoach(d, isDemo) {
+      console.log('[renderCoach] 호출됨, data:', d);
       const area = document.getElementById('replyArea');
       const wrap = document.getElementById('coachArea');
+      console.log('[renderCoach] area:', area, 'wrap:', wrap);
+
+      if (!wrap) {
+        console.error('[renderCoach] ❌ coachArea 요소 없음!');
+        return;
+      }
+
       area.classList.add('empty');
       area.style.display = 'none';
 
@@ -2423,6 +2431,7 @@
 
       card.appendChild(body);
       wrap.appendChild(card);
+      console.log('[renderCoach] ✅ 코칭 카드 렌더링 완료, wrap.childElementCount:', wrap.childElementCount);
       // 최신 카드로 스크롤
       card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
