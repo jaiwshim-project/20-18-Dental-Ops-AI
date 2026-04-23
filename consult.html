@@ -993,6 +993,13 @@
   <script src="js/dental-engines.js"></script>
   <script>
     // 30개 언어 지원
+    // 🧪 테스트 모드 (URL ?test=true 파라미터로 활성화)
+    const isTestMode = new URLSearchParams(window.location.search).has("test");
+    if (isTestMode) {
+      console.warn("🧪 [TEST MODE] 로그인 없이 상담 AI 사용 중. Supabase에 저장되지 않습니다.");
+      document.body.style.borderTop = "3px solid #FF9500";
+    }
+
     const LANG_OPTIONS = [
       { code: 'ko-KR', label: '한국어' },
       { code: 'en-US', label: 'English (US)' },
@@ -1913,7 +1920,7 @@
       btn.textContent = '💾 저장 중...';
 
       // Supabase 전용 저장 — 로컬 저장 없음
-      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+      if (isTestMode) { showToast('🧪 테스트 모드: 세션이 저장되지 않습니다', 'info'); btn.disabled = false; btn.textContent = '🛑 상담 종료 및 저장'; return; } if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
         showToast('Supabase 미연결 — 세션을 저장할 수 없습니다', 'error');
         btn.disabled = false;
         btn.textContent = '🛑 상담 종료 및 저장';
@@ -2561,7 +2568,7 @@
           updateSessionMeta();
 
           // Supabase에 즉시 저장 (coach_turn)
-          if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+          if (!isTestMode && typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
             try {
               const turnsSnapshot = currentSession.turns.map(t => (
                 (t.speaker === 'staff' ? '[실장] ' : t.speaker === 'patient' ? '[환자] ' : '') + t.text
