@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="자동화 엔진 — 신규 인사, 후속, 리마인더, 재방문 유도 메시지를 AI로 생성·발송">
+  <title>자동화 | Medvo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="var(--primary)">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .auto-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .auto-layout { grid-template-columns: 1fr; }
+    }
+
+    .tpl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .tpl-card {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all var(--duration) var(--ease);
+    }
+    .tpl-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .tpl-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+    }
+    .tpl-title { font-weight: 700; font-size: 0.9375rem; color: var(--text-primary); }
+    .tpl-preview {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      background: var(--gray-50);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      flex: 1;
+      min-height: 80px;
+    }
+    .tpl-actions { display: flex; gap: 8px; }
+
+    .custom-card {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+    .custom-result {
+      margin-top: 16px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, var(--primary-bg), rgba(0,212,170,0.08));
+      border-radius: var(--radius-md);
+      border-left: 4px solid var(--primary);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      min-height: 60px;
+      color: var(--text-primary);
+    }
+    .custom-result.empty {
+      background: var(--gray-50);
+      border-left-color: var(--gray-300);
+      color: var(--text-tertiary);
+      font-size: 0.8125rem;
+    }
+
+    .settings-list { display: flex; flex-direction: column; gap: 2px; }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--gray-200);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 0.875rem; color: var(--text-primary); font-weight: 500; flex: 1; }
+    .setting-desc { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 2px; }
+
+    /* Toggle Switch */
+    .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--gray-300);
+      border-radius: 34px;
+      transition: .25s;
+    }
+    .switch .slider:before {
+      position: absolute; content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .switch input:checked + .slider { background-color: var(--primary); }
+    .switch input:checked + .slider:before { transform: translateX(18px); }
+
+    .log-table { width: 100%; }
+    .log-table th, .log-table td {
+      font-size: 0.8125rem;
+      padding: 10px 12px;
+    }
+    .status-pill {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+    .status-sent { background: var(--success-bg); color: var(--success-text); }
+    .status-failed { background: var(--danger-bg); color: var(--danger-text); }
+
+    .spinner-inline {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--gray-300);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+
+    .section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-head h2 { margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="layout" id="app">
+    <div class="main">
+      <header class="header">
+        <div class="flex items-center gap-12">
+          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+          <span class="header-title">⚙️ 자동화</span>
+        </div>
+        <div class="header-actions">
+          <span id="sessionBadge"></span>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- 상단: 템플릿 그리드 + 설정 -->
+        <div class="auto-layout">
+          <div>
+            <!-- 템플릿 그리드 -->
+            <section>
+              <div class="section-head">
+                <h2>📨 자동화 템플릿</h2>
+                <span style="font-size:0.8125rem; color:var(--text-tertiary);">5종 · 환자 선택 후 실행</span>
+              </div>
+              <div class="tpl-grid" id="tplGrid"></div>
+            </section>
+
+            <!-- 커스텀 메시지 생성 -->
+            <section class="mt-32">
+              <div class="section-head">
+                <h2>✨ 커스텀 메시지 생성</h2>
+                <span style="font-size:0.8125rem; color:var(--text-tertiary);">AI가 시나리오에 맞춰 메시지 생성</span>
+              </div>
+              <div class="custom-card">
+                <div class="form-group">
+                  <label class="form-label">시나리오</label>
+                  <input type="text" class="form-input" id="scenarioInput" placeholder="예) 임플란트 시술 3일 전 금주 안내 + 당일 준비물 공지">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">대상 환자</label>
+                  <select class="form-input" id="customPatient">
+                    <option value="">-- 환자 선택 --</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" onclick="runCustom()" id="customBtn">✨ AI로 메시지 생성</button>
+                <div class="custom-result empty" id="customResult">생성된 메시지가 여기에 표시됩니다.</div>
+              </div>
+            </section>
+          </div>
+
+          <!-- 우측 설정 -->
+          <aside>
+            <div class="card">
+              <div class="card-header">
+                <h3>🎛️ 자동화 설정</h3>
+              </div>
+              <div class="card-body">
+                <div class="settings-list" id="settingsList"></div>
+              </div>
+              <div class="card-footer" style="font-size:0.75rem; color:var(--text-tertiary);">
+                설정은 이 브라우저에만 저장됩니다.
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- 하단: 실행 로그 -->
+        <section class="mt-32">
+          <div class="section-head">
+            <h2>📋 실행 로그</h2>
+            <button class="btn btn-sm btn-secondary" onclick="refreshLogs()">🔄 새로고침</button>
+          </div>
+          <div class="card">
+            <div class="card-body" style="padding:0;">
+              <div class="table-wrap">
+                <table class="log-table">
+                  <thead>
+                    <tr>
+                      <th>시간</th>
+                      <th>환자</th>
+                      <th>타입</th>
+                      <th>메시지 미리보기</th>
+                      <th>상태</th>
+                    </tr>
+                  </thead>
+                  <tbody id="logTbody">
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-tertiary); padding:32px;">실행 로그가 없습니다</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/qlrcq-framework.js"></script>
+  <script src="js/dental-engines.js"></script>
+  <script>
+    document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('automation'));
+
+    const TPL_META = {
+      new_patient_greeting: { icon: '👋', title: '신규 환자 인사', desc: '첫 방문 감사 메시지' },
+      consult_followup: { icon: '📞', title: '상담 후속', desc: '상담 다음날 정리 메시지' },
+      pre_treatment_reminder: { icon: '⏰', title: '시술 전 리마인더', desc: '예약 1일 전 준비사항' },
+      post_treatment_care: { icon: '💊', title: '시술 후 관리', desc: '시술 당일/익일 케어 안내' },
+      revisit_nudge: { icon: '🔔', title: '재방문 유도', desc: '정기 검진 리마인더' }
+    };
+
+    const SETTINGS = [
+      { key: 'auto_new_greet', label: '신규 환자 자동 인사', desc: '예약 등록 즉시 인사 메시지 발송' },
+      { key: 'auto_followup_24h', label: '상담 후 24h 후속', desc: '상담 하루 뒤 자동 후속 메시지' },
+      { key: 'auto_pre_reminder', label: '시술 1일 전 리마인더', desc: '예약일 24시간 전 알림' },
+      { key: 'auto_post_care', label: '시술 후 관리 안내', desc: '시술 당일 저녁 케어 메시지' },
+      { key: 'auto_revisit_12w', label: '12주 후 재방문 유도', desc: '마지막 방문 후 3개월 시점 알림' }
+    ];
+
+    // ---------- 환자 옵션 (Supabase 전용) ----------
+    let patientCache = [];
+    async function populatePatients() {
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
+        try { patientCache = await SupabaseDB.getPatients({ limit: 200 }); }
+        catch (e) { console.warn(e); patientCache = []; }
+      }
+      const sels = document.querySelectorAll('#customPatient, .patient-inline-sel');
+      sels.forEach(sel => {
+        // 기본 옵션 외 기존 동적 옵션 제거
+        while (sel.options.length > 1) sel.remove(1);
+        patientCache.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          const ageTxt = p.age ? `${p.age}세` : '-';
+          opt.textContent = `${p.name} (${ageTxt})`;
+          sel.appendChild(opt);
+        });
+      });
+    }
+
+    // ---------- 템플릿 그리드 ----------
+    function renderTemplates() {
+      const el = document.getElementById('tplGrid');
+      el.innerHTML = Object.keys(AutomationEngine.templates).map(key => {
+        const meta = TPL_META[key] || { icon: '✉️', title: key, desc: '' };
+        const tpl = AutomationEngine.templates[key];
+        return `
+          <div class="tpl-card">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="tpl-icon">${meta.icon}</div>
+              <div>
+                <div class="tpl-title">${meta.title}</div>
+                <div style="font-size:0.75rem; color:var(--text-tertiary);">${meta.desc}</div>
+              </div>
+            </div>
+            <div class="tpl-preview">${tpl}</div>
+            <div class="tpl-actions">
+              <select class="form-input patient-inline-sel" data-key="${key}" style="flex:1; padding:6px 10px; font-size:0.8125rem;">
+                <option value="">환자 선택...</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="runTemplate('${key}', this)">▶ 실행</button>
+            </div>
+          </div>`;
+      }).join('');
+      // 템플릿 렌더 이후 환자 옵션 주입
+      populatePatients();
+    }
+
+    function getPatientById(id) {
+      return patientCache.find(p => p.id === id);
+    }
+
+    async function runTemplate(key, btn) {
+      const card = btn.closest('.tpl-card');
+      const sel = card.querySelector('.patient-inline-sel');
+      const pid = sel.value;
+      if (!pid) { showToast('환자를 선택하세요', 'warning'); return; }
+      const patient = getPatientById(pid);
+      if (!patient) { showToast('환자 정보를 찾을 수 없습니다', 'error'); return; }
+
+      const vars = {
+        name: patient.name,
+        clinic: '미소치과',
+        date: '2026-04-22',
+        time: '14:00',
+        treatment: patient.treatment || '치료',
+        weeks: 12
+      };
+      const payload = AutomationEngine.render(key, vars);
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-inline"></span>';
+      try {
+        const rec = await AutomationEngine.execute({ type: key, patientId: pid, payload });
+        showToast(`✅ ${patient.name}님께 "${TPL_META[key].title}" 발송`, 'success');
+        refreshLogs();
+      } catch (e) {
+        showToast('실행 실패: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '▶ 실행';
+      }
+    }
+
+    // ---------- 커스텀 생성 ----------
+    async function runCustom() {
+      const scenario = document.getElementById('scenarioInput').value.trim();
+      const pid = document.getElementById('customPatient').value;
+      const patient = pid ? getPatientById(pid) : null;
+
+      if (!scenario) { showToast('시나리오를 입력하세요', 'warning'); return; }
+
+      const btn = document.getElementById('customBtn');
+      const resultEl = document.getElementById('customResult');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-inline"></span> 생성 중...';
+      resultEl.classList.remove('empty');
+      resultEl.textContent = 'AI가 메시지를 작성하고 있습니다...';
+
+      try {
+        const res = await AutomationEngine.generateCustom({ scenario, patient });
+        resultEl.textContent = res.text;
+
+        // 생성만 하고 끝낼지? 로그에도 남기자 (status=draft 대신 sent 처리: 데모 목적)
+        await AutomationEngine.execute({
+          type: 'custom',
+          patientId: patient?.id || null,
+          payload: res.text
+        });
+        showToast(res.demo ? '데모 응답 생성됨 (API 키 미설정)' : '커스텀 메시지 생성 완료', 'success');
+        refreshLogs();
+      } catch (e) {
+        resultEl.textContent = '⚠️ 오류: ' + e.message;
+        showToast('생성 실패', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ AI로 메시지 생성';
+      }
+    }
+
+    // ---------- 설정 토글 ----------
+    function renderSettings() {
+      const el = document.getElementById('settingsList');
+      const saved = Store.get('automation_settings', {});
+      el.innerHTML = SETTINGS.map(s => {
+        const checked = saved[s.key] !== false; // 기본 ON
+        return `
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">${s.label}</div>
+              <div class="setting-desc">${s.desc}</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSetting('${s.key}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>`;
+      }).join('');
+    }
+    function toggleSetting(key, val) {
+      const cur = Store.get('automation_settings', {});
+      cur[key] = val;
+      Store.set('automation_settings', cur);
+      showToast((val ? 'ON: ' : 'OFF: ') + key, 'info', 1500);
+    }
+
+    // ---------- 로그 테이블 (Supabase 전용) ----------
+    async function refreshLogs() {
+      const tbody = document.getElementById('logTbody');
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.isReady()) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-tertiary); padding:32px;">Supabase 연결 필요</td></tr>';
+        return;
+      }
+      let logs = [];
+      try {
+        const { data, error } = await SupabaseDB.client.from('automations')
+          .select('*').order('created_at', { ascending: false }).limit(20);
+        if (error) throw error;
+        logs = data || [];
+      } catch (e) {
+        console.warn(e);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:32px;">조회 실패: ' + escapeHTML(e.message) + '</td></tr>';
+        return;
+      }
+      if (!logs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-tertiary); padding:32px;">실행 로그가 없습니다</td></tr>';
+        return;
+      }
+      tbody.innerHTML = logs.map(log => {
+        const p = getPatientById(log.patient_id);
+        const pName = p ? escapeHTML(p.name) : escapeHTML(log.patient_id || '-');
+        const typeTitle = escapeHTML((TPL_META[log.type] && TPL_META[log.type].title) || log.type);
+        const payloadText = log.payload ? (typeof log.payload === 'string' ? log.payload : JSON.stringify(log.payload)) : '';
+        const preview = escapeHTML(payloadText.slice(0, 50) + (payloadText.length > 50 ? '...' : ''));
+        const time = new Date(log.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const statusCls = log.status === 'failed' ? 'status-failed' : 'status-sent';
+        const statusIcon = log.status === 'failed' ? '❌' : '✅';
+        return `
+          <tr>
+            <td style="white-space:nowrap;">${escapeHTML(time)}</td>
+            <td>${pName}</td>
+            <td><span class="badge badge-primary">${typeTitle}</span></td>
+            <td style="max-width:380px; color:var(--text-secondary);">${preview || '-'}</td>
+            <td><span class="status-pill ${statusCls}">${statusIcon} ${escapeHTML(log.status || 'sent')}</span></td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ---------- 초기화 ----------
+    renderTemplates();
+    renderSettings();
+    refreshLogs();
+  </script>
+</body>
+</html>
