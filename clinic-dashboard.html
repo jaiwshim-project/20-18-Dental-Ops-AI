@@ -514,7 +514,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('clinicAuthModal')">취소</button>
-        <button class="btn btn-primary" id="authVerifyBtn">✓ 인증</button>
+        <button class="btn btn-primary" id="authVerifyBtn" onclick="verifyClinicAdmin();" style="cursor:pointer;">✓ 인증</button>
       </div>
     </div>
   </div>
@@ -731,18 +731,34 @@
     }
 
     async function verifyClinicAdmin() {
-      console.log('[verifyClinicAdmin] ▶️ 시작');
+      console.log('═══════════════════════════════════════');
+      console.log('[verifyClinicAdmin] 🔐 인증 시작');
+      console.log('═══════════════════════════════════════');
 
-      const errorEl = document.getElementById('authError');
-      const pwdInput = document.getElementById('authPassword');
-      const CLINIC_PASSWORD = '123456';
+      try {
+        const errorEl = document.getElementById('authError');
+        const pwdInput = document.getElementById('authPassword');
+        const CLINIC_PASSWORD = '123456';
 
-      const pwd = (pwdInput?.value || '').trim();
+        console.log('[verifyClinicAdmin] ✅ 요소 조회:', {
+          errorEl: !!errorEl,
+          pwdInput: !!pwdInput
+        });
 
-      console.log('[verifyClinicAdmin] 입력값:', {
-        pwdLength: pwd.length,
-        pwd: pwd || '(비어있음)'
-      });
+        if (!pwdInput) {
+          console.error('[verifyClinicAdmin] ❌ authPassword 요소 없음!');
+          alert('입력 필드를 찾을 수 없습니다. 페이지를 새로고침하세요.');
+          return;
+        }
+
+        const pwd = (pwdInput.value || '').trim();
+
+        console.log('[verifyClinicAdmin] 입력값:', {
+          pwdLength: pwd.length,
+          pwdCharacters: Array.from(pwd).map(c => `'${c}'`).join(','),
+          pwd: pwd || '(비어있음)',
+          elementValue: pwdInput.value
+        });
 
       // 비밀번호 유효성 검사
       if (pwd.length !== 6) {
