@@ -1,4 +1,3 @@
-  <script>
 // [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('review'));
 
 let allSessions = [];       // DB에서 가져온 원본

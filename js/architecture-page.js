@@ -1,4 +1,3 @@
-  <script>
 const ARCH_PASSWORD = '9663';
 
 function verifyArchPassword() {

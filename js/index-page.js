@@ -1,4 +1,3 @@
-  <script>
 // 병원 목록 즉시 로드 (common.js 로드 후)
 (async () => {
   window.allClinics = [];

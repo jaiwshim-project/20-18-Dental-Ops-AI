@@ -1,4 +1,3 @@
-  <script>
 // [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('review-tab'));
 
 // 환자 옵션 채우기 — Supabase 전용

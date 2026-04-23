@@ -1,4 +1,3 @@
-  <script>
 // [moved to DOMContentLoaded] document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar('conversion'));
 
 const QUICK_OBJECTIONS = [
