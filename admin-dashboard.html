@@ -18,7 +18,7 @@
     }
     .auth-lock .auth-card {
       max-width: 400px; width: 90%;
-      background: var(--bg-base)
+      background: var(--bg-base);
       border-radius: var(--radius-lg);
       padding: 40px 32px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
@@ -212,22 +212,42 @@
     const AUTH_KEY = 'admin_dash_auth_v1';
 
     function checkAdminPass() {
-      const v = (document.getElementById('authPass').value || '').trim();
+      const inp = document.getElementById('authPass');
+      const v = (inp?.value || '').trim();
+      console.log('[Admin Auth] 입력값:', v, '| 예상값:', ADMIN_DASH_PASS, '| 일치:', v === ADMIN_DASH_PASS);
+      console.log('[Admin Auth] input 요소:', inp, '| 타입:', typeof v, '| 길이:', v.length);
+
       if (v === ADMIN_DASH_PASS) {
+        console.log('[Admin Auth] ✅ 인증 성공!');
         sessionStorage.setItem(AUTH_KEY, '1');
+        console.log('[Admin Auth] sessionStorage 저장:', sessionStorage.getItem(AUTH_KEY));
         unlockDash();
       } else {
+        console.log('[Admin Auth] ❌ 비밀번호 불일치');
         showToast('비밀번호가 올바르지 않습니다', 'error');
-        const inp = document.getElementById('authPass');
         inp.value = '';
         inp.focus();
       }
     }
 
     function unlockDash() {
-      document.getElementById('authLock').style.display = 'none';
-      document.getElementById('authedContent').style.display = 'block';
-      document.getElementById('app').insertAdjacentHTML('afterbegin', renderSidebar(''));
+      console.log('[Admin Auth] unlockDash 실행...');
+      const lock = document.getElementById('authLock');
+      const content = document.getElementById('authedContent');
+      const app = document.getElementById('app');
+
+      console.log('[Admin Auth] authLock 요소:', lock, '| display:', lock?.style.display);
+      console.log('[Admin Auth] authedContent 요소:', content, '| display:', content?.style.display);
+      console.log('[Admin Auth] app 요소:', app);
+
+      lock.style.display = 'none';
+      content.style.display = 'block';
+
+      console.log('[Admin Auth] ✅ unlockDash 완료');
+      console.log('[Admin Auth] authLock display 변경 후:', lock.style.display);
+      console.log('[Admin Auth] authedContent display 변경 후:', content.style.display);
+
+      app.insertAdjacentHTML('afterbegin', renderSidebar(''));
       updateSessionUI && updateSessionUI();
       loadDashData();
     }
@@ -248,10 +268,15 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-      // 이미 인증된 세션이면 바로 해제
+      console.log('[Admin Auth] DOMContentLoaded 이벤트');
+      console.log('[Admin Auth] AUTH_KEY:', AUTH_KEY);
+      console.log('[Admin Auth] sessionStorage 값:', sessionStorage.getItem(AUTH_KEY));
+
       if (sessionStorage.getItem(AUTH_KEY) === '1') {
+        console.log('[Admin Auth] 이미 인증됨, unlockDash 실행');
         unlockDash();
       } else {
+        console.log('[Admin Auth] 미인증 상태, 비밀번호 입력 필드 포커스');
         setTimeout(() => document.getElementById('authPass')?.focus(), 100);
       }
     });
