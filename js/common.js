@@ -633,6 +633,14 @@ function updateSessionUI() {
     tierEl.textContent = s.is_admin ? `${tm.label} · ADMIN` : tm.label;
     badge.appendChild(tierEl);
 
+    // 대시보드 버튼 추가
+    const dashBtn = document.createElement('a');
+    dashBtn.href = 'clinic-dashboard.html';
+    dashBtn.className = 'btn btn-sm btn-primary';
+    dashBtn.style.cssText = 'margin-left:8px; padding:4px 12px; text-decoration:none;';
+    dashBtn.textContent = '📋 대시보드';
+    badge.appendChild(dashBtn);
+
     const out = document.createElement('a');
     out.href = '#';
     out.style.cssText = 'color:var(--danger); text-decoration:none;';

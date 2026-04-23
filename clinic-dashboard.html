@@ -8,10 +8,10 @@
   <link rel="stylesheet" href="css/common.css">
   <style>
     body { background: var(--bg-base); }
-    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: block !important; }
+    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none !important; }
 
-    /* 🔐 인증 모달 숨김 */
-    #clinicAuthModal { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+    /* 🔐 인증 모달 활성화 */
+    #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; display: flex !important; }
     #clinicAuthModal.hidden { opacity: 0 !important; pointer-events: none !important; display: none !important; }
 
     .clinic-header {
@@ -544,24 +544,30 @@
     }
 
     function checkAuth() {
-      console.log('[checkAuth] ▶️ 시작 (인증 모달 없음 - 콘텐츠 바로 표시)');
+      console.log('[checkAuth] ▶️ 시작');
 
-      // 대시보드 콘텐츠 표시
+      const session = Session.get();
+      console.log('[checkAuth] 세션 상태:', { session: !!session, clinic_id: session?.clinic_id });
+
+      // 1단계: 대시보드 콘텐츠 숨김
       const container = document.querySelector('.clinic-container');
       if (container) {
-        container.style.display = 'block';
-        console.log('[checkAuth] ✅ 콘텐츠 표시 완료');
+        container.style.display = 'none';
+        console.log('[checkAuth] ✅ 콘텐츠 숨김 완료');
       }
 
-      // 인증 모달 숨김
+      // 2단계: 병원 관리 인증 모달 표시
       const modal = document.getElementById('clinicAuthModal');
-      if (modal) {
-        modal.style.display = 'none';
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
+      if (!modal) {
+        console.error('[checkAuth] ❌ clinicAuthModal 요소 없음');
+        return;
       }
 
-      console.log('[checkAuth] ✅ 완료');
+      modal.style.display = 'flex';
+      modal.style.opacity = '1';
+      modal.classList.add('active');
+
+      console.log('[checkAuth] ✅ 인증 모달 표시 완료');
     }
 
     async function verifyClinicAdmin() {

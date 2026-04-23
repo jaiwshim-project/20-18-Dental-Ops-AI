@@ -12,7 +12,7 @@
     .auth-lock {
       position: fixed; inset: 0;
       background: linear-gradient(135deg, var(--gray-900) 0%, #1E3A8A 100%);
-      display: none !important;
+      display: flex !important;
       align-items: center; justify-content: center;
       z-index: 9999;
     }
@@ -55,7 +55,6 @@
 </head>
 <body>
   <!-- 🔒 비밀번호 잠금 화면 -->
-  <!-- 인증 잠금 제거됨 (콘텐츠 바로 표시)
   <div id="authLock" class="auth-lock">
     <div class="auth-card">
       <div style="font-size:3rem; margin-bottom:12px;">🔒</div>
@@ -70,10 +69,9 @@
       </div>
     </div>
   </div>
-  -->
 
-  <!-- 인증 완료 후 표시 (인증 제거 - 처음부터 표시) -->
-  <div id="authedContent" style="display:block;">
+  <!-- 인증 완료 후 표시 -->
+  <div id="authedContent" style="display:none;">
     <div class="layout" id="app">
       <div class="main">
         <header class="header">
