@@ -518,6 +518,43 @@
   <script src="js/supabase.js"></script>
   <script src="js/common.js"></script>
   <script>
+    // 🔥 clinic-dashboard에서 updateSessionUI를 오버라이드
+    // (로컬 tier를 우선으로 사용)
+    const originalUpdateSessionUI = updateSessionUI;
+    window.updateSessionUI = function() {
+      console.log('[clinic-dashboard] updateSessionUI 오버라이드 실행');
+
+      // 원래 updateSessionUI 실행
+      originalUpdateSessionUI();
+
+      // 그 후 clinicData의 tier로 배지 강제 업데이트
+      if (typeof clinicData !== 'undefined' && clinicData?.tier) {
+        console.log('[clinic-dashboard] 배지 최종 업데이트: ' + clinicData.tier);
+
+        const badge = document.getElementById('sessionBadge');
+        if (badge) {
+          // 배지 재생성
+          const tierMap = {
+            'free': { label: '🆓 Free', bg: '#e5e7eb', fg: '#374151' },
+            'pro': { label: '⭐ Pro', bg: '#dbeafe', fg: '#1e40af' },
+            'max': { label: '🚀 Max', bg: '#ddd6fe', fg: '#4c1d95' }
+          };
+
+          const tier = (clinicData.tier || 'free').toLowerCase();
+          const tm = tierMap[tier] || tierMap.free;
+
+          // 기존 tier 배지 찾아서 교체
+          const tierBadge = badge.querySelector('span');
+          if (tierBadge) {
+            tierBadge.style.cssText = `padding:2px 8px; background:${tm.bg}; color:${tm.fg}; border-radius:var(--radius-full); font-size:0.6875rem; font-weight:700; letter-spacing:0.03em;`;
+            tierBadge.textContent = tm.label;
+            console.log('[clinic-dashboard] ✅ 배지 최종 업데이트 완료:', tier);
+          }
+        }
+      }
+    };
+  </script>
+  <script>
     let clinicId = null;
     let clinicData = null;
     let isClinicAuthVerified = false;
