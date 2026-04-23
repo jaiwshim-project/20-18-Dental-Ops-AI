@@ -381,8 +381,8 @@
           else if (tier === 'max') max++;
 
           return `
-            <tr>
-              <td style="font-weight:600;">${safe(c.name)}</td>
+            <tr style="cursor:pointer; transition:background 0.2s;" onclick="window.location.href='clinic-dashboard.html?id=${c.id}';">
+              <td style="font-weight:600; color:var(--primary);">${safe(c.name)}</td>
               <td>${safe(c.director_name)}</td>
               <td>${safe(c.region)}</td>
               <td style="text-align:center;">${userCount}명</td>
