@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>개인 대시보드 — Medvo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { background: var(--bg-base); }
+    .dashboard-container { max-width: 900px; margin: 0 auto; padding: 24px; display: none !important; }
+
+    /* 🔐 인증 모달 */
+    #staffAuthModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 1;
+      pointer-events: all;
+    }
+    #staffAuthModal.hidden { opacity: 0; pointer-events: none; display: none; }
+
+    .auth-modal-content {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+    }
+
+    .auth-modal-content h2 { margin-top: 0; color: var(--text-primary); }
+    .auth-modal-content p { color: var(--text-secondary); }
+
+    .pwd-input-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 24px 0;
+    }
+
+    .pwd-input {
+      width: 45px; height: 45px;
+      font-size: 20px;
+      text-align: center;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .pwd-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,102,255,0.1); }
+
+    /* 🎨 프리미엄 헤더 */
+    .staff-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 40px 32px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 32px;
+      box-shadow: 0 8px 24px rgba(30, 58, 138, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .staff-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .staff-header * { position: relative; z-index: 1; }
+    .staff-header h1 { font-size: 2rem; margin: 0 0 8px 0; font-weight: 700; }
+    .staff-header p { margin: 4px 0; opacity: 0.95; }
+
+    .staff-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .info-card {
+      background: rgba(255,255,255,0.1);
+      padding: 16px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .info-label { font-size: 0.875rem; opacity: 0.85; }
+    .info-value { font-size: 1.25rem; font-weight: 600; margin-top: 4px; }
+
+    /* 🎯 상담 목록 */
+    .section {
+      background: white;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      border: 1px solid var(--gray-200);
+    }
+
+    .section h2 { margin-top: 0; margin-bottom: 20px; color: var(--text-primary); }
+
+    .consult-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .consult-table thead {
+      background: var(--gray-50);
+      border-bottom: 2px solid var(--gray-200);
+    }
+
+    .consult-table th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .consult-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .consult-table tbody tr:hover { background: var(--gray-50); }
+
+    .consult-title { font-weight: 500; color: var(--primary); cursor: pointer; }
+    .consult-title:hover { text-decoration: underline; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-completed { background: var(--success-bg); color: var(--success-text); }
+    .status-pending { background: var(--warning-bg); color: var(--warning-text); }
+
+    /* 🔘 버튼 */
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-secondary { background: var(--gray-200); color: var(--text-primary); }
+    .btn-secondary:hover { background: var(--gray-300); }
+
+    .btn-sm { padding: 8px 12px; font-size: 0.875rem; }
+
+    /* 🏠 홈 버튼 */
+    .home-btn-container {
+      margin-bottom: 24px;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--gray-100);
+      color: var(--text-primary);
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .home-btn:hover { background: var(--gray-200); }
+
+    @media (max-width: 768px) {
+      .dashboard-container { padding: 16px; }
+      .staff-header { padding: 24px 20px; }
+      .staff-header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout" id="app">
+    <div class="main">
+      <!-- 헤더 -->
+      <header class="header">
+        <div class="header-content">
+          <a href="index.html" class="logo">🦷 Medvo</a>
+          <div id="sessionBadge" class="session-badge"></div>
+        </div>
+      </header>
+
+      <!-- 메인 콘텐츠 -->
+      <div class="content">
+        <!-- 🔐 인증 모달 -->
+        <div id="staffAuthModal">
+          <div class="auth-modal-content">
+            <h2>개인 대시보드 접근</h2>
+            <p>6자리 비밀번호를 입력해주세요</p>
+            <div class="pwd-input-group">
+              <input type="password" class="pwd-input" id="authPwd1" maxlength="1">
+              <input type="password" class="pwd-input" id="authPwd2" maxlength="1">
+              <input type="password" class="pwd-input" id="authPwd3" maxlength="1">
+              <input type="password" class="pwd-input" id="authPwd4" maxlength="1">
+              <input type="password" class="pwd-input" id="authPwd5" maxlength="1">
+              <input type="password" class="pwd-input" id="authPwd6" maxlength="1">
+            </div>
+            <button class="btn btn-primary" style="width:100%;" onclick="verifyStaffPassword()">인증</button>
+          </div>
+        </div>
+
+        <!-- 대시보드 콘텐츠 -->
+        <div class="dashboard-container">
+          <!-- 홈 버튼 -->
+          <div class="home-btn-container">
+            <a href="javascript:goHome()" class="home-btn">🏠 홈으로</a>
+          </div>
+
+          <!-- 헤더 -->
+          <div class="staff-header">
+            <h1 id="staffName">-</h1>
+            <p id="staffRole">-</p>
+            <div class="staff-info">
+              <div class="info-card">
+                <div class="info-label">병원</div>
+                <div class="info-value" id="clinicName">-</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">상담 수</div>
+                <div class="info-value" id="consultCount">-</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">가입일</div>
+                <div class="info-value" id="joinDate">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 상담 목록 -->
+          <div class="section">
+            <h2>📋 상담 목록</h2>
+            <div id="consultTableContainer">
+              <table class="consult-table">
+                <thead>
+                  <tr>
+                    <th>제목</th>
+                    <th>환자명</th>
+                    <th>상태</th>
+                    <th>작성일</th>
+                    <th style="width:80px;">보기</th>
+                  </tr>
+                </thead>
+                <tbody id="consultTableBody">
+                  <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-secondary);">로딩 중...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    let staffId = null;
+    let clinicId = null;
+    let staffData = null;
+    let staffPassword = null;
+
+    async function init() {
+      console.log('[personal-dashboard] init 시작');
+      const params = new URLSearchParams(window.location.search);
+      staffId = params.get('staff_id');
+      clinicId = params.get('clinic_id');
+
+      if (!staffId || !clinicId) {
+        showToast('유효하지 않은 접근입니다', 'error');
+        setTimeout(() => window.location.href = 'index.html', 1000);
+        return;
+      }
+
+      console.log('[personal-dashboard] staffId:', staffId, 'clinicId:', clinicId);
+      await loadStaffData();
+      showAuthModal();
+    }
+
+    async function loadStaffData() {
+      try {
+        const res = await fetch(`/api/staff-info?staff_id=${staffId}&clinic_id=${clinicId}`);
+        if (!res.ok) throw new Error('Staff data load failed');
+
+        const data = await res.json();
+        staffData = data.staff;
+        staffPassword = data.password;
+
+        console.log('[personal-dashboard] staffData:', staffData);
+
+        // 헤더 업데이트
+        document.getElementById('staffName').textContent = staffData.name || '-';
+        document.getElementById('staffRole').textContent = staffData.role || '직원';
+        document.getElementById('clinicName').textContent = staffData.clinic_name || '-';
+        document.getElementById('joinDate').textContent = new Date(staffData.created_at).toLocaleDateString('ko-KR');
+
+      } catch (e) {
+        console.error('[loadStaffData]', e);
+        showToast('직원 정보를 불러올 수 없습니다', 'error');
+      }
+    }
+
+    function showAuthModal() {
+      const modal = document.getElementById('staffAuthModal');
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      document.getElementById('authPwd1').focus();
+
+      // 숫자만 입력 + 자동 이동
+      for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`authPwd${i}`);
+        input.addEventListener('input', (e) => {
+          if (e.target.value && i < 6) {
+            document.getElementById(`authPwd${i + 1}`).focus();
+          }
+        });
+      }
+    }
+
+    function verifyStaffPassword() {
+      const pwd = Array.from({ length: 6 }, (_, i) =>
+        document.getElementById(`authPwd${i + 1}`).value
+      ).join('');
+
+      if (pwd.length !== 6) {
+        showToast('6자리 비밀번호를 입력해주세요', 'warning');
+        return;
+      }
+
+      // 비밀번호 비교 (저장된 비밀번호와 입력 값 비교)
+      if (pwd === staffPassword) {
+        unlockDashboard();
+      } else {
+        showToast('비밀번호가 일치하지 않습니다', 'error');
+        // 입력 필드 초기화
+        for (let i = 1; i <= 6; i++) {
+          document.getElementById(`authPwd${i}`).value = '';
+        }
+        document.getElementById('authPwd1').focus();
+      }
+    }
+
+    function unlockDashboard() {
+      const modal = document.getElementById('staffAuthModal');
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+
+      const container = document.querySelector('.dashboard-container');
+      container.style.display = 'block';
+
+      loadConsultList();
+    }
+
+    async function loadConsultList() {
+      try {
+        const res = await fetch(`/api/staff-consults?staff_id=${staffId}&clinic_id=${clinicId}`);
+        if (!res.ok) throw new Error('Consult list load failed');
+
+        const data = await res.json();
+        const consults = data.consults || [];
+
+        console.log('[loadConsultList] consults:', consults);
+
+        // 상담 수 업데이트
+        document.getElementById('consultCount').textContent = consults.length;
+
+        renderConsultTable(consults);
+      } catch (e) {
+        console.error('[loadConsultList]', e);
+        showToast('상담 목록을 불러올 수 없습니다', 'error');
+      }
+    }
+
+    function renderConsultTable(consults) {
+      const tbody = document.getElementById('consultTableBody');
+
+      if (!consults.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center; padding:40px; color:var(--text-secondary);">
+              저장된 상담이 없습니다.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = consults.map(c => `
+        <tr>
+          <td><span class="consult-title" onclick="viewConsult('${c.id}')">${escapeHTML(c.title || '제목 없음')}</span></td>
+          <td>${escapeHTML(c.patient_name || '-')}</td>
+          <td><span class="status-badge status-${c.status || 'pending'}">${c.status === 'completed' ? '완료' : '진행중'}</span></td>
+          <td>${new Date(c.created_at).toLocaleDateString('ko-KR')}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="viewConsult('${c.id}')">보기</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function viewConsult(consultId) {
+      // 상담 상세 페이지로 이동 (또는 모달로 표시)
+      window.location.href = `consult-detail.html?id=${consultId}&staff_id=${staffId}&clinic_id=${clinicId}`;
+    }
+
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    // 페이지 로드
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

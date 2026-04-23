@@ -466,7 +466,7 @@
               <th>휴대폰</th>
               <th>직급</th>
               <th>가입일</th>
-              <th style="width:100px;">작업</th>
+              <th style="width:200px;">작업</th>
             </tr>
           </thead>
           <tbody id="staffTableBody">
@@ -864,12 +864,23 @@
           <td>${escapeHTML(s.phone || '-')}</td>
           <td>${escapeHTML(s.role || '직원')}</td>
           <td>${new Date(s.created_at).toLocaleDateString('ko-KR')}</td>
-          <td style="display:flex; gap:4px;">
+          <td style="display:flex; gap:6px;">
+            <button class="action-btn view-staff-btn" style="background:var(--primary); color:white; flex:1;" data-staff-id="${s.id}" data-staff-name="${s.name}">📊 대시보드</button>
             <button class="action-btn edit-staff-btn" style="background:var(--primary-bg); color:var(--primary);" data-staff-id="${s.id}" data-staff-phone="${s.phone || ''}" data-staff-role="${s.role || '직원'}">수정</button>
             <button class="action-btn delete delete-staff-btn" data-staff-id="${s.id}">삭제</button>
           </td>
         </tr>
       `).join('');
+
+      // 대시보드 버튼 이벤트 리스너
+      document.querySelectorAll('.view-staff-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const staffId = this.dataset.staffId;
+          const staffName = this.dataset.staffName;
+          console.log('[viewStaffDashboard]', { staffId, staffName, clinicId });
+          window.location.href = `personal-dashboard.html?staff_id=${staffId}&clinic_id=${clinicId}`;
+        });
+      });
 
       // 수정 버튼 이벤트 리스너
       document.querySelectorAll('.edit-staff-btn').forEach(btn => {
