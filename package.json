@@ -1,7 +1,7 @@
 {
-  "name": "dental-ops-ai",
+  "name": "medvo",
   "version": "1.0.0",
-  "description": "치과 상담·운영 AI 플랫폼",
+  "description": "의료 상담을 AI로 구조화하여 매출로 연결시키는 전환 엔진",
   "scripts": {
     "dev": "next dev",
     "build": "",

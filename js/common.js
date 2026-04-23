@@ -29,8 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ============================================================
-   Dental Ops AI — Common JavaScript
-   치과 상담·진단·운영 AI 플랫폼
+   Medvo — Common JavaScript
+   의료 상담을 AI로 구조화하여 매출로 연결시키는 전환 엔진
    ============================================================ */
 
 // --- Sidebar Toggle (Mobile) ---
@@ -658,7 +658,7 @@ function renderSidebar(activePage) {
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo" style="flex-direction:column; gap:8px; align-items:center;">
-        <img src="img/logo.png" alt="Dental Ops AI" style="max-width:200px; width:100%; height:auto; background:#FFFFFF; padding:10px 14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        <img src="img/logo.png" alt="Medvo" style="max-width:200px; width:100%; height:auto; background:#FFFFFF; padding:10px 14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
         <div style="font-size:0.6875rem; color:var(--text-on-primary-disabled); letter-spacing:0.08em; text-transform:uppercase; text-align:center;">치과 상담·운영 OS</div>
       </div>
     </div>
@@ -724,7 +724,7 @@ function renderSidebar(activePage) {
           <span class="sidebar-api-status" id="sidebarDbStatus"></span>
         </span>
       </button>
-      <div style="font-size:0.7rem; color:rgba(255,255,255,0.25); margin-top:10px;">Dental Ops AI v1.0</div>
+      <div style="font-size:0.7rem; color:rgba(255,255,255,0.25); margin-top:10px;">Medvo v1.0</div>
     </div>
   </aside>
   <!-- Supabase 모달 -->
@@ -867,8 +867,8 @@ function renderFooter() {
     <div class="footer-inner">
       <div class="footer-top">
         <div class="footer-brand">
-          <img src="img/logo.png" alt="Dental Ops AI" style="max-width:180px; background:#FFFFFF; padding:8px 12px; border-radius:8px; margin-bottom:14px; display:inline-block;">
-          <p>치과 상담·진단·운영을 자동화하는 AI 운영 플랫폼. 상담 전환율과 환자 경험을 동시에 끌어올립니다.</p>
+          <img src="img/logo.png" alt="Medvo" style="max-width:180px; background:#FFFFFF; padding:8px 12px; border-radius:8px; margin-bottom:14px; display:inline-block;">
+          <p>의료 상담을 데이터 기반 구조로 설계하여 매출 전환을 극대화하는 AI 플랫폼. 공감 · 이해 · 선택 · 신뢰의 4가지 전환 포인트를 체계적으로 관리합니다.</p>
         </div>
         <div class="footer-section">
           <h4>8대 엔진</h4>
@@ -891,7 +891,7 @@ function renderFooter() {
         </div>
       </div>
       <div class="footer-bottom">
-        <div class="footer-copy">&copy; ${new Date().getFullYear()} Dental Ops AI. Powered by AX Dental Solutions.</div>
+        <div class="footer-copy">&copy; ${new Date().getFullYear()} Medvo. Powered by AX Dental Solutions.</div>
         <div class="footer-badges">
           <span class="footer-badge">8-Engine</span>
           <a href="admin-dashboard.html" class="footer-badge" style="background:rgba(0,102,255,0.15); border-color:rgba(0,102,255,0.4); color:#60A5FA; text-decoration:none; cursor:pointer;">🛠 관리자 대시보드</a>

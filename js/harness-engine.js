@@ -1,5 +1,5 @@
 /* ============================================================
-   Dental Ops AI — Harness Engine (6-Stage Insight Pipeline)
+   Medvo — Harness Engine (6-Stage Insight Pipeline)
    Curator → Miner → Architect → Writer → Critic → Editor
    ============================================================ */
 

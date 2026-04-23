@@ -1,4 +1,4 @@
-// Vercel Edge Runtime — Gemini 프록시 (Dental Ops AI SaaS)
+// Vercel Edge Runtime — Gemini 프록시 (Medvo SaaS)
 // Cold Start <100ms, 본사 GEMINI_API_KEY 서버 보관
 //
 // ① Auth 검증 (Bearer token or user_email)
