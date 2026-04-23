@@ -397,18 +397,18 @@
           return `
             <tr>
               <td style="font-weight:600; color:var(--primary); cursor:pointer;" onclick="window.location.href='clinic-dashboard.html?id=${c.id}';">${safe(c.name)}</td>
-              <td>${safe(c.director_name)}</td>
-              <td>${safe(c.region)}</td>
-              <td style="text-align:center;">${userCount}명</td>
-              <td>
-                <select onchange="changeClinicTier('${c.id}', this.value)" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
+              <td onclick="event.stopPropagation();">${safe(c.director_name)}</td>
+              <td onclick="event.stopPropagation();">${safe(c.region)}</td>
+              <td style="text-align:center;" onclick="event.stopPropagation();">${userCount}명</td>
+              <td onclick="event.stopPropagation();">
+                <select onchange="changeClinicTier('${c.id}', this.value)" onclick="event.stopPropagation();" style="padding:4px 8px; font-size:0.8125rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm);">
                   <option value="free" ${tier === 'free' ? 'selected' : ''}>🆓 Free (3회)</option>
                   <option value="pro" ${tier === 'pro' ? 'selected' : ''}>⭐ Pro (20회)</option>
                   <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60회)</option>
                 </select>
               </td>
-              <td style="font-size:0.75rem; color:var(--text-tertiary);">${(c.created_at || '').slice(0, 10)}</td>
-              <td style="text-align:center;">
+              <td style="font-size:0.75rem; color:var(--text-tertiary);" onclick="event.stopPropagation();">${(c.created_at || '').slice(0, 10)}</td>
+              <td style="text-align:center;" onclick="event.stopPropagation();">
                 <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteClinic('${c.id}', '${safe(c.name)}');" style="padding:4px 10px; font-size:0.75rem;">🗑️ 삭제</button>
               </td>
             </tr>
