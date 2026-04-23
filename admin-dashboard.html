@@ -439,11 +439,28 @@
 
     async function changeClinicTier(clinicId, tier) {
       try {
-        await SupabaseDB.updateClinicTier(clinicId, tier);
+        console.log('[changeClinicTier] 요금제 변경 요청:', { clinicId, tier });
+        const res = await fetch('/api/change-tier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinic_id: clinicId, tier })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || '요금제 변경 실패');
+        }
+
+        const data = await res.json();
+        console.log('[changeClinicTier] ✅ 요금제 변경 완료:', data);
         showToast('요금제 변경 완료', 'success');
+
+        // 50ms 딜레이 후 재로드 (DB 반영 대기)
+        await new Promise(r => setTimeout(r, 50));
         await renderMembersTable();
         await renderKpi();
       } catch (e) {
+        console.error('[changeClinicTier] Error:', e);
         showToast('변경 실패: ' + e.message, 'error');
       }
     }
