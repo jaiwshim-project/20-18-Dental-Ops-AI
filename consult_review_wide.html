@@ -122,18 +122,38 @@
       vertical-align: middle;
     }
 
+    /* 모든 화면에서 3단 구조 유지 */
+    @media (max-width: 1920px) {
+      .consult-layout {
+        grid-template-columns: 300px 1fr 320px;
+        gap: 18px;
+      }
+    }
     @media (max-width: 1400px) {
-      .consult-layout { grid-template-columns: 280px 1fr 280px; gap: 16px; }
+      .consult-layout {
+        grid-template-columns: 280px 1fr 300px;
+        gap: 16px;
+      }
     }
     @media (max-width: 1200px) {
-      .consult-layout { grid-template-columns: 260px 1fr 260px; gap: 12px; }
+      .consult-layout {
+        grid-template-columns: 260px 1fr 280px;
+        gap: 14px;
+      }
     }
     @media (max-width: 1024px) {
       .consult-layout {
-        grid-template-columns: 240px 1fr 240px;
+        grid-template-columns: 240px 1fr 260px;
         gap: 12px;
       }
       .panel-body { padding: 12px; }
+    }
+    @media (max-width: 768px) {
+      .consult-layout {
+        grid-template-columns: 200px 1fr 240px;
+        gap: 10px;
+      }
+      .panel-body { padding: 10px; }
     }
 
     /* ============ 음성 인식 / 상담실장 코칭 ============ */
