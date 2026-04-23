@@ -1,6 +1,6 @@
 {
   "name": "medvo",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "의료 상담을 AI로 구조화하여 매출로 연결시키는 전환 엔진",
   "scripts": {
     "dev": "next dev",
