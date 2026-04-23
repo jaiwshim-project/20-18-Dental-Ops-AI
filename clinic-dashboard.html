@@ -818,9 +818,29 @@
           currentSession.tier = clinicData.tier || 'free';
           Session.login(currentSession);
           console.log('[loadClinicInfo] 세션 tier 업데이트:', clinicData.tier);
-          // updateSessionUI를 다시 호출하여 배지 갱신
-          if (typeof updateSessionUI === 'function') {
-            updateSessionUI();
+
+          // 배지를 직접 업데이트 (확실한 동기화)
+          const badge = document.getElementById('sessionBadge');
+          if (badge) {
+            // 기존 배지 제거
+            badge.innerHTML = '';
+
+            // 새 배지 생성
+            const tierMap = {
+              'free': { label: '🆓 Free', bg: '#e5e7eb', fg: '#374151' },
+              'pro': { label: '⭐ Pro', bg: '#dbeafe', fg: '#1e40af' },
+              'max': { label: '🚀 Max', bg: '#ddd6fe', fg: '#4c1d95' }
+            };
+
+            const tier = (clinicData.tier || 'free').toLowerCase();
+            const tm = tierMap[tier] || tierMap.free;
+
+            const tierEl = document.createElement('span');
+            tierEl.style.cssText = `padding:2px 8px; background:${tm.bg}; color:${tm.fg}; border-radius:var(--radius-full); font-size:0.6875rem; font-weight:700; letter-spacing:0.03em;`;
+            tierEl.textContent = tm.label;
+            badge.appendChild(tierEl);
+
+            console.log('[loadClinicInfo] ✅ 배지 직접 업데이트 완료:', tier);
           }
         }
 
