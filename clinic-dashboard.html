@@ -8,10 +8,10 @@
   <link rel="stylesheet" href="css/common.css">
   <style>
     body { background: var(--bg-base); }
-    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none !important; }
+    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: block !important; }
 
-    /* 🔐 clinic-dashboard에서는 인증 모달을 기본으로 활성화 */
-    #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; display: flex !important; }
+    /* 🔐 인증 모달 숨김 */
+    #clinicAuthModal { display: none !important; opacity: 0 !important; pointer-events: none !important; }
     #clinicAuthModal.hidden { opacity: 0 !important; pointer-events: none !important; display: none !important; }
 
     .clinic-header {
@@ -544,57 +544,24 @@
     }
 
     function checkAuth() {
-      console.log('[checkAuth] ▶️ 시작');
-      console.log('[checkAuth] URL:', window.location.href);
-      console.log('[checkAuth] 페이지:', document.title);
+      console.log('[checkAuth] ▶️ 시작 (인증 모달 없음 - 콘텐츠 바로 표시)');
 
-      const session = Session.get();
-
-      console.log('[checkAuth] 세션 상태:', {
-        session: !!session,
-        clinic_id: session?.clinic_id
-      });
-
-      // ✅ 1단계: 세션이 있으면 clinicId 설정
-      if (session && session.clinic_id) {
-        clinicId = session.clinic_id;
-        console.log('[checkAuth] ✅ 세션 있음. clinicId:', clinicId);
-      } else {
-        console.log('[checkAuth] ⚠️ 세션 없음 → 모달에서 인증 정보 입력 필요');
-      }
-
-      // ✅ 2단계: 대시보드 콘텐츠 숨김
-      console.log('[checkAuth] 2단계: 대시보드 콘텐츠 숨김');
+      // 대시보드 콘텐츠 표시
       const container = document.querySelector('.clinic-container');
       if (container) {
-        container.style.display = 'none';
-        console.log('[checkAuth] ✅ 콘텐츠 숨김 완료');
-      } else {
-        console.warn('[checkAuth] ⚠️ .clinic-container 요소 없음');
+        container.style.display = 'block';
+        console.log('[checkAuth] ✅ 콘텐츠 표시 완료');
       }
 
-      // ✅ 3단계: 병원 관리 인증 모달 표시 (항상)
-      console.log('[checkAuth] 3단계: 병원 관리 인증 모달 표시');
+      // 인증 모달 숨김
       const modal = document.getElementById('clinicAuthModal');
-
-      if (!modal) {
-        console.error('[checkAuth] ❌❌❌ clinicAuthModal 요소 없음! (이것이 문제)');
-        return;
+      if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
       }
 
-      // 모달 표시 (3가지 방법으로 명확하게)
-      modal.style.display = 'flex';  // display 명시
-      modal.style.opacity = '1';      // opacity 명시
-      modal.classList.add('active');  // active 클래스 추가
-
-      console.log('[checkAuth] ✅ 병원 관리 인증 모달 표시 완료');
-      console.log('[checkAuth] 모달 상태:', {
-        display: modal.style.display,
-        opacity: modal.style.opacity,
-        hasActive: modal.classList.contains('active')
-      });
-
-      console.log('[checkAuth] ✅✅✅ checkAuth() 완료');
+      console.log('[checkAuth] ✅ 완료');
     }
 
     async function verifyClinicAdmin() {
