@@ -408,21 +408,8 @@
       </div>
       <div class="modal-body">
         <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:20px;">
-          병원 관리에 접근하기 위해 인증이 필요합니다. 회원가입 시 입력한 정보를 입력해주세요.
+          병원 관리에 접근하기 위해 비밀번호를 입력해주세요.
         </p>
-        <div class="form-group">
-          <label class="form-label">병원명 <span style="color:var(--danger);">*</span></label>
-          <div style="display:flex; gap:8px;">
-            <input type="text" class="form-input" id="authClinicName" placeholder="예: 디지털스마일치과" autocomplete="off" style="flex:1;">
-            <button type="button" id="authClinicSearchBtn" class="btn btn-secondary" style="padding:8px 12px; font-size:1.25rem; white-space:nowrap;" title="병원 목록">🔍</button>
-          </div>
-        </div>
-        <!-- 병원 검색 드롭다운 -->
-        <div id="authClinicDropdown" style="background:var(--surface); border-top:1px solid var(--gray-200); max-height:250px; overflow-y:auto; display:none; margin-bottom:16px;"></div>
-        <div class="form-group">
-          <label class="form-label">이메일 <span style="color:var(--danger);">*</span></label>
-          <input type="email" class="form-input" id="authClinicEmail" placeholder="you@example.com" autocomplete="email">
-        </div>
         <div class="form-group">
           <label class="form-label">비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></label>
           <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
@@ -573,36 +560,17 @@
     async function verifyClinicAdmin() {
       console.log('[verifyClinicAdmin] ▶️ 시작');
 
-      const clinicNameEl = document.getElementById('authClinicName');
-      const emailEl = document.getElementById('authClinicEmail');
       const errorEl = document.getElementById('authError');
+      const CLINIC_PASSWORD = '123456';
 
-      const clinicName = clinicNameEl?.value?.trim() || '';
-      const email = emailEl?.value?.trim() || '';
       const pwd = [1,2,3,4,5,6].map(i => document.getElementById(`authPwd${i}`)?.value || '').join('');
 
       console.log('[verifyClinicAdmin] 입력값:', {
-        clinicName: clinicName || '(비어있음)',
-        email: email || '(비어있음)',
         pwdLength: pwd.length,
         pwd: pwd || '(비어있음)'
       });
 
-      // 유효성 검사
-      if (!clinicName) {
-        console.warn('[verifyClinicAdmin] ❌ 병원명이 입력되지 않음');
-        errorEl.style.display = 'block';
-        errorEl.textContent = '병원명을 입력하세요';
-        return;
-      }
-
-      if (!email) {
-        console.warn('[verifyClinicAdmin] ❌ 이메일이 입력되지 않음');
-        errorEl.style.display = 'block';
-        errorEl.textContent = '이메일을 입력하세요';
-        return;
-      }
-
+      // 비밀번호 유효성 검사
       if (pwd.length !== 6) {
         console.warn('[verifyClinicAdmin] ❌ 비밀번호 길이 오류:', pwd.length);
         errorEl.style.display = 'block';
@@ -622,38 +590,16 @@
       try {
         errorEl.style.display = 'none';
 
-        console.log('[verifyClinicAdmin] 🔄 /api/login 호출 중...', { clinicName, email, pwdLength: pwd.length });
-
-        const body = JSON.stringify({ clinicName, email, password: pwd });
-        console.log('[verifyClinicAdmin] 요청 본문:', body);
-
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: body
-        });
-
-        console.log('[verifyClinicAdmin] API 응답 상태:', res.status, res.statusText);
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          const errMsg = err.error || '인증 실패. 정보를 다시 확인해주세요.';
+        // 로컬에서 비밀번호 검증
+        if (pwd !== CLINIC_PASSWORD) {
+          console.warn('[verifyClinicAdmin] ❌ 비밀번호 불일치');
           errorEl.style.display = 'block';
-          errorEl.textContent = '❌ ' + errMsg;
-          console.error('[verifyClinicAdmin] ❌ 인증 실패:', { status: res.status, error: errMsg });
+          errorEl.textContent = '비밀번호가 올바르지 않습니다';
           return;
         }
 
-        const user = await res.json();
+        console.log('[verifyClinicAdmin] ✅ 비밀번호 인증 성공');
         isClinicAuthVerified = true;
-
-        console.log('[verifyClinicAdmin] ✅ 인증 성공:', user);
-
-        // 응답에서 clinic_id 추출
-        if (user.clinic_id && !clinicId) {
-          clinicId = user.clinic_id;
-          console.log('[verifyClinicAdmin] ✅ clinic_id 설정:', clinicId);
-        }
 
         // 인증 성공 → 콘텐츠 표시
         console.log('[verifyClinicAdmin] UI 업데이트 중...');
