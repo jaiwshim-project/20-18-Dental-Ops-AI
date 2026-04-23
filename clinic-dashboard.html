@@ -571,6 +571,38 @@
     function checkAuth() {
       console.log('[checkAuth] ▶️ 시작');
 
+      // 🔑 1단계: sessionStorage에서 인증 정보 확인 (페이지 새로고침 후에도 유지)
+      const clinicAuthVerifiedSession = sessionStorage.getItem('clinicAuthVerified');
+      if (clinicAuthVerifiedSession === 'true') {
+        console.log('[checkAuth] ✅ sessionStorage에서 인증 정보 발견 → 모달 건너뜀');
+        isClinicAuthVerified = true;
+
+        // 세션에서 clinic_id 가져오기
+        const session = Session.get();
+        if (session?.clinic_id) {
+          clinicId = session.clinic_id;
+          console.log('[checkAuth] ✅ clinicId 설정:', clinicId);
+        }
+
+        // 대시보드 콘텐츠 표시
+        const container = document.querySelector('.clinic-container');
+        if (container) {
+          container.style.display = 'block';
+          console.log('[checkAuth] ✅ 대시보드 표시');
+        }
+
+        // 인증 모달 숨김
+        const modal = document.getElementById('clinicAuthModal');
+        if (modal) {
+          modal.classList.add('hidden');
+          console.log('[checkAuth] ✅ 모달 숨김');
+        }
+
+        return;  // 여기서 종료
+      }
+
+      console.log('[checkAuth] 인증 정보 없음 → 모달 표시');
+
       // 세션에서 clinic_id 가져오기
       const session = Session.get();
       console.log('[checkAuth] 세션 상태:', { session: !!session, clinic_id: session?.clinic_id });
@@ -646,6 +678,10 @@
 
         console.log('[verifyClinicAdmin] ✅ 비밀번호 인증 성공');
         isClinicAuthVerified = true;
+
+        // 🔑 sessionStorage에 인증 정보 저장 (페이지 새로고침 후에도 유지)
+        sessionStorage.setItem('clinicAuthVerified', 'true');
+        console.log('[verifyClinicAdmin] 🔑 sessionStorage에 인증 정보 저장됨');
 
         // 인증 성공 → 콘텐츠 표시
         console.log('[verifyClinicAdmin] UI 업데이트 중...');
