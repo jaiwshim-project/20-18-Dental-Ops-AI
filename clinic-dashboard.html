@@ -1282,14 +1282,9 @@
         clinicId = s.clinic_id;
         console.log('[initClinicDashboard] 세션에서 clinicId 추출:', clinicId);
 
-        // 세션의 clinic_id로 병원 정보 로드
-        try {
-          console.log('[initClinicDashboard] 일반 사용자: 병원 정보 로드 중...');
-          await loadClinicInfo();
-          console.log('[initClinicDashboard] ✅ 병원 정보 로드 완료');
-        } catch (e) {
-          console.error('[initClinicDashboard] ❌ 병원 정보 로드 실패:', e);
-        }
+        // ✅ 주의: loadClinicInfo()는 verifyClinicAdmin()에서만 호출!
+        // 여기서는 호출하지 않음 (clinic_id 불완전할 수 있음)
+        console.log('[initClinicDashboard] 📌 병원 정보는 인증 후 로드합니다 (verifyClinicAdmin)');
       }
 
       try {
