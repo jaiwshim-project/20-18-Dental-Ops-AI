@@ -198,7 +198,7 @@ async function callGeoAIO(prompt, options = {}) {
   }
 }
 
-// 자동 선택 및 호출
+// 자동 선택 및 호출 (실패 시 다음 모델로 폴백)
 async function callAI(prompt, options = {}) {
   const availableModels = getAvailableModels();
 
@@ -206,23 +206,26 @@ async function callAI(prompt, options = {}) {
     throw new Error('[ai-selector] 사용 가능한 AI API 없음. 환경 변수를 설정해주세요.');
   }
 
-  const selectedModel = selectBestModel(availableModels);
+  // 우선순위 순서로 정렬, 각 모델 실패 시 다음 모델로 폴백
+  const ordered = [AVAILABLE_MODELS.GEMINI, AVAILABLE_MODELS.CLAUDE, AVAILABLE_MODELS.GEO_AIO]
+    .filter(m => availableModels.includes(m));
 
-  try {
-    switch (selectedModel) {
-      case AVAILABLE_MODELS.GEMINI:
-        return await callGemini(prompt, options);
-      case AVAILABLE_MODELS.CLAUDE:
-        return await callClaude(prompt, options);
-      case AVAILABLE_MODELS.GEO_AIO:
-        return await callGeoAIO(prompt, options);
-      default:
-        throw new Error('알 수 없는 모델: ' + selectedModel);
+  let lastError;
+  for (const model of ordered) {
+    try {
+      console.log('[ai-selector] 시도:', model);
+      switch (model) {
+        case AVAILABLE_MODELS.GEMINI:  return await callGemini(prompt, options);
+        case AVAILABLE_MODELS.CLAUDE:  return await callClaude(prompt, options);
+        case AVAILABLE_MODELS.GEO_AIO: return await callGeoAIO(prompt, options);
+      }
+    } catch (e) {
+      console.error('[ai-selector] ' + model + ' 실패, 다음 모델 시도:', e.message);
+      lastError = e;
     }
-  } catch (e) {
-    console.error('[ai-selector] AI 호출 실패:', e.message);
-    throw e;
   }
+
+  throw lastError || new Error('[ai-selector] 모든 AI API 호출 실패');
 }
 
 module.exports = {
