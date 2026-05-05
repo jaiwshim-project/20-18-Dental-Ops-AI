@@ -1087,11 +1087,34 @@ function updateSidebarDbState() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // 사이드바 자동 렌더링 — common.js에서 모든 페이지 공통 처리
+  const _appDiv = document.getElementById('app');
+  if (_appDiv && !document.getElementById('sidebar')) {
+    const _path = window.location.pathname.split('/').pop() || 'index.html';
+    const _pageMap = {
+      'index.html': 'index', '': 'index',
+      'consult.html': 'consult',
+      'review.html': 'review',
+      'consult_review_wide.html': 'review-wide',
+      'consult_review_tab.html': 'review-tab',
+      'conversion.html': 'conversion',
+      'automation.html': 'automation',
+      'patients.html': 'patients',
+      'dashboard.html': 'dashboard',
+      'training.html': 'training',
+      'insight.html': 'insight',
+      'clinic-dashboard.html': 'clinic-dashboard',
+      'admin.html': 'admin',
+      'manual.html': 'manual',
+      'architecture.html': 'architecture',
+      'admin-dashboard.html': 'admin-dash',
+    };
+    const _pageName = _pageMap[_path] || '';
+    _appDiv.insertAdjacentHTML('afterbegin', renderSidebar(_pageName));
+    console.log('[common.js] ✅ 사이드바 렌더링 완료:', _pageName);
+  }
   updateSidebarDbState();
   renderConnectionBanner();
-  // Supabase Auth 세션 복원 + onAuthStateChange 구독
-  // SupabaseDB.init()이 DOMContentLoaded에서 실행되므로 약간의 딜레이
-  // initAuthBridge 제거됨 - 이전 매직링크 방식
 });
 
 // --- 연결 상태 배너 (엔진 페이지 한정) ---
