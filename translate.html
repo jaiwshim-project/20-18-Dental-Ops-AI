@@ -81,9 +81,11 @@
     /* ── 대화 패널 ── */
     .conv-panel {
       display: flex; flex-direction: column;
-      border: 1.5px solid var(--gray-200); border-radius: var(--radius-lg);
+      border: 2px solid var(--gray-200); border-radius: var(--radius-lg);
       overflow: hidden; min-height: 0;
     }
+    .patient-panel { border-color: #3b82f6; box-shadow: 0 0 0 1px #bfdbfe; }
+    .staff-panel   { border-color: #16a34a; box-shadow: 0 0 0 1px #bbf7d0; }
     .panel-header {
       padding: 9px 14px; font-weight: 700; font-size: 0.875rem;
       text-align: center; flex-shrink: 0;
