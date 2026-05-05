@@ -87,11 +87,12 @@ function openModal(id) {
   if (overlay) {
     overlay.classList.add('active');
     overlay.classList.remove('hidden');
-    // clinic-dashboard의 !important를 처리하기 위해 인라인 스타일도 설정
     overlay.style.setProperty('display', 'flex', 'important');
     overlay.style.setProperty('opacity', '1', 'important');
     overlay.style.setProperty('pointer-events', 'all', 'important');
   }
+  // 로그인 모달은 항상 로그인 탭으로 초기화
+  if (id === 'loginModal') switchAuthTab('login');
 }
 function closeModal(id) {
   const overlay = document.getElementById(id);
@@ -281,15 +282,7 @@ function switchAuthTab(tab) {
     loginContent.style.display = 'block';
     loginTab.style.background = 'var(--primary)';
     loginTab.style.color = 'white';
-    // 병원명 입력 여부에 따라 확인 또는 로그인 버튼 표시
-    const clinicNameInput = document.getElementById('clinicName');
-    if (clinicNameInput && clinicNameInput.value.trim()) {
-      clinicConfirmBtn.style.display = 'block';
-      finalLoginBtn.style.display = 'none';
-    } else {
-      clinicConfirmBtn.style.display = 'block'; // 항상 확인 버튼 표시
-      finalLoginBtn.style.display = 'none';
-    }
+    authBtn.style.display = 'block'; // 로그인 버튼 바로 표시
   } else if (tab === 'signup') {
     signupContent.style.display = 'block';
     signupTab.style.background = 'var(--primary)';
