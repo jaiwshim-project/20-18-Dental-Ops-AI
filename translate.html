@@ -338,6 +338,20 @@
   };
 
   // 마이크 상태 문구 (환자 언어)
+  // "상담AI통역" 각 언어 번역
+  const PAGE_TITLE = {
+    'English':'AI Interpreter','Chinese (Simplified)':'AI翻译','Chinese (Traditional)':'AI翻譯',
+    'Japanese':'AI通訳','Spanish':'Intérprete IA','French':'Interprète IA',
+    'German':'KI-Dolmetscher','Portuguese':'Intérprete IA','Russian':'ИИ-переводчик',
+    'Arabic':'مترجم ذكاء اصطناعي','Hindi':'AI दुभाषिया','Vietnamese':'Phiên dịch AI',
+    'Thai':'ล่าม AI','Indonesian':'Penerjemah AI','Malay':'Penterjemah AI',
+    'Filipino':'AI Interpreter','Dutch':'AI-tolk','Italian':'Interprete IA',
+    'Polish':'Tłumacz AI','Turkish':'AI Tercüman','Ukrainian':'AI-перекладач',
+    'Swedish':'AI-tolk','Norwegian':'AI-tolk','Danish':'AI-tolk',
+    'Finnish':'AI-tulkki','Czech':'AI tlumočník','Romanian':'Interpret AI',
+    'Hungarian':'AI tolmács','Greek':'Διερμηνέας ΑΙ','Hebrew':'מתורגמן AI'
+  };
+
   const MIC_IDLE = {
     'English':'Tap to record','Chinese (Simplified)':'点击录音','Chinese (Traditional)':'點擊錄音',
     'Japanese':'タップして録音','Spanish':'Toca para grabar','French':'Appuyer pour enregistrer',
@@ -427,6 +441,13 @@
     setInterim('staff',   '마이크를 눌러 시작하세요', false);
     resetMicUI();
 
+    // 페이지 헤더 타이틀에 환자 언어 번역 추가
+    const titleEl = document.querySelector('.header-title');
+    if (titleEl) {
+      const translated = PAGE_TITLE[pLang] || '';
+      titleEl.textContent = '🌐 상담AI통역' + (translated ? ' · ' + translated : '');
+    }
+
     document.getElementById('setupScreen').style.display = 'none';
     document.getElementById('chatScreen').style.display = 'flex';
   }
@@ -462,6 +483,8 @@
     }
 
     setTimeout(() => {
+      const titleEl = document.querySelector('.header-title');
+      if (titleEl) titleEl.textContent = '🌐 상담AI통역';
       document.getElementById('chatScreen').style.display = 'none';
       document.getElementById('setupScreen').style.display = 'flex';
     }, 1200);
