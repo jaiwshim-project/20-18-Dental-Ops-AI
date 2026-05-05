@@ -317,6 +317,28 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) document.getElementById('speechWarn').style.display = 'block';
 
+  // 30개 언어별 "환자" / "직원" 단어
+  const PATIENT_WORD = {
+    'English':'Patient','Chinese (Simplified)':'患者','Chinese (Traditional)':'患者',
+    'Japanese':'患者','Spanish':'Paciente','French':'Patient','German':'Patient',
+    'Portuguese':'Paciente','Russian':'Пациент','Arabic':'المريض','Hindi':'मरीज़',
+    'Vietnamese':'Bệnh nhân','Thai':'ผู้ป่วย','Indonesian':'Pasien','Malay':'Pesakit',
+    'Filipino':'Pasyente','Dutch':'Patiënt','Italian':'Paziente','Polish':'Pacjent',
+    'Turkish':'Hasta','Ukrainian':'Пацієнт','Swedish':'Patient','Norwegian':'Pasient',
+    'Danish':'Patient','Finnish':'Potilas','Czech':'Pacient','Romanian':'Pacient',
+    'Hungarian':'Páciens','Greek':'Ασθενής','Hebrew':'מטופל'
+  };
+  const STAFF_WORD = {
+    'English':'Staff','Chinese (Simplified)':'工作人员','Chinese (Traditional)':'工作人員',
+    'Japanese':'スタッフ','Spanish':'Personal','French':'Personnel','German':'Personal',
+    'Portuguese':'Equipe','Russian':'Персонал','Arabic':'الموظف','Hindi':'स्टाफ',
+    'Vietnamese':'Nhân viên','Thai':'เจ้าหน้าที่','Indonesian':'Staf','Malay':'Kakitangan',
+    'Filipino':'Kawani','Dutch':'Personeel','Italian':'Personale','Polish':'Personel',
+    'Turkish':'Personel','Ukrainian':'Персонал','Swedish':'Personal','Norwegian':'Personale',
+    'Danish':'Personale','Finnish':'Henkilökunta','Czech':'Personál','Romanian':'Personal',
+    'Hungarian':'Személyzet','Greek':'Προσωπικό','Hebrew':'צוות'
+  };
+
   // 30개 언어별 환자 안내 문구
   const PATIENT_HINTS = {
     'English':               '🎤 Press the mic button and speak.\nWhen done, click the mic again after 1 second.\nYour words will be translated for the staff.',
@@ -544,12 +566,21 @@
     messages.push(entry);
     updateMsgCount();
 
+    // 환자 언어로 라벨 설정
+    const patWord   = PATIENT_WORD[pLang] || '환자';
+    const staffWord = STAFF_WORD[pLang]   || '직원';
+
     // 본인 패널 — 오른쪽 정렬
-    appendBubble(document.getElementById(isP ? 'logP' : 'logS'), 'own', isP ? '환자' : '직원', text, null);
+    // 환자 패널: "Patient" (환자 언어), 직원 패널: "직원" (한국어)
+    appendBubble(document.getElementById(isP ? 'logP' : 'logS'), 'own',
+      isP ? patWord : '직원', text, null);
 
     // 상대방 패널 — 왼쪽 정렬, 번역 대기
+    // 환자 패널에 오는 직원 번역: "Staff→English" (환자 언어)
+    // 직원 패널에 오는 환자 번역: "환자→Korean" (한국어)
+    const otherLabel = isP ? ('환자→' + toLang) : (staffWord + '→' + pLang);
     const otherEl = appendBubble(document.getElementById(isP ? 'logS' : 'logP'), 'other',
-      (isP ? '환자→' : '직원→') + toLang, '⏳ 번역 중...', 'trans_' + id);
+      otherLabel, '⏳ 번역 중...', 'trans_' + id);
     otherEl.querySelector('.bubble').classList.add('bubble-translating');
 
     return entry;
