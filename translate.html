@@ -337,6 +337,37 @@
     'Hungarian':'Személyzet','Greek':'Προσωπικό','Hebrew':'צוות'
   };
 
+  // 마이크 상태 문구 (환자 언어)
+  const MIC_IDLE = {
+    'English':'Tap to record','Chinese (Simplified)':'点击录音','Chinese (Traditional)':'點擊錄音',
+    'Japanese':'タップして録音','Spanish':'Toca para grabar','French':'Appuyer pour enregistrer',
+    'German':'Zum Aufnehmen tippen','Portuguese':'Toque para gravar','Russian':'Нажмите для записи',
+    'Arabic':'اضغط للتسجيل','Hindi':'रिकॉर्ड करने के लिए टैप करें','Vietnamese':'Nhấn để ghi âm',
+    'Thai':'แตะเพื่อบันทึก','Indonesian':'Ketuk untuk merekam','Malay':'Ketik untuk rakam',
+    'Filipino':'I-tap para mag-record','Dutch':'Tik om op te nemen','Italian':'Tocca per registrare',
+    'Polish':'Dotknij aby nagrać','Turkish':'Kaydetmek için dokunun','Ukrainian':'Натисніть для запису',
+    'Swedish':'Tryck för att spela in','Norwegian':'Trykk for å ta opp','Danish':'Tryk for at optage',
+    'Finnish':'Napauta nauhoittaaksesi','Czech':'Klepněte pro nahrávání','Romanian':'Apăsați pentru înregistrare',
+    'Hungarian':'Érintse meg a felvételhez','Greek':'Πατήστε για εγγραφή','Hebrew':'לחץ להקלטה'
+  };
+  const MIC_REC = {
+    'English':'🔴 Recording — tap again to stop','Chinese (Simplified)':'🔴 录音中 — 再次点击停止',
+    'Chinese (Traditional)':'🔴 錄音中 — 再次點擊停止','Japanese':'🔴 録音中 — もう一度タップして停止',
+    'Spanish':'🔴 Grabando — toca de nuevo para parar','French':'🔴 Enregistrement — appuyer pour arrêter',
+    'German':'🔴 Aufnahme — erneut tippen zum Stoppen','Portuguese':'🔴 Gravando — toque novamente para parar',
+    'Russian':'🔴 Запись — нажмите снова для остановки','Arabic':'🔴 تسجيل — اضغط مجدداً للإيقاف',
+    'Hindi':'🔴 रिकॉर्डिंग — रोकने के लिए फिर टैप करें','Vietnamese':'🔴 Đang ghi — nhấn lại để dừng',
+    'Thai':'🔴 กำลังบันทึก — แตะอีกครั้งเพื่อหยุด','Indonesian':'🔴 Merekam — ketuk lagi untuk berhenti',
+    'Malay':'🔴 Merakam — ketik lagi untuk berhenti','Filipino':'🔴 Nagre-record — i-tap ulit para huminto',
+    'Dutch':'🔴 Opname — tik opnieuw om te stoppen','Italian':'🔴 Registrazione — tocca di nuovo per fermare',
+    'Polish':'🔴 Nagrywanie — dotknij ponownie aby zatrzymać','Turkish':'🔴 Kayıt — durdurmak için tekrar dokunun',
+    'Ukrainian':'🔴 Запис — натисніть знову щоб зупинити','Swedish':'🔴 Spelar in — tryck igen för att stoppa',
+    'Norwegian':'🔴 Tar opp — trykk igjen for å stoppe','Danish':'🔴 Optager — tryk igen for at stoppe',
+    'Finnish':'🔴 Nauhoittaa — napauta uudelleen lopettaaksesi','Czech':'🔴 Nahrávání — klepněte znovu pro zastavení',
+    'Romanian':'🔴 Înregistrare — apăsați din nou pentru oprire','Hungarian':'🔴 Felvétel — érintse meg újra a leállításhoz',
+    'Greek':'🔴 Εγγραφή — πατήστε ξανά για διακοπή','Hebrew':'🔴 מקליט — לחץ שוב לעצירה'
+  };
+
   // 30개 언어별 환자 안내 문구
   const PATIENT_HINTS = {
     'English':               '🎤 Press the mic button and speak.\nWhen done, click the mic again after 1 second.\nYour words will be translated for the staff.',
@@ -526,19 +557,19 @@
       btn.textContent = '⏹';
       btn.disabled    = false;
       other.disabled  = true;
-      stat.textContent  = '🔴 녹음 중 — 다시 누르면 중지';
+      // 환자 마이크면 환자 언어, 직원 마이크면 한국어
+      stat.textContent  = isP ? (MIC_REC[pLang] || '🔴 녹음 중 — 다시 누르면 중지') : '🔴 녹음 중 — 다시 누르면 중지';
       ostat.textContent = '대기 중';
     }
   }
 
   function resetMicUI() {
-    ['P','S'].forEach(x => {
-      const btn = document.getElementById('mic' + x);
-      btn.className   = 'mic-btn';
-      btn.textContent = '🎤';
-      btn.disabled    = false;
-      document.getElementById('status' + x).textContent = '누르면 녹음 시작';
-    });
+    const micP = document.getElementById('micP');
+    const micS = document.getElementById('micS');
+    micP.className = 'mic-btn'; micP.textContent = '🎤'; micP.disabled = false;
+    micS.className = 'mic-btn'; micS.textContent = '🎤'; micS.disabled = false;
+    document.getElementById('statusP').textContent = MIC_IDLE[pLang] || '누르면 녹음 시작';
+    document.getElementById('statusS').textContent = '누르면 녹음 시작';
   }
 
   function setInterim(who, text, active) {
