@@ -793,11 +793,27 @@
       try {
         errorEl.style.display = 'none';
 
-        // 로컬에서 비밀번호 검증
-        if (pwd !== CLINIC_PASSWORD) {
+        // clinic_id 확보 (세션에서)
+        const session = Session.get();
+        const cid = clinicId || session?.clinic_id;
+
+        if (!cid) {
+          errorEl.style.display = 'block';
+          errorEl.textContent = '먼저 로그인 후 접근해주세요';
+          return;
+        }
+
+        // API로 비밀번호 검증 (Supabase password_hash 기준)
+        const verifyRes = await fetch('/api/verify-clinic-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinic_id: cid, password: pwd })
+        });
+        if (!verifyRes.ok) {
+          const err = await verifyRes.json();
           console.warn('[verifyClinicAdmin] ❌ 비밀번호 불일치');
           errorEl.style.display = 'block';
-          errorEl.textContent = '비밀번호가 올바르지 않습니다';
+          errorEl.textContent = err.error === '비밀번호 불일치' ? '비밀번호가 올바르지 않습니다' : ('오류: ' + err.error);
           return;
         }
 
