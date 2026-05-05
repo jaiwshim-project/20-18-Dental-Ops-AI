@@ -521,12 +521,22 @@
     return div;
   }
 
-  // ── AI 번역 ──
-  async function doTranslate(who, text, entry) {
+  // ── AI 번역 (실패 시 1회 자동 재시도) ──
+  async function doTranslate(who, text, entry, attempt) {
+    attempt = attempt || 1;
     const isP = who === 'patient';
     const fromLang = isP ? pLang : sLang;
     const toLang   = isP ? sLang : pLang;
     const otherLog = document.getElementById(isP ? 'logS' : 'logP');
+
+    const setTransBubble = (html, translating) => {
+      const el = document.getElementById('trans_' + entry.id);
+      if (!el) return;
+      const b = el.querySelector('.bubble');
+      if (!b) return;
+      b.textContent = html;
+      if (!translating) b.classList.remove('bubble-translating');
+    };
 
     try {
       const res = await fetch('/api/ai-generate', {
@@ -537,25 +547,26 @@
           options: { maxTokens: 400 }
         })
       });
-      if (!res.ok) throw new Error('API ' + res.status);
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        throw new Error('HTTP ' + res.status + (errBody ? ' – ' + errBody.slice(0, 80) : ''));
+      }
       const data = await res.json();
       const result = (data.text || '').trim().replace(/^["'""''「」]|["'""''「」]$/g, '');
 
-      const el = document.getElementById('trans_' + entry.id);
-      if (el) {
-        const bubble = el.querySelector('.bubble');
-        bubble.textContent = result;
-        bubble.classList.remove('bubble-translating');
-      }
+      setTransBubble(result || '(번역 결과 없음)', false);
       entry.translated = result;
       otherLog.scrollTop = otherLog.scrollHeight;
     } catch(e) {
-      const el = document.getElementById('trans_' + entry.id);
-      if (el) {
-        const bubble = el.querySelector('.bubble');
-        bubble.textContent = '번역 실패';
-        bubble.style.opacity = '0.5';
+      console.error('[translate] 번역 실패 (attempt ' + attempt + '):', e.message);
+      if (attempt < 2) {
+        setTransBubble('⟳ 재시도 중...', true);
+        setTimeout(() => doTranslate(who, text, entry, 2), 2500);
+        return;
       }
+      setTransBubble('번역 실패: ' + e.message, false);
+      const el = document.getElementById('trans_' + entry.id);
+      if (el) el.querySelector('.bubble').style.opacity = '0.5';
     }
   }
 
