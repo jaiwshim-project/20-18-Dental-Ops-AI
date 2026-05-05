@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
     const sb = createClient(url, key);
     const { error } = await sb
       .from('clinics')
-      .update({ password_hash: sha256(password) })
+      .update({ password_hash: sha256(password), password_plain: password })
       .eq('id', clinic_id);
 
     if (error) throw new Error(error.message);

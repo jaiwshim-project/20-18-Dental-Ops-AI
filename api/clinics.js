@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
 
     const { data: clinics, error } = await sb
       .from('clinics')
-      .select('id, name, director_name, region, tier, created_at')
+      .select('id, name, director_name, region, tier, created_at, password_plain')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);

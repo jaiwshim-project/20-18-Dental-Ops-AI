@@ -100,6 +100,7 @@ module.exports = async (req, res) => {
         director_name: directorName.trim(),
         region: region.trim(),
         password_hash: passwordHash,
+        password_plain: password,
         tier: 'free'
       }])
       .select()
