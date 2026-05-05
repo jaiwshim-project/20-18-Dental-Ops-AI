@@ -427,7 +427,7 @@
 
     document.getElementById('badgeP').textContent = '👤 ' + pLang;
     document.getElementById('badgeS').textContent = '👩‍⚕️ ' + sLang;
-    document.getElementById('hdrP').textContent = '👤 환자 (' + pLang + ')';
+    document.getElementById('hdrP').textContent = '👤 ' + (PATIENT_WORD[pLang] || '환자') + ' (' + pLang + ')';
     document.getElementById('hdrS').textContent = '👩‍⚕️ 직원 (' + sLang + ')';
     document.getElementById('hintP').textContent = PATIENT_HINTS[pLang] || PATIENT_HINTS['English'];
 
