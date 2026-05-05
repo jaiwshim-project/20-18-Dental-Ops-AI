@@ -423,16 +423,7 @@ function initClinicInputs() {
   registerClinicInputListeners();
 }
 
-if (document.readyState === 'loading') {
-  console.log('[clinic-input-init] DOMContentLoaded 대기');
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('[clinic-input-init] DOMContentLoaded 발생 → 초기화 시작');
-    initClinicInputs();
-  });
-} else {
-  console.log('[clinic-input-init] DOMContentLoaded 이미 발생 → 즉시 실행');
-  initClinicInputs();
-}
+// initClinicInputs()는 사이드바 렌더링 직후(DOMContentLoaded 내)에서만 호출됨
 
 // 로그인: 병원명 + 이메일 + 비밀번호(6자리)
 async function submitClinicLogin() {
@@ -1112,6 +1103,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const _pageName = _pageMap[_path] || '';
     _appDiv.insertAdjacentHTML('afterbegin', renderSidebar(_pageName));
     console.log('[common.js] ✅ 사이드바 렌더링 완료:', _pageName);
+    // 사이드바 렌더링 후 즉시 병원 검색 리스너 등록 (요소가 DOM에 존재하는 시점)
+    initClinicInputs();
   }
   updateSidebarDbState();
   renderConnectionBanner();
