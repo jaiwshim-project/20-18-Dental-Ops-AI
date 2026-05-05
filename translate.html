@@ -646,8 +646,12 @@
     if (id) div.id = id;
     div.innerHTML = '<div class="bubble-label">' + esc(label) + '</div><div class="bubble">' + esc(text) + '</div>';
     log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
+    scrollBottom(log);
     return div;
+  }
+
+  function scrollBottom(log) {
+    requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
   }
 
   // ── AI 번역 (실패 시 1회 자동 재시도) ──
@@ -685,7 +689,7 @@
 
       setTransBubble(result || '(번역 결과 없음)', false);
       entry.translated = result;
-      otherLog.scrollTop = otherLog.scrollHeight;
+      scrollBottom(otherLog);
     } catch(e) {
       console.error('[translate] 번역 실패 (attempt ' + attempt + '):', e.message);
       if (attempt < 2) {
