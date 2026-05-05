@@ -155,13 +155,11 @@
     }
     .mic-status { font-size: 0.78rem; color: var(--text-secondary); margin-top: 5px; font-weight: 500; }
     .mic-hint {
-      margin-top: 10px; padding: 8px 12px;
-      background: var(--gray-50); border: 1px solid var(--gray-200);
+      margin-bottom: 10px; padding: 8px 12px;
+      background: #fff5f5; border: 1px solid #fca5a5;
       border-radius: var(--radius-sm); font-size: 0.78rem;
-      color: var(--text-secondary); line-height: 1.5; text-align: center;
+      color: #dc2626; line-height: 1.55; text-align: center; font-weight: 500;
     }
-    .patient-panel .mic-hint { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
-    .staff-panel   .mic-hint { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
 
     /* 저장 알림 */
     .save-toast {
@@ -277,9 +275,9 @@
             <div class="conv-log" id="logP"></div>
             <div class="panel-interim" id="interimP">마이크 버튼을 눌러 말하기 시작하세요</div>
             <div class="panel-mic">
+              <div class="mic-hint" id="hintP"></div>
               <button class="mic-btn" id="micP" onclick="toggleMic('patient')">🎤</button>
               <div class="mic-status" id="statusP">누르면 녹음 시작</div>
-              <div class="mic-hint" id="hintP"></div>
             </div>
           </div>
 
