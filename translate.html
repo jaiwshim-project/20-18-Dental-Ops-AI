@@ -154,6 +154,14 @@
       50%      { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
     }
     .mic-status { font-size: 0.78rem; color: var(--text-secondary); margin-top: 5px; font-weight: 500; }
+    .mic-hint {
+      margin-top: 10px; padding: 8px 12px;
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm); font-size: 0.78rem;
+      color: var(--text-secondary); line-height: 1.5; text-align: center;
+    }
+    .patient-panel .mic-hint { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+    .staff-panel   .mic-hint { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
 
     /* 저장 알림 */
     .save-toast {
@@ -271,6 +279,7 @@
             <div class="panel-mic">
               <button class="mic-btn" id="micP" onclick="toggleMic('patient')">🎤</button>
               <div class="mic-status" id="statusP">누르면 녹음 시작</div>
+              <div class="mic-hint" id="hintP"></div>
             </div>
           </div>
 
@@ -308,6 +317,40 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) document.getElementById('speechWarn').style.display = 'block';
 
+  // 30개 언어별 환자 안내 문구
+  const PATIENT_HINTS = {
+    'English':               '🎤 Press the button and speak.\nYour words will be translated for the staff.',
+    'Chinese (Simplified)':  '🎤 按下按钮后说话。\n您的话将被翻译给工作人员。',
+    'Chinese (Traditional)': '🎤 按下按鈕後說話。\n您的話將被翻譯給工作人員。',
+    'Japanese':              '🎤 ボタンを押して話してください。\n発言はスタッフに翻訳されます。',
+    'Spanish':               '🎤 Presione el botón y hable.\nSus palabras serán traducidas al personal.',
+    'French':                '🎤 Appuyez sur le bouton et parlez.\nVos mots seront traduits pour le personnel.',
+    'German':                '🎤 Drücken Sie die Taste und sprechen Sie.\nIhre Worte werden für das Personal übersetzt.',
+    'Portuguese':            '🎤 Pressione o botão e fale.\nSuas palavras serão traduzidas para a equipe.',
+    'Russian':               '🎤 Нажмите кнопку и говорите.\nВаши слова будут переведены для персонала.',
+    'Arabic':                '🎤 اضغط الزر وتحدث.\nسيتم ترجمة كلامك للموظفين.',
+    'Hindi':                 '🎤 बटन दबाएं और बोलें।\nआपकी बातें स्टाफ के लिए अनुवाद होंगी।',
+    'Vietnamese':            '🎤 Nhấn nút và nói chuyện.\nLời nói của bạn sẽ được dịch cho nhân viên.',
+    'Thai':                  '🎤 กดปุ่มแล้วพูด\nคำพูดของคุณจะถูกแปลให้เจ้าหน้าที่',
+    'Indonesian':            '🎤 Tekan tombol dan bicara.\nKata-kata Anda akan diterjemahkan untuk staf.',
+    'Malay':                 '🎤 Tekan butang dan bercakap.\nKata-kata anda akan diterjemahkan untuk kakitangan.',
+    'Filipino':              '🎤 Pindutin ang pindutan at magsalita.\nIsasalin ang iyong mga salita para sa kawani.',
+    'Dutch':                 '🎤 Druk op de knop en spreek.\nUw woorden worden vertaald voor het personeel.',
+    'Italian':               '🎤 Premi il pulsante e parla.\nLe tue parole saranno tradotte per il personale.',
+    'Polish':                '🎤 Naciśnij przycisk i mów.\nTwoje słowa zostaną przetłumaczone dla personelu.',
+    'Turkish':               '🎤 Düğmeye basın ve konuşun.\nSözleriniz personel için çevrilecektir.',
+    'Ukrainian':             '🎤 Натисніть кнопку і говоріть.\nВаші слова будуть перекладені для персоналу.',
+    'Swedish':               '🎤 Tryck på knappen och tala.\nDina ord kommer att översättas för personalen.',
+    'Norwegian':             '🎤 Trykk på knappen og snakk.\nOrdenene dine vil bli oversatt til personalet.',
+    'Danish':                '🎤 Tryk på knappen og tal.\nDine ord vil blive oversat til personalet.',
+    'Finnish':               '🎤 Paina nappia ja puhu.\nSanasi käännetään henkilökunnalle.',
+    'Czech':                 '🎤 Stiskněte tlačítko a mluvte.\nVaše slova budou přeložena pro personál.',
+    'Romanian':              '🎤 Apăsați butonul și vorbiți.\nCuvintele dvs. vor fi traduse pentru personal.',
+    'Hungarian':             '🎤 Nyomja meg a gombot és beszéljen.\nSzavait lefordítják a személyzet számára.',
+    'Greek':                 '🎤 Πατήστε το κουμπί και μιλήστε.\nΤα λόγια σας θα μεταφραστούν για το προσωπικό.',
+    'Hebrew':                '🎤 לחץ על הכפתור ודבר.\nהמילים שלך יתורגמו לצוות.'
+  };
+
   // ── 세션 시작 ──
   function startSession() {
     if (!SpeechRecognition) { alert('Chrome 또는 Edge 브라우저를 사용해주세요.'); return; }
@@ -321,6 +364,7 @@
     document.getElementById('badgeS').textContent = '👩‍⚕️ ' + sLang;
     document.getElementById('hdrP').textContent = '👤 환자 (' + pLang + ')';
     document.getElementById('hdrS').textContent = '👩‍⚕️ 직원 (' + sLang + ')';
+    document.getElementById('hintP').textContent = PATIENT_HINTS[pLang] || PATIENT_HINTS['English'];
 
     messages.length = 0;
     sessionStart = new Date().toISOString();
