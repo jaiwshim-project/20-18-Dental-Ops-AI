@@ -711,8 +711,7 @@
 
       console.log('[checkAuth] 인증 정보 없음 → 모달 표시');
 
-      // 세션에서 clinic_id 가져오기
-      const session = Session.get();
+      // 세션에서 clinic_id 가져오기 (위에서 이미 선언된 session 재사용)
       console.log('[checkAuth] 세션 상태:', { session: !!session, clinic_id: session?.clinic_id });
 
       if (session?.clinic_id) {
