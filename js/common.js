@@ -708,7 +708,7 @@ function renderSidebar(activePage) {
 
       <div class="nav-section-label">8대 엔진</div>
       <a href="consult.html" class="nav-item ${activePage === 'consult' ? 'active' : ''}">
-        <span class="nav-item-icon">💬</span> 상담 AI
+        <span class="nav-item-icon">💬</span> 상담AI코치
       </a>
       <a href="review.html" class="nav-item ${activePage === 'review' ? 'active' : ''}">
         <span class="nav-item-icon">📋</span> 상담 리뷰
