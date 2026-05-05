@@ -113,12 +113,13 @@
                       <th>지역</th>
                       <th>직원수</th>
                       <th>요금제</th>
+                      <th>비밀번호 설정</th>
                       <th>가입일</th>
                       <th>작업</th>
                     </tr>
                   </thead>
                   <tbody id="membersTable">
-                    <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
+                    <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-tertiary);">불러오는 중...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -354,7 +355,7 @@
       const tbody = document.getElementById('membersTable');
       const summary = document.getElementById('membersSummary');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">불러오는 중...</td></tr>';
 
       try {
         // /api/clinics에서 관리자용 병원 목록 조회
@@ -388,6 +389,15 @@
                   <option value="max" ${tier === 'max' ? 'selected' : ''}>🚀 Max (60회)</option>
                 </select>
               </td>
+              <td onclick="event.stopPropagation();">
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <input type="password" id="pw_${c.id}" placeholder="6자리" maxlength="6"
+                    style="width:68px; padding:4px 6px; font-size:0.8rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm); text-align:center;"
+                    onkeydown="if(event.key==='Enter'){event.stopPropagation(); changeClinicPassword('${c.id}');}">
+                  <button onclick="event.stopPropagation(); changeClinicPassword('${c.id}');"
+                    style="padding:4px 8px; font-size:0.75rem; background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); cursor:pointer; white-space:nowrap;">저장</button>
+                </div>
+              </td>
               <td style="font-size:0.75rem; color:var(--text-tertiary);" onclick="event.stopPropagation();">${(c.created_at || '').slice(0, 10)}</td>
               <td style="text-align:center;" onclick="event.stopPropagation();">
                 <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteClinic('${c.id}', '${safe(c.name)}');" style="padding:4px 10px; font-size:0.75rem;">🗑️ 삭제</button>
@@ -396,7 +406,7 @@
           `;
         }));
 
-        tbody.innerHTML = rows.join('') || '<tr><td colspan="6" style="text-align:center; padding:20px;">병원 없음</td></tr>';
+        tbody.innerHTML = rows.join('') || '<tr><td colspan="8" style="text-align:center; padding:20px;">병원 없음</td></tr>';
 
         if (summary) {
           summary.innerHTML = `
@@ -415,6 +425,32 @@
 
     async function renderMembersTable() {
       return renderClinicsTable(); // 호환성 유지
+    }
+
+    async function changeClinicPassword(clinicId) {
+      const input = document.getElementById('pw_' + clinicId);
+      const pw = (input?.value || '').trim();
+      if (!/^\d{6}$/.test(pw)) {
+        showToast('비밀번호는 숫자 6자리여야 합니다', 'error');
+        input?.focus();
+        return;
+      }
+      try {
+        const res = await fetch('/api/change-clinic-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinic_id: clinicId, password: pw })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || '변경 실패');
+        }
+        showToast('✅ 비밀번호 변경 완료', 'success');
+        if (input) input.value = '';
+      } catch (e) {
+        console.error('[changeClinicPassword]', e);
+        showToast('변경 실패: ' + e.message, 'error');
+      }
     }
 
     async function changeClinicTier(clinicId, tier) {
