@@ -273,7 +273,7 @@
           <div class="conv-panel patient-panel">
             <div class="panel-header" id="hdrP">👤 환자 (English)</div>
             <div class="conv-log" id="logP"></div>
-            <div class="panel-interim" id="interimP">마이크 버튼을 눌러 말하기 시작하세요</div>
+            <div class="panel-interim" id="interimP"></div>
             <div class="panel-mic">
               <div class="mic-hint" id="hintP"></div>
               <button class="mic-btn" id="micP" onclick="toggleMic('patient')">🎤</button>
@@ -437,7 +437,7 @@
 
     document.getElementById('logP').innerHTML = '';
     document.getElementById('logS').innerHTML = '';
-    setInterim('patient', '마이크를 눌러 시작하세요', false);
+    setInterim('patient', '', false);
     setInterim('staff',   '마이크를 눌러 시작하세요', false);
     resetMicUI();
 
@@ -563,7 +563,7 @@
     const prev = activeWho;
     activeWho = null;
     if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
-    if (prev) setInterim(prev, '마이크를 눌러 시작하세요', false);
+    if (prev) setInterim(prev, prev === 'patient' ? '' : '마이크를 눌러 시작하세요', false);
     resetMicUI();
   }
 
