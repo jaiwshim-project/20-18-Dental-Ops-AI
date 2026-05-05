@@ -11,32 +11,7 @@ const API_BASE_URL = (() => {
   return '';
 })();
 
-// === Enter 키 로그인 (간단함) ===
-document.addEventListener('DOMContentLoaded', () => {
-  // 병원명 입력 필드 Enter 키 리스너
-  const clinicNameInput = document.getElementById('clinicName');
-  if (clinicNameInput) {
-    clinicNameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        console.log('⌨️ Enter 키 감지 → 병원명 확인');
-        confirmClinicAndProceed();
-      }
-    });
-  }
-
-  // 비밀번호 입력 필드들에 Enter 키 리스너 추가
-  ['loginPwd1', 'loginPwd2', 'loginPwd3', 'loginPwd4', 'loginPwd5', 'loginPwd6'].forEach(id => {
-    const input = document.getElementById(id);
-    if (input) {
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          console.log('⌨️ Enter 키 감지 → 로그인 시도');
-          submitClinicLogin();
-        }
-      });
-    }
-  });
-});
+// Enter 키 및 비밀번호 auto-advance는 registerClinicInputListeners()에서 등록
 
 /* ============================================================
    Medvo — Common JavaScript
@@ -403,12 +378,36 @@ function registerClinicInputListeners() {
   if (searchBtn) {
     searchBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('[clinicSearchBtn] click 이벤트');
       const clinicInput = document.getElementById('clinicName');
       const clinics = filterClinicsList(clinicInput.value || '');
       showClinicDropdown(clinics);
     });
   }
+
+  // 병원명 Enter → 확인
+  if (clinicInput) {
+    clinicInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') confirmClinicAndProceed();
+    });
+  }
+
+  // 비밀번호 6칸: 숫자 입력 시 자동 다음 칸 이동 + Enter → 로그인
+  const pwdIds = ['loginPwd1','loginPwd2','loginPwd3','loginPwd4','loginPwd5','loginPwd6'];
+  pwdIds.forEach((id, idx) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (el.value && idx < pwdIds.length - 1) {
+        document.getElementById(pwdIds[idx + 1])?.focus();
+      }
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitClinicLogin();
+      if (e.key === 'Backspace' && !el.value && idx > 0) {
+        document.getElementById(pwdIds[idx - 1])?.focus();
+      }
+    });
+  });
 }
 
 // DOMContentLoaded 또는 즉시 실행 (이미 발생한 경우 대비)
