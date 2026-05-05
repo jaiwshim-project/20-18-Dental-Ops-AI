@@ -107,7 +107,7 @@ async function callClaude(prompt, options = {}) {
     throw new Error('Claude API 키 없음');
   }
 
-  const { model = 'claude-3-5-sonnet-20241022', temperature = 0.7, maxTokens = 2048 } = options;
+  const { model = 'claude-haiku-4-5-20251001', temperature = 0.7, maxTokens = 2048 } = options;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
