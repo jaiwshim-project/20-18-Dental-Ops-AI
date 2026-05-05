@@ -391,8 +391,8 @@
               </td>
               <td onclick="event.stopPropagation();">
                 <div style="display:flex; gap:4px; align-items:center;">
-                  <input type="password" id="pw_${c.id}" placeholder="6자리" maxlength="6"
-                    style="width:68px; padding:4px 6px; font-size:0.8rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm); text-align:center;"
+                  <input type="text" id="pw_${c.id}" placeholder="6자리" maxlength="6" inputmode="numeric"
+                    style="width:68px; padding:4px 6px; font-size:0.8rem; border:1px solid var(--gray-300); border-radius:var(--radius-sm); text-align:center; font-family:monospace; letter-spacing:0.15em;"
                     onkeydown="if(event.key==='Enter'){event.stopPropagation(); changeClinicPassword('${c.id}');}">
                   <button onclick="event.stopPropagation(); changeClinicPassword('${c.id}');"
                     style="padding:4px 8px; font-size:0.75rem; background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); cursor:pointer; white-space:nowrap;">저장</button>
@@ -445,8 +445,16 @@
           const err = await res.json();
           throw new Error(err.error || '변경 실패');
         }
-        showToast('✅ 비밀번호 변경 완료', 'success');
-        if (input) input.value = '';
+        showToast('✅ 비밀번호 변경 완료: ' + pw, 'success');
+        if (input) {
+          input.style.background = '#d1fae5';
+          input.style.borderColor = 'var(--success)';
+          setTimeout(() => {
+            input.value = '';
+            input.style.background = '';
+            input.style.borderColor = '';
+          }, 1500);
+        }
       } catch (e) {
         console.error('[changeClinicPassword]', e);
         showToast('변경 실패: ' + e.message, 'error');
