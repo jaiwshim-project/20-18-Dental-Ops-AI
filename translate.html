@@ -7,478 +7,570 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🌐%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/common.css">
   <style>
-    .content { max-width: 900px !important; }
+    .content { max-width: 1140px !important; padding-bottom: 0 !important; }
 
     /* ── 설정 화면 ── */
     #setupScreen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60vh;
-      gap: 32px;
+      display: flex; align-items: center; justify-content: center; min-height: 65vh;
     }
     .setup-card {
-      background: var(--surface);
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius-lg);
-      padding: 40px 48px;
-      width: 100%;
-      max-width: 520px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      background: var(--surface); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg); padding: 44px 52px;
+      width: 100%; max-width: 560px; box-shadow: 0 4px 24px rgba(0,0,0,0.07);
     }
     .setup-card h2 { font-size: 1.375rem; margin-bottom: 6px; }
-    .setup-card .desc { color: var(--text-tertiary); font-size: 0.875rem; margin-bottom: 28px; }
-
+    .setup-card p  { color: var(--text-tertiary); font-size: 0.875rem; margin-bottom: 28px; }
     .lang-pair {
-      display: grid;
-      grid-template-columns: 1fr 48px 1fr;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
+      display: grid; grid-template-columns: 1fr 36px 1fr;
+      align-items: center; gap: 10px; margin-bottom: 28px;
     }
-    .lang-col label { font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px; }
-    .lang-arrow { text-align: center; font-size: 1.75rem; color: var(--primary); }
+    .lang-col label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+    .lang-arrow { text-align: center; font-size: 1.5rem; color: var(--primary); }
     .lang-select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid var(--gray-300);
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      background: var(--surface);
-      color: var(--text-primary);
-      cursor: pointer;
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid var(--gray-300); border-radius: var(--radius-sm);
+      font-size: 0.9rem; background: var(--surface); color: var(--text-primary); cursor: pointer;
     }
     .lang-select:focus { outline: none; border-color: var(--primary); }
-
     .start-btn {
-      width: 100%;
-      padding: 14px;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: 1.0625rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.15s;
+      width: 100%; padding: 15px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 1.0625rem; font-weight: 700; cursor: pointer; transition: background 0.15s;
     }
-    .start-btn:hover { background: var(--primary-dark, #0052cc); }
+    .start-btn:hover { background: #0052cc; }
+    .browser-warn {
+      background: #fef3c7; border: 1px solid #fbbf24; border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.8125rem; color: #92400e;
+      text-align: center; margin-bottom: 16px;
+    }
 
     /* ── 대화 화면 ── */
-    #chatScreen { display: none; }
+    #chatScreen {
+      display: none; flex-direction: column; gap: 10px;
+      height: calc(100vh - 88px); overflow: hidden;
+    }
 
-    .chat-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--surface);
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius-md);
-      padding: 12px 20px;
-      margin-bottom: 16px;
+    /* 세션 바 */
+    .session-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md); padding: 9px 18px; flex-shrink: 0;
     }
-    .chat-header .lang-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 700;
-      font-size: 1rem;
-    }
-    .lang-badge {
-      padding: 4px 14px;
-      border-radius: var(--radius-full);
-      font-size: 0.875rem;
-      font-weight: 700;
-    }
-    .lang-badge.patient { background: var(--primary-bg); color: var(--primary); }
-    .lang-badge.staff { background: #f0fdf4; color: #16a34a; }
+    .lang-badges { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+    .badge { padding: 4px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight: 700; }
+    .badge.p { background: #dbeafe; color: var(--primary); }
+    .badge.s { background: #dcfce7; color: #16a34a; }
     .end-btn {
-      padding: 6px 16px;
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius-sm);
-      background: transparent;
-      font-size: 0.875rem;
-      cursor: pointer;
-      color: var(--text-secondary);
+      padding: 6px 16px; border: 1px solid var(--gray-300);
+      border-radius: var(--radius-sm); background: transparent;
+      font-size: 0.8125rem; cursor: pointer; color: var(--text-secondary);
+      transition: all 0.15s;
     }
-    .end-btn:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+    .end-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
-    /* 대화 기록 */
-    .chat-log {
-      background: var(--surface);
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      min-height: 300px;
-      max-height: 420px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 16px;
+    /* ── 스플릿 뷰 ── */
+    .split-view {
+      display: grid; grid-template-columns: 1fr 34px 1fr;
+      flex: 1; min-height: 0;
     }
-    .chat-empty-msg {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-tertiary);
-      font-size: 0.9rem;
-      gap: 8px;
-      padding: 40px 0;
+    .split-divider {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; color: var(--text-tertiary);
     }
 
-    .msg-block { display: flex; flex-direction: column; gap: 4px; }
-    .msg-block.patient { align-items: flex-start; }
-    .msg-block.staff   { align-items: flex-end; }
+    /* ── 대화 패널 ── */
+    .conv-panel {
+      display: flex; flex-direction: column;
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-lg);
+      overflow: hidden; min-height: 0;
+    }
+    .panel-header {
+      padding: 9px 14px; font-weight: 700; font-size: 0.875rem;
+      text-align: center; flex-shrink: 0;
+    }
+    .patient-panel .panel-header { background: #dbeafe; color: var(--primary); }
+    .staff-panel .panel-header   { background: #dcfce7; color: #16a34a; }
 
-    .msg-who {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--text-tertiary);
-      letter-spacing: 0.04em;
-      padding: 0 4px;
-    }
-
-    .msg-original {
-      max-width: 80%;
-      padding: 12px 16px;
-      border-radius: var(--radius-md);
-      font-size: 0.9375rem;
-      line-height: 1.6;
-    }
-    .msg-block.patient .msg-original {
-      background: var(--gray-50);
-      border: 1px solid var(--gray-200);
-      border-bottom-left-radius: 4px;
-    }
-    .msg-block.staff .msg-original {
-      background: var(--primary-bg);
-      border: 1px solid var(--primary-light, #c7d9ff);
-      border-bottom-right-radius: 4px;
+    /* 대화 로그 */
+    .conv-log {
+      flex: 1; overflow-y: auto; padding: 12px;
+      display: flex; flex-direction: column; gap: 8px; min-height: 0;
     }
 
-    .msg-translated {
-      max-width: 80%;
-      padding: 8px 16px;
-      font-size: 0.875rem;
-      line-height: 1.6;
-      border-radius: var(--radius-sm);
+    /* 말풍선 */
+    .bubble-wrap { display: flex; flex-direction: column; }
+    .bubble-wrap.own   { align-items: flex-end; }
+    .bubble-wrap.other { align-items: flex-start; }
+    .bubble-label { font-size: 0.64rem; color: var(--text-tertiary); margin-bottom: 2px; padding: 0 4px; }
+    .bubble {
+      max-width: 90%; padding: 9px 13px; border-radius: 16px;
+      font-size: 0.9rem; line-height: 1.55; word-break: break-word;
     }
-    .msg-block.patient .msg-translated {
-      background: #f0fdf4;
-      border: 1px dashed #bbf7d0;
-      color: #16a34a;
-      font-weight: 600;
-      border-bottom-left-radius: 4px;
+    /* 환자 패널 */
+    .patient-panel .bubble-wrap.own .bubble {
+      background: var(--primary); color: #fff; border-bottom-right-radius: 4px;
     }
-    .msg-block.staff .msg-translated {
-      background: #eff6ff;
-      border: 1px dashed #bfdbfe;
-      color: var(--primary);
-      font-weight: 600;
-      border-bottom-right-radius: 4px;
+    .patient-panel .bubble-wrap.other .bubble {
+      background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-bottom-left-radius: 4px;
     }
-    .msg-loading { color: var(--text-tertiary); font-style: italic; font-size: 0.875rem; }
+    /* 직원 패널 */
+    .staff-panel .bubble-wrap.own .bubble {
+      background: #16a34a; color: #fff; border-bottom-right-radius: 4px;
+    }
+    .staff-panel .bubble-wrap.other .bubble {
+      background: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; border-bottom-left-radius: 4px;
+    }
+    .bubble-translating { opacity: 0.55; font-style: italic; }
 
-    /* 입력 패널 (2분할) */
-    .input-panels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    /* 실시간 텍스트 */
+    .panel-interim {
+      padding: 7px 14px; min-height: 36px; flex-shrink: 0;
+      font-size: 0.84rem; color: var(--text-tertiary); font-style: italic;
+      border-top: 1px solid var(--gray-100); background: var(--gray-50);
+      transition: background 0.2s, color 0.2s; line-height: 1.4;
     }
-    .input-panel {
-      background: var(--surface);
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-    }
-    .input-panel-header {
-      padding: 10px 14px;
-      font-size: 0.8125rem;
-      font-weight: 700;
-      border-bottom: 1px solid var(--gray-100);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .input-panel.patient .input-panel-header { background: var(--primary-bg); color: var(--primary); }
-    .input-panel.staff   .input-panel-header { background: #f0fdf4; color: #16a34a; }
+    .patient-panel .panel-interim.active { background: #dbeafe; color: var(--primary); font-style: normal; }
+    .staff-panel .panel-interim.active   { background: #dcfce7; color: #16a34a;      font-style: normal; }
 
-    .input-panel textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border: none;
-      resize: none;
-      font-size: 0.9375rem;
-      font-family: inherit;
-      min-height: 80px;
-      box-sizing: border-box;
-      background: var(--surface);
-      color: var(--text-primary);
+    /* 마이크 영역 */
+    .panel-mic {
+      padding: 12px; text-align: center;
+      border-top: 1px solid var(--gray-200); flex-shrink: 0;
     }
-    .input-panel textarea:focus { outline: none; }
-    .input-panel-footer {
-      padding: 8px 12px;
-      border-top: 1px solid var(--gray-100);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .mic-btn {
+      width: 60px; height: 60px; border-radius: 50%; border: 2.5px solid;
+      font-size: 1.65rem; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; justify-content: center;
     }
-    .input-hint { font-size: 0.75rem; color: var(--text-tertiary); }
-    .translate-btn {
-      padding: 7px 18px;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 0.875rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.15s;
-      color: #fff;
+    .patient-panel .mic-btn { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+    .staff-panel   .mic-btn { border-color: #16a34a;      background: #f0fdf4; color: #16a34a; }
+    .mic-btn.recording {
+      background: #ef4444 !important; border-color: #dc2626 !important; color: #fff !important;
+      animation: pulse 1.2s infinite;
     }
-    .input-panel.patient .translate-btn { background: var(--primary); }
-    .input-panel.patient .translate-btn:hover { background: var(--primary-dark, #0052cc); }
-    .input-panel.staff   .translate-btn { background: #16a34a; }
-    .input-panel.staff   .translate-btn:hover { background: #15803d; }
-    .translate-btn:disabled { background: var(--gray-300) !important; cursor: not-allowed; }
+    .mic-btn:disabled { opacity: 0.3; cursor: not-allowed; animation: none; }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50%      { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+    }
+    .mic-status { font-size: 0.7rem; color: var(--text-tertiary); margin-top: 5px; }
+
+    /* 저장 알림 */
+    .save-toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #16a34a; color: #fff;
+      padding: 10px 20px; border-radius: var(--radius-md);
+      font-size: 0.875rem; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: slideUp 0.3s ease; z-index: 9999;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(12px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
 
     @media (max-width: 640px) {
-      .lang-pair { grid-template-columns: 1fr; }
-      .lang-arrow { transform: rotate(90deg); }
-      .input-panels { grid-template-columns: 1fr; }
+      .split-view { grid-template-columns: 1fr; grid-template-rows: 1fr auto 1fr; }
+      .split-divider { height: 26px; }
+      #chatScreen { height: auto; }
     }
   </style>
 </head>
 <body data-page="translate">
-  <div class="layout" id="app">
-    <div class="main">
-      <header class="header">
-        <div class="flex items-center gap-12">
-          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
-          <span class="header-title">🌐 상담AI통역</span>
-        </div>
-        <div class="header-actions"><span id="sessionBadge"></span></div>
-      </header>
-
-      <div class="content">
-
-        <!-- ① 설정 화면 -->
-        <div id="setupScreen">
-          <div class="setup-card">
-            <h2>🌐 상담AI통역</h2>
-            <p class="desc">언어를 선택하고 시작하면 환자와 직원의 대화를 실시간으로 번역합니다.</p>
-
-            <div class="lang-pair">
-              <div class="lang-col">
-                <label>👤 환자 언어</label>
-                <select id="patientLang" class="lang-select">
-                  <option value="English">🇺🇸 English (영어)</option>
-                  <option value="Chinese (Simplified)">🇨🇳 中文简体 (중국어 간체)</option>
-                  <option value="Chinese (Traditional)">🇹🇼 中文繁體 (중국어 번체)</option>
-                  <option value="Japanese">🇯🇵 日本語 (일본어)</option>
-                  <option value="Spanish">🇪🇸 Español (스페인어)</option>
-                  <option value="French">🇫🇷 Français (프랑스어)</option>
-                  <option value="German">🇩🇪 Deutsch (독일어)</option>
-                  <option value="Portuguese">🇧🇷 Português (포르투갈어)</option>
-                  <option value="Russian">🇷🇺 Русский (러시아어)</option>
-                  <option value="Arabic">🇸🇦 العربية (아랍어)</option>
-                  <option value="Hindi">🇮🇳 हिन्दी (힌디어)</option>
-                  <option value="Vietnamese">🇻🇳 Tiếng Việt (베트남어)</option>
-                  <option value="Thai">🇹🇭 ภาษาไทย (태국어)</option>
-                  <option value="Indonesian">🇮🇩 Bahasa Indonesia (인도네시아어)</option>
-                  <option value="Malay">🇲🇾 Bahasa Melayu (말레이어)</option>
-                  <option value="Filipino">🇵🇭 Filipino (필리핀어)</option>
-                  <option value="Dutch">🇳🇱 Nederlands (네덜란드어)</option>
-                  <option value="Italian">🇮🇹 Italiano (이탈리아어)</option>
-                  <option value="Polish">🇵🇱 Polski (폴란드어)</option>
-                  <option value="Turkish">🇹🇷 Türkçe (터키어)</option>
-                  <option value="Ukrainian">🇺🇦 Українська (우크라이나어)</option>
-                  <option value="Swedish">🇸🇪 Svenska (스웨덴어)</option>
-                  <option value="Norwegian">🇳🇴 Norsk (노르웨이어)</option>
-                  <option value="Danish">🇩🇰 Dansk (덴마크어)</option>
-                  <option value="Finnish">🇫🇮 Suomi (핀란드어)</option>
-                  <option value="Czech">🇨🇿 Čeština (체코어)</option>
-                  <option value="Romanian">🇷🇴 Română (루마니아어)</option>
-                  <option value="Hungarian">🇭🇺 Magyar (헝가리어)</option>
-                  <option value="Greek">🇬🇷 Ελληνικά (그리스어)</option>
-                  <option value="Hebrew">🇮🇱 עברית (히브리어)</option>
-                </select>
-              </div>
-              <div class="lang-arrow">⇄</div>
-              <div class="lang-col">
-                <label>👩‍⚕️ 직원 언어</label>
-                <select id="staffLang" class="lang-select">
-                  <option value="Korean" selected>🇰🇷 한국어</option>
-                  <option value="English">🇺🇸 English</option>
-                  <option value="Japanese">🇯🇵 日本語</option>
-                  <option value="Chinese (Simplified)">🇨🇳 中文简体</option>
-                </select>
-              </div>
-            </div>
-
-            <button class="start-btn" onclick="startSession()">🌐 번역 시작</button>
-          </div>
-        </div>
-
-        <!-- ② 대화 화면 -->
-        <div id="chatScreen">
-          <!-- 헤더 바 -->
-          <div class="chat-header">
-            <div class="lang-info">
-              <span class="lang-badge patient" id="badgePatient">🇺🇸 English</span>
-              <span style="color:var(--text-tertiary); font-size:1.25rem;">⇄</span>
-              <span class="lang-badge staff" id="badgeStaff">🇰🇷 한국어</span>
-            </div>
-            <button class="end-btn" onclick="endSession()">✕ 종료</button>
-          </div>
-
-          <!-- 대화 기록 -->
-          <div class="chat-log" id="chatLog">
-            <div class="chat-empty-msg" id="chatEmptyMsg">
-              <div style="font-size:2.5rem;">💬</div>
-              <div>아래 입력창에서 대화를 시작하세요</div>
-              <div style="font-size:0.8rem;">환자와 직원이 각자 자신의 언어로 입력합니다</div>
-            </div>
-          </div>
-
-          <!-- 입력 패널 (환자 / 직원 분리) -->
-          <div class="input-panels">
-            <!-- 환자 입력 -->
-            <div class="input-panel patient">
-              <div class="input-panel-header">
-                👤 환자 입력 <span id="patientLangLabel" style="font-weight:400; opacity:0.7;">(English)</span>
-              </div>
-              <textarea id="patientInput" placeholder="환자가 자신의 언어로 입력..."
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();translate('patient');}"></textarea>
-              <div class="input-panel-footer">
-                <span class="input-hint">Enter 전송 · Shift+Enter 줄바꿈</span>
-                <button class="translate-btn" id="patientSendBtn" onclick="translate('patient')">번역 →</button>
-              </div>
-            </div>
-
-            <!-- 직원 입력 -->
-            <div class="input-panel staff">
-              <div class="input-panel-header">
-                👩‍⚕️ 직원 입력 <span id="staffLangLabel" style="font-weight:400; opacity:0.7;">(한국어)</span>
-              </div>
-              <textarea id="staffInput" placeholder="직원이 자신의 언어로 입력..."
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();translate('staff');}"></textarea>
-              <div class="input-panel-footer">
-                <span class="input-hint">Enter 전송 · Shift+Enter 줄바꿈</span>
-                <button class="translate-btn" id="staffSendBtn" onclick="translate('staff')">번역 →</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
+<div class="layout" id="app">
+  <div class="main">
+    <header class="header">
+      <div class="flex items-center gap-12">
+        <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+        <span class="header-title">🌐 상담AI통역</span>
       </div>
+      <div class="header-actions"><span id="sessionBadge"></span></div>
+    </header>
+
+    <div class="content">
+
+      <!-- ① 설정 화면 -->
+      <div id="setupScreen">
+        <div class="setup-card">
+          <h2>🌐 상담AI통역</h2>
+          <p>언어를 선택하고 시작하면 환자-직원 대화를 실시간으로 음성 인식 후 양방향 번역합니다.</p>
+          <div class="lang-pair">
+            <div class="lang-col">
+              <label>👤 환자 언어</label>
+              <select id="patientLang" class="lang-select">
+                <option value="English|en-US">🇺🇸 English (영어)</option>
+                <option value="Chinese (Simplified)|zh-CN">🇨🇳 中文简体 (중국어 간체)</option>
+                <option value="Chinese (Traditional)|zh-TW">🇹🇼 中文繁體 (중국어 번체)</option>
+                <option value="Japanese|ja-JP">🇯🇵 日本語 (일본어)</option>
+                <option value="Spanish|es-ES">🇪🇸 Español (스페인어)</option>
+                <option value="French|fr-FR">🇫🇷 Français (프랑스어)</option>
+                <option value="German|de-DE">🇩🇪 Deutsch (독일어)</option>
+                <option value="Portuguese|pt-BR">🇧🇷 Português (포르투갈어)</option>
+                <option value="Russian|ru-RU">🇷🇺 Русский (러시아어)</option>
+                <option value="Arabic|ar-SA">🇸🇦 العربية (아랍어)</option>
+                <option value="Hindi|hi-IN">🇮🇳 हिन्दी (힌디어)</option>
+                <option value="Vietnamese|vi-VN">🇻🇳 Tiếng Việt (베트남어)</option>
+                <option value="Thai|th-TH">🇹🇭 ภาษาไทย (태국어)</option>
+                <option value="Indonesian|id-ID">🇮🇩 Bahasa Indonesia (인도네시아어)</option>
+                <option value="Malay|ms-MY">🇲🇾 Bahasa Melayu (말레이어)</option>
+                <option value="Filipino|fil-PH">🇵🇭 Filipino (필리핀어)</option>
+                <option value="Dutch|nl-NL">🇳🇱 Nederlands (네덜란드어)</option>
+                <option value="Italian|it-IT">🇮🇹 Italiano (이탈리아어)</option>
+                <option value="Polish|pl-PL">🇵🇱 Polski (폴란드어)</option>
+                <option value="Turkish|tr-TR">🇹🇷 Türkçe (터키어)</option>
+                <option value="Ukrainian|uk-UA">🇺🇦 Українська (우크라이나어)</option>
+                <option value="Swedish|sv-SE">🇸🇪 Svenska (스웨덴어)</option>
+                <option value="Norwegian|nb-NO">🇳🇴 Norsk (노르웨이어)</option>
+                <option value="Danish|da-DK">🇩🇰 Dansk (덴마크어)</option>
+                <option value="Finnish|fi-FI">🇫🇮 Suomi (핀란드어)</option>
+                <option value="Czech|cs-CZ">🇨🇿 Čeština (체코어)</option>
+                <option value="Romanian|ro-RO">🇷🇴 Română (루마니아어)</option>
+                <option value="Hungarian|hu-HU">🇭🇺 Magyar (헝가리어)</option>
+                <option value="Greek|el-GR">🇬🇷 Ελληνικά (그리스어)</option>
+                <option value="Hebrew|he-IL">🇮🇱 עברית (히브리어)</option>
+              </select>
+            </div>
+            <div class="lang-arrow">⇄</div>
+            <div class="lang-col">
+              <label>👩‍⚕️ 직원 언어</label>
+              <select id="staffLang" class="lang-select">
+                <option value="Korean|ko-KR" selected>🇰🇷 한국어</option>
+                <option value="English|en-US">🇺🇸 English</option>
+                <option value="Japanese|ja-JP">🇯🇵 日本語</option>
+                <option value="Chinese (Simplified)|zh-CN">🇨🇳 中文简体</option>
+              </select>
+            </div>
+          </div>
+          <div id="speechWarn" class="browser-warn" style="display:none;">
+            ⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해주세요.
+          </div>
+          <button class="start-btn" onclick="startSession()">🎙️ 번역 시작</button>
+        </div>
+      </div>
+
+      <!-- ② 대화 화면 -->
+      <div id="chatScreen">
+        <!-- 세션 바 -->
+        <div class="session-bar">
+          <div class="lang-badges">
+            <span class="badge p" id="badgeP">👤 English</span>
+            <span style="color:var(--text-tertiary);">⇄</span>
+            <span class="badge s" id="badgeS">👩‍⚕️ 한국어</span>
+            <span id="msgCount" style="font-size:0.78rem;color:var(--text-tertiary);"></span>
+          </div>
+          <button class="end-btn" onclick="endSession()">⏹ 종료 &amp; 저장</button>
+        </div>
+
+        <!-- 스플릿 뷰 -->
+        <div class="split-view">
+          <!-- 환자 패널 -->
+          <div class="conv-panel patient-panel">
+            <div class="panel-header" id="hdrP">👤 환자 (English)</div>
+            <div class="conv-log" id="logP"></div>
+            <div class="panel-interim" id="interimP">마이크 버튼을 눌러 말하기 시작하세요</div>
+            <div class="panel-mic">
+              <button class="mic-btn" id="micP" onclick="toggleMic('patient')">🎤</button>
+              <div class="mic-status" id="statusP">누르면 녹음 시작</div>
+            </div>
+          </div>
+
+          <!-- 구분선 -->
+          <div class="split-divider">⇄</div>
+
+          <!-- 직원 패널 -->
+          <div class="conv-panel staff-panel">
+            <div class="panel-header" id="hdrS">👩‍⚕️ 직원 (한국어)</div>
+            <div class="conv-log" id="logS"></div>
+            <div class="panel-interim" id="interimS">마이크 버튼을 눌러 말하기 시작하세요</div>
+            <div class="panel-mic">
+              <button class="mic-btn" id="micS" onclick="toggleMic('staff')">🎤</button>
+              <div class="mic-status" id="statusS">누르면 녹음 시작</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
+</div>
 
-  <script src="js/common.js"></script>
-  <script>
-    let patientLang = 'English';
-    let staffLang = 'Korean';
+<script src="js/common.js"></script>
+<script>
+  // ── 상태 ──
+  let pLang = 'English', pCode = 'en-US';
+  let sLang = 'Korean',  sCode = 'ko-KR';
+  let activeWho = null;      // 'patient' | 'staff' | null
+  let recognition = null;    // 현재 SpeechRecognition 인스턴스
+  let shouldRestart = false; // 자동 재시작 플래그
+  let sessionStart = null;
+  const messages = [];       // [{id, who, original, translated, timestamp}, ...]
 
-    function startSession() {
-      patientLang = document.getElementById('patientLang').value;
-      staffLang = document.getElementById('staffLang').value;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) document.getElementById('speechWarn').style.display = 'block';
 
-      document.getElementById('badgePatient').textContent = '👤 ' + patientLang;
-      document.getElementById('badgeStaff').textContent = '👩‍⚕️ ' + staffLang;
-      document.getElementById('patientLangLabel').textContent = '(' + patientLang + ')';
-      document.getElementById('staffLangLabel').textContent = '(' + staffLang + ')';
-      document.getElementById('patientInput').placeholder = '환자가 ' + patientLang + '로 입력...';
-      document.getElementById('staffInput').placeholder = '직원이 ' + staffLang + '로 입력...';
+  // ── 세션 시작 ──
+  function startSession() {
+    if (!SpeechRecognition) { alert('Chrome 또는 Edge 브라우저를 사용해주세요.'); return; }
 
-      document.getElementById('setupScreen').style.display = 'none';
-      document.getElementById('chatScreen').style.display = 'block';
-      document.getElementById('patientInput').focus();
-    }
+    const pVal = document.getElementById('patientLang').value.split('|');
+    const sVal = document.getElementById('staffLang').value.split('|');
+    pLang = pVal[0]; pCode = pVal[1];
+    sLang = sVal[0]; sCode = sVal[1];
 
-    function endSession() {
-      if (document.getElementById('chatLog').children.length > 1) {
-        if (!confirm('대화를 종료하고 언어 설정으로 돌아가시겠습니까?')) return;
-      }
-      document.getElementById('chatLog').innerHTML = `
-        <div class="chat-empty-msg" id="chatEmptyMsg">
-          <div style="font-size:2.5rem;">💬</div>
-          <div>아래 입력창에서 대화를 시작하세요</div>
-          <div style="font-size:0.8rem;">환자와 직원이 각자 자신의 언어로 입력합니다</div>
-        </div>`;
-      document.getElementById('patientInput').value = '';
-      document.getElementById('staffInput').value = '';
+    document.getElementById('badgeP').textContent = '👤 ' + pLang;
+    document.getElementById('badgeS').textContent = '👩‍⚕️ ' + sLang;
+    document.getElementById('hdrP').textContent = '👤 환자 (' + pLang + ')';
+    document.getElementById('hdrS').textContent = '👩‍⚕️ 직원 (' + sLang + ')';
+
+    messages.length = 0;
+    sessionStart = new Date().toISOString();
+    updateMsgCount();
+
+    document.getElementById('logP').innerHTML = '';
+    document.getElementById('logS').innerHTML = '';
+    setInterim('patient', '마이크를 눌러 시작하세요', false);
+    setInterim('staff',   '마이크를 눌러 시작하세요', false);
+    resetMicUI();
+
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('chatScreen').style.display = 'flex';
+  }
+
+  // ── 세션 종료 + DB 저장 ──
+  async function endSession() {
+    stopRec();
+
+    if (messages.length === 0) {
       document.getElementById('chatScreen').style.display = 'none';
       document.getElementById('setupScreen').style.display = 'flex';
+      return;
     }
 
-    async function translate(who) {
-      const isPatient = who === 'patient';
-      const inputEl = document.getElementById(isPatient ? 'patientInput' : 'staffInput');
-      const btnEl = document.getElementById(isPatient ? 'patientSendBtn' : 'staffSendBtn');
-      const text = inputEl.value.trim();
-      if (!text) return;
+    try {
+      const sess = (typeof Session !== 'undefined') ? Session.get() : null;
+      const r = await fetch('/api/save-translate-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clinic_id:   sess?.clinic_id || null,
+          patient_lang: pLang,
+          staff_lang:   sLang,
+          messages,
+          started_at:  sessionStart,
+          ended_at:    new Date().toISOString()
+        })
+      });
+      if (r.ok) showToast('💾 대화 내용이 저장되었습니다');
+      else      showToast('⚠️ 저장 실패: ' + r.status);
+    } catch(e) {
+      showToast('⚠️ 저장 실패: ' + e.message);
+    }
 
-      const fromLang = isPatient ? patientLang : staffLang;
-      const toLang   = isPatient ? staffLang   : patientLang;
+    setTimeout(() => {
+      document.getElementById('chatScreen').style.display = 'none';
+      document.getElementById('setupScreen').style.display = 'flex';
+    }, 1200);
+  }
 
-      inputEl.value = '';
-      btnEl.disabled = true;
+  // ── 마이크 토글 ──
+  function toggleMic(who) {
+    if (activeWho === who) { stopRec(); return; }
+    stopRec();
+    startRec(who);
+  }
 
-      // 빈 화면 제거
-      const empty = document.getElementById('chatEmptyMsg');
-      if (empty) empty.remove();
+  function startRec(who) {
+    activeWho = who;
+    shouldRestart = true;
+    setMicUI(who, true);
+    createRec(who);
+  }
 
-      // 말풍선 추가
-      const id = 'msg_' + Date.now();
-      const log = document.getElementById('chatLog');
-      const block = document.createElement('div');
-      block.className = 'msg-block ' + who;
-      block.innerHTML = `
-        <div class="msg-who">${isPatient ? '👤 환자 · ' + fromLang : '👩‍⚕️ 직원 · ' + fromLang}</div>
-        <div class="msg-original">${escHtml(text)}</div>
-        <div class="msg-translated msg-loading" id="${id}">⏳ ${toLang}로 번역 중...</div>
-      `;
-      log.appendChild(block);
-      log.scrollTop = log.scrollHeight;
+  // 새 SpeechRecognition 인스턴스 생성 + 시작 (자동 재시작 핵심)
+  function createRec(who) {
+    if (!shouldRestart || activeWho !== who) return;
 
-      try {
-        const res = await fetch('/api/ai-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: `You are a professional medical interpreter for a dental clinic.
-Translate the following text from ${fromLang} to ${toLang}.
-Output ONLY the translated text. No explanations, no quotes, no labels.
+    const isP = who === 'patient';
+    let localIdx = 0; // 이 인스턴스에서 처리한 마지막 결과 인덱스
 
-"${text}"`,
-            options: { maxTokens: 500 }
-          })
-        });
-        if (!res.ok) throw new Error('API 오류 ' + res.status);
-        const data = await res.json();
-        const translated = (data.text || '').trim() || '번역 결과 없음';
+    const rec = new SpeechRecognition();
+    rec.lang = isP ? pCode : sCode;
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    recognition = rec;
 
-        const el = document.getElementById(id);
-        if (el) {
-          el.textContent = translated;
-          el.classList.remove('msg-loading');
+    rec.onresult = (e) => {
+      if (recognition !== rec) return;
+      let interim = '';
+      for (let i = localIdx; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          const text = e.results[i][0].transcript.trim();
+          if (text) {
+            const entry = addToLog(who, text);
+            doTranslate(who, text, entry);
+            localIdx = i + 1;
+          }
+        } else {
+          interim += e.results[i][0].transcript;
         }
-      } catch (e) {
-        const el = document.getElementById(id);
-        if (el) { el.textContent = '번역 실패: ' + e.message; el.style.color = 'var(--danger)'; }
-      } finally {
-        btnEl.disabled = false;
-        inputEl.focus();
-        log.scrollTop = log.scrollHeight;
+      }
+      setInterim(who, interim || '🔴 듣는 중...', true);
+    };
+
+    // continuous: true 에서도 침묵 후 onend가 발생할 수 있어 자동 재시작
+    rec.onend = () => {
+      if (recognition !== rec) return;
+      if (shouldRestart && activeWho === who) {
+        setTimeout(() => createRec(who), 180);
+      }
+    };
+
+    rec.onerror = (e) => {
+      if (recognition !== rec) return;
+      if (e.error === 'aborted') return;
+      console.warn('Speech error:', e.error);
+      if (shouldRestart && activeWho === who) {
+        setTimeout(() => createRec(who), 500);
+      }
+    };
+
+    try { rec.start(); } catch(e) {
+      if (shouldRestart && activeWho === who) setTimeout(() => createRec(who), 500);
+    }
+  }
+
+  function stopRec() {
+    shouldRestart = false;
+    const prev = activeWho;
+    activeWho = null;
+    if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+    if (prev) setInterim(prev, '마이크를 눌러 시작하세요', false);
+    resetMicUI();
+  }
+
+  // ── UI 헬퍼 ──
+  function setMicUI(who, recording) {
+    const isP = who === 'patient';
+    const btn   = document.getElementById(isP ? 'micP' : 'micS');
+    const other = document.getElementById(isP ? 'micS' : 'micP');
+    const stat  = document.getElementById(isP ? 'statusP' : 'statusS');
+    const ostat = document.getElementById(isP ? 'statusS' : 'statusP');
+
+    if (recording) {
+      btn.className   = 'mic-btn recording';
+      btn.textContent = '⏹';
+      btn.disabled    = false;
+      other.disabled  = true;
+      stat.textContent  = '🔴 녹음 중 — 다시 누르면 중지';
+      ostat.textContent = '대기 중';
+    }
+  }
+
+  function resetMicUI() {
+    ['P','S'].forEach(x => {
+      const btn = document.getElementById('mic' + x);
+      btn.className   = 'mic-btn';
+      btn.textContent = '🎤';
+      btn.disabled    = false;
+      document.getElementById('status' + x).textContent = '누르면 녹음 시작';
+    });
+  }
+
+  function setInterim(who, text, active) {
+    const el = document.getElementById(who === 'patient' ? 'interimP' : 'interimS');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'panel-interim' + (active ? ' active' : '');
+  }
+
+  function updateMsgCount() {
+    const el = document.getElementById('msgCount');
+    if (el && messages.length > 0) el.textContent = messages.length + '개 발화';
+  }
+
+  // ── 메시지 추가 ──
+  function addToLog(who, text) {
+    const isP = who === 'patient';
+    const fromLang = isP ? pLang : sLang;
+    const toLang   = isP ? sLang : pLang;
+    const id = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+    const entry = { id, who, original: text, originalLang: fromLang, translated: null, translatedLang: toLang, timestamp: new Date().toISOString() };
+    messages.push(entry);
+    updateMsgCount();
+
+    // 본인 패널 — 오른쪽 정렬
+    appendBubble(document.getElementById(isP ? 'logP' : 'logS'), 'own', isP ? '환자' : '직원', text, null);
+
+    // 상대방 패널 — 왼쪽 정렬, 번역 대기
+    const otherEl = appendBubble(document.getElementById(isP ? 'logS' : 'logP'), 'other',
+      (isP ? '환자→' : '직원→') + toLang, '⏳ 번역 중...', 'trans_' + id);
+    otherEl.querySelector('.bubble').classList.add('bubble-translating');
+
+    return entry;
+  }
+
+  function appendBubble(log, side, label, text, id) {
+    const div = document.createElement('div');
+    div.className = 'bubble-wrap ' + side;
+    if (id) div.id = id;
+    div.innerHTML = '<div class="bubble-label">' + esc(label) + '</div><div class="bubble">' + esc(text) + '</div>';
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  // ── AI 번역 ──
+  async function doTranslate(who, text, entry) {
+    const isP = who === 'patient';
+    const fromLang = isP ? pLang : sLang;
+    const toLang   = isP ? sLang : pLang;
+    const otherLog = document.getElementById(isP ? 'logS' : 'logP');
+
+    try {
+      const res = await fetch('/api/ai-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: 'You are a professional medical interpreter at a dental clinic. Translate from ' + fromLang + ' to ' + toLang + '. Output ONLY the translated text, no quotes, no explanations.\n\n' + text,
+          options: { maxTokens: 400 }
+        })
+      });
+      if (!res.ok) throw new Error('API ' + res.status);
+      const data = await res.json();
+      const result = (data.text || '').trim().replace(/^["'""''「」]|["'""''「」]$/g, '');
+
+      const el = document.getElementById('trans_' + entry.id);
+      if (el) {
+        const bubble = el.querySelector('.bubble');
+        bubble.textContent = result;
+        bubble.classList.remove('bubble-translating');
+      }
+      entry.translated = result;
+      otherLog.scrollTop = otherLog.scrollHeight;
+    } catch(e) {
+      const el = document.getElementById('trans_' + entry.id);
+      if (el) {
+        const bubble = el.querySelector('.bubble');
+        bubble.textContent = '번역 실패';
+        bubble.style.opacity = '0.5';
       }
     }
+  }
 
-    function escHtml(s) {
-      return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-    }
-  </script>
+  // ── 유틸 ──
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'save-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+</script>
 </body>
 </html>
