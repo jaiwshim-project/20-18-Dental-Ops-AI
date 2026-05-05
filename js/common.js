@@ -707,6 +707,9 @@ function renderSidebar(activePage) {
       </a>
 
       <div class="nav-section-label">8대 엔진</div>
+      <a href="translate.html" class="nav-item ${activePage === 'translate' ? 'active' : ''}">
+        <span class="nav-item-icon">🌐</span> 상담AI통역
+      </a>
       <a href="consult.html" class="nav-item ${activePage === 'consult' ? 'active' : ''}">
         <span class="nav-item-icon">💬</span> 상담AI코치
       </a>
@@ -1076,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const _path = window.location.pathname.split('/').pop() || 'index.html';
     const _pageMap = {
       'index.html': 'index', '': 'index',
+      'translate.html': 'translate',
       'consult.html': 'consult',
       'review.html': 'review',
       'consult_review_wide.html': 'review-wide',

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="상담AI통역 — 외국인 환자와의 대화를 30개 언어로 실시간 번역">
+  <title>상담AI통역 | Medvo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🌐%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="var(--primary)">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .content { max-width: 100% !important; }
+
+    .translate-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
+      min-height: calc(100vh - var(--header-h) - 64px);
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--gray-100);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-body { padding: 16px; flex: 1; overflow-y: auto; }
+
+    /* 언어 설정 패널 */
+    .lang-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+    .lang-select:focus { outline: none; border-color: var(--primary); }
+
+    .lang-arrow {
+      text-align: center;
+      font-size: 1.5rem;
+      padding: 8px 0;
+      color: var(--primary);
+    }
+
+    /* 대화 영역 */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 300px;
+    }
+
+    .chat-bubble {
+      max-width: 85%;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+    }
+    .chat-bubble.patient {
+      align-self: flex-start;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble.staff {
+      align-self: flex-end;
+      background: var(--primary-bg);
+      border: 1px solid var(--primary-light, #c7d9ff);
+      border-bottom-right-radius: 4px;
+    }
+    .bubble-who {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .bubble-original {
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-bottom: 6px;
+    }
+    .bubble-translated {
+      font-size: 0.875rem;
+      color: var(--primary);
+      line-height: 1.6;
+      padding-top: 6px;
+      border-top: 1px dashed var(--gray-200);
+    }
+    .bubble-loading {
+      font-size: 0.875rem;
+      color: var(--text-tertiary);
+      font-style: italic;
+    }
+
+    .chat-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 0.9rem;
+      gap: 8px;
+    }
+    .chat-empty .icon { font-size: 3rem; }
+
+    /* 입력 영역 */
+    .input-area {
+      border-top: 1px solid var(--gray-200);
+      padding: 14px 16px;
+      background: var(--surface);
+    }
+    .speaker-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .speaker-btn {
+      flex: 1;
+      padding: 8px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-secondary);
+    }
+    .speaker-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .msg-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      resize: none;
+      min-height: 48px;
+      max-height: 120px;
+    }
+    .msg-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,102,255,0.1); }
+
+    .send-btn {
+      padding: 10px 20px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9375rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      height: 48px;
+    }
+    .send-btn:hover { background: var(--primary-dark, #0052cc); }
+    .send-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+    /* 언어 정보 칩 */
+    .lang-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      background: var(--gray-100);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .clear-btn {
+      width: 100%;
+      padding: 8px;
+      margin-top: 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      cursor: pointer;
+    }
+    .clear-btn:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+
+    @media (max-width: 768px) {
+      .translate-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page="translate">
+  <div class="layout" id="app">
+    <div class="main">
+      <header class="header">
+        <div class="flex items-center gap-12">
+          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+          <span class="header-title">🌐 상담AI통역</span>
+        </div>
+        <div class="header-actions">
+          <span id="sessionBadge"></span>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="translate-layout">
+
+          <!-- 왼쪽: 언어 설정 -->
+          <div class="panel">
+            <div class="panel-header">⚙️ 언어 설정</div>
+            <div class="panel-body">
+              <div class="form-group" style="margin-bottom:8px;">
+                <label class="form-label" style="font-size:0.8125rem;">환자 언어</label>
+                <select id="patientLang" class="lang-select">
+                  <option value="English">🇺🇸 English (영어)</option>
+                  <option value="Chinese (Simplified)">🇨🇳 中文简体 (중국어 간체)</option>
+                  <option value="Chinese (Traditional)">🇹🇼 中文繁體 (중국어 번체)</option>
+                  <option value="Japanese">🇯🇵 日本語 (일본어)</option>
+                  <option value="Spanish">🇪🇸 Español (스페인어)</option>
+                  <option value="French">🇫🇷 Français (프랑스어)</option>
+                  <option value="German">🇩🇪 Deutsch (독일어)</option>
+                  <option value="Portuguese">🇧🇷 Português (포르투갈어)</option>
+                  <option value="Russian">🇷🇺 Русский (러시아어)</option>
+                  <option value="Arabic">🇸🇦 العربية (아랍어)</option>
+                  <option value="Hindi">🇮🇳 हिन्दी (힌디어)</option>
+                  <option value="Vietnamese">🇻🇳 Tiếng Việt (베트남어)</option>
+                  <option value="Thai">🇹🇭 ภาษาไทย (태국어)</option>
+                  <option value="Indonesian">🇮🇩 Bahasa Indonesia (인도네시아어)</option>
+                  <option value="Malay">🇲🇾 Bahasa Melayu (말레이어)</option>
+                  <option value="Filipino">🇵🇭 Filipino (필리핀어)</option>
+                  <option value="Dutch">🇳🇱 Nederlands (네덜란드어)</option>
+                  <option value="Italian">🇮🇹 Italiano (이탈리아어)</option>
+                  <option value="Polish">🇵🇱 Polski (폴란드어)</option>
+                  <option value="Turkish">🇹🇷 Türkçe (터키어)</option>
+                  <option value="Ukrainian">🇺🇦 Українська (우크라이나어)</option>
+                  <option value="Swedish">🇸🇪 Svenska (스웨덴어)</option>
+                  <option value="Norwegian">🇳🇴 Norsk (노르웨이어)</option>
+                  <option value="Danish">🇩🇰 Dansk (덴마크어)</option>
+                  <option value="Finnish">🇫🇮 Suomi (핀란드어)</option>
+                  <option value="Czech">🇨🇿 Čeština (체코어)</option>
+                  <option value="Romanian">🇷🇴 Română (루마니아어)</option>
+                  <option value="Hungarian">🇭🇺 Magyar (헝가리어)</option>
+                  <option value="Greek">🇬🇷 Ελληνικά (그리스어)</option>
+                  <option value="Hebrew">🇮🇱 עברית (히브리어)</option>
+                </select>
+              </div>
+
+              <div class="lang-arrow">⇅</div>
+
+              <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" style="font-size:0.8125rem;">직원 언어</label>
+                <select id="staffLang" class="lang-select">
+                  <option value="Korean" selected>🇰🇷 한국어 (기본)</option>
+                  <option value="English">🇺🇸 English (영어)</option>
+                  <option value="Chinese (Simplified)">🇨🇳 中文简体 (중국어 간체)</option>
+                  <option value="Japanese">🇯🇵 日本語 (일본어)</option>
+                </select>
+              </div>
+
+              <hr style="border:none; border-top:1px solid var(--gray-200); margin:16px 0;">
+
+              <div style="font-size:0.8rem; color:var(--text-tertiary); line-height:1.6;">
+                <p>💡 <strong>사용법</strong></p>
+                <p>① 언어 선택</p>
+                <p>② 누가 말하는지 선택 (환자/직원)</p>
+                <p>③ 대화 내용 입력 후 전송</p>
+                <p>④ AI가 상대방 언어로 번역</p>
+              </div>
+
+              <button class="clear-btn" onclick="clearChat()">🗑️ 대화 초기화</button>
+            </div>
+          </div>
+
+          <!-- 오른쪽: 대화 + 입력 -->
+          <div class="panel" style="overflow:hidden;">
+            <div class="panel-header" style="justify-content:space-between;">
+              <span>💬 실시간 번역 대화</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <span class="lang-chip" id="patientLangChip">🌐 English</span>
+                <span style="color:var(--text-tertiary); font-size:0.8rem;">↔</span>
+                <span class="lang-chip" id="staffLangChip">🇰🇷 Korean</span>
+              </div>
+            </div>
+
+            <div class="chat-area" id="chatArea">
+              <div class="chat-empty" id="chatEmpty">
+                <div class="icon">🌐</div>
+                <div>대화를 입력하면 AI가 실시간으로 번역합니다</div>
+                <div style="font-size:0.8rem;">30개 언어 지원</div>
+              </div>
+            </div>
+
+            <div class="input-area">
+              <div class="speaker-toggle">
+                <button class="speaker-btn active" id="btnPatient" onclick="setSpeaker('patient')">
+                  👤 환자
+                </button>
+                <button class="speaker-btn" id="btnStaff" onclick="setSpeaker('staff')">
+                  👩‍⚕️ 직원
+                </button>
+              </div>
+              <div class="input-row">
+                <textarea class="msg-input" id="msgInput" placeholder="대화 내용을 입력하세요..." rows="2"
+                  onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">🌐 번역</button>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-tertiary); margin-top:6px;">
+                Enter로 전송 · Shift+Enter 줄바꿈
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/session.js"></script>
+  <script>
+    let currentSpeaker = 'patient'; // 'patient' | 'staff'
+    let messages = [];
+
+    // 언어 칩 업데이트
+    document.getElementById('patientLang').addEventListener('change', updateLangChips);
+    document.getElementById('staffLang').addEventListener('change', updateLangChips);
+
+    function updateLangChips() {
+      const pl = document.getElementById('patientLang').value;
+      const sl = document.getElementById('staffLang').value;
+      document.getElementById('patientLangChip').textContent = '🌐 ' + pl.split(' ')[0];
+      document.getElementById('staffLangChip').textContent = '🗣️ ' + sl.split(' ')[0];
+    }
+
+    function setSpeaker(who) {
+      currentSpeaker = who;
+      document.getElementById('btnPatient').classList.toggle('active', who === 'patient');
+      document.getElementById('btnStaff').classList.toggle('active', who === 'staff');
+      document.getElementById('msgInput').focus();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const patientLang = document.getElementById('patientLang').value;
+      const staffLang = document.getElementById('staffLang').value;
+
+      const isPatient = currentSpeaker === 'patient';
+      const fromLang = isPatient ? patientLang : staffLang;
+      const toLang = isPatient ? staffLang : patientLang;
+
+      input.value = '';
+      document.getElementById('sendBtn').disabled = true;
+
+      // 빈 화면 숨기기
+      const empty = document.getElementById('chatEmpty');
+      if (empty) empty.style.display = 'none';
+
+      // 말풍선 추가
+      const msgId = Date.now();
+      const bubble = addBubble(msgId, isPatient, text, fromLang, toLang);
+
+      try {
+        const prompt = `You are a professional medical interpreter for a dental clinic.
+Translate the following text from ${fromLang} to ${toLang}.
+Provide ONLY the translation, nothing else. No explanations, no notes.
+
+Text to translate:
+"${text}"`;
+
+        const res = await fetch('/api/ai-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, options: { maxTokens: 500 } })
+        });
+
+        if (!res.ok) throw new Error('번역 실패');
+        const data = await res.json();
+        const translated = data.text?.trim() || '번역 결과 없음';
+
+        // 번역 결과 업데이트
+        const transEl = document.getElementById('trans_' + msgId);
+        if (transEl) {
+          transEl.textContent = translated;
+          transEl.classList.remove('bubble-loading');
+          transEl.classList.add('bubble-translated');
+        }
+
+        messages.push({ speaker: currentSpeaker, original: text, translated, fromLang, toLang });
+
+      } catch (e) {
+        const transEl = document.getElementById('trans_' + msgId);
+        if (transEl) {
+          transEl.textContent = '번역 오류: ' + e.message;
+          transEl.style.color = 'var(--danger)';
+        }
+      } finally {
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('msgInput').focus();
+      }
+    }
+
+    function addBubble(msgId, isPatient, text, fromLang, toLang) {
+      const chatArea = document.getElementById('chatArea');
+      const div = document.createElement('div');
+      div.className = 'chat-bubble ' + (isPatient ? 'patient' : 'staff');
+      div.innerHTML = `
+        <div class="bubble-who">${isPatient ? '👤 환자 (' + fromLang + ')' : '👩‍⚕️ 직원 (' + fromLang + ')'}</div>
+        <div class="bubble-original">${escHtml(text)}</div>
+        <div class="bubble-loading" id="trans_${msgId}">⏳ ${toLang}로 번역 중...</div>
+      `;
+      chatArea.appendChild(div);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return div;
+    }
+
+    function escHtml(str) {
+      return str.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+    }
+
+    function clearChat() {
+      if (!messages.length) return;
+      if (!confirm('대화 내역을 모두 삭제하시겠습니까?')) return;
+      messages = [];
+      const chatArea = document.getElementById('chatArea');
+      chatArea.innerHTML = `
+        <div class="chat-empty" id="chatEmpty">
+          <div class="icon">🌐</div>
+          <div>대화를 입력하면 AI가 실시간으로 번역합니다</div>
+          <div style="font-size:0.8rem;">30개 언어 지원</div>
+        </div>`;
+    }
+  </script>
+</body>
+</html>
