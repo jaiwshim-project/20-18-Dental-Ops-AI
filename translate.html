@@ -290,7 +290,7 @@
           <div class="conv-panel staff-panel">
             <div class="panel-header" id="hdrS">👩‍⚕️ 직원 (한국어)</div>
             <div class="conv-log" id="logS"></div>
-            <div class="panel-interim" id="interimS">마이크 버튼을 눌러 말하기 시작하세요</div>
+            <div class="panel-interim" id="interimS"></div>
             <div class="panel-mic">
               <button class="mic-btn" id="micS" onclick="toggleMic('staff')">🎤</button>
               <div class="mic-status" id="statusS">누르면 녹음 시작</div>
@@ -440,7 +440,7 @@
     document.getElementById('logP').innerHTML = '';
     document.getElementById('logS').innerHTML = '';
     setInterim('patient', '', false);
-    setInterim('staff',   '마이크를 눌러 시작하세요', false);
+    setInterim('staff',   '', false);
     resetMicUI();
 
     // 페이지 헤더 타이틀에 환자 언어 번역 추가
@@ -565,7 +565,7 @@
     const prev = activeWho;
     activeWho = null;
     if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
-    if (prev) setInterim(prev, prev === 'patient' ? '' : '마이크를 눌러 시작하세요', false);
+    if (prev) setInterim(prev, '', false);
     resetMicUI();
   }
 
