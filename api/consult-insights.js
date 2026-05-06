@@ -5,8 +5,9 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  const { clinic_id } = req.query;
-  if (!clinic_id) return res.status(400).json({ error: 'clinic_id 필요' });
+  const { clinic_id, debug } = req.query;
+  const isDebug = debug === '1';
+  if (!clinic_id && !isDebug) return res.status(400).json({ error: 'clinic_id 필요' });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -34,6 +35,28 @@ module.exports = async (req, res) => {
 
     const debugTotal = allLogs?.length || 0;
 
+    // debug=1: 필터 없이 원본 데이터 구조 반환
+    if (isDebug) {
+      const sample = (allLogs || []).slice(0, 10).map(l => ({
+        id: l.id,
+        created_at: l.created_at,
+        metadata_keys: l.metadata ? Object.keys(l.metadata) : [],
+        clinic_id: l.metadata?.clinic_id ?? '(없음)',
+        staff_id: l.metadata?.staff_id ?? '(없음)',
+        type: l.metadata?.type ?? '(없음)',
+        patient_name: l.metadata?.patient_name ?? '(없음)',
+        author: l.metadata?.author ?? '(없음)',
+        duration_sec: l.metadata?.duration_sec ?? '(없음)',
+      }));
+      const distinctClinicIds = [...new Set((allLogs || []).map(l => l.metadata?.clinic_id).filter(Boolean))];
+      return res.status(200).json({
+        total_records: debugTotal,
+        distinct_clinic_ids: distinctClinicIds,
+        your_clinic_id: clinic_id || '(파라미터 없음)',
+        sample,
+      });
+    }
+
     // clinic_id로 필터 + type='session' (또는 type 없는 것도 포함)
     const logs = (allLogs || []).filter(l =>
       l.metadata &&
@@ -45,7 +68,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({
         empty: true,
         reason: 'no_match',
-        debug_total_records: debugTotal,    // 전체 레코드 수 (진단용)
+        debug_total_records: debugTotal,
       });
     }
 
