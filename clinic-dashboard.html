@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="css/common.css">
   <style>
     body { background: var(--bg-base); }
-    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none !important; }
+    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none; }
 
     /* 🔐 인증 모달 활성화 */
     #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; display: flex !important; }
@@ -678,76 +678,30 @@
     }
 
     window.checkAuth = function checkAuth() {
-      console.log('[checkAuth] ▶️ 시작');
-
-      // 🔑 1단계: sessionStorage에서 인증 정보 확인 (페이지 새로고침 후에도 유지)
-      const clinicAuthVerifiedSession = sessionStorage.getItem('clinicAuthVerified');
-
-      // 세션에서 clinic_id 가져오기 (필수 조건)
       const session = Session.get();
       const hasClinicId = !!session?.clinic_id;
 
-      if (clinicAuthVerifiedSession === 'true' && hasClinicId) {
-        console.log('[checkAuth] ✅ sessionStorage에서 인증 정보 발견 + clinic_id 존재 → 모달 건너뜀');
+      // 이미 로그인된 사용자(session.clinic_id 존재) → 비밀번호 재입력 없이 바로 통과
+      if (hasClinicId) {
         isClinicAuthVerified = true;
-
         clinicId = session.clinic_id;
-        console.log('[checkAuth] ✅ clinicId 설정:', clinicId);
+        sessionStorage.setItem('clinicAuthVerified', 'true');
 
-        // 대시보드 콘텐츠 표시
-        const container = document.querySelector('.clinic-container');
-        if (container) {
-          container.style.display = 'block';
-          console.log('[checkAuth] ✅ 대시보드 표시');
-        }
-
-        // 인증 모달 숨김
         const modal = document.getElementById('clinicAuthModal');
-        if (modal) {
-          modal.classList.add('hidden');
-          console.log('[checkAuth] ✅ 모달 숨김');
-        }
+        if (modal) modal.classList.add('hidden');
 
-        return;  // 여기서 종료
-      }
+        const container = document.querySelector('.clinic-container');
+        if (container) container.style.display = 'block';
 
-      // clinic_id가 없으면 sessionStorage 제거 (인증 정보 초기화)
-      if (!hasClinicId && clinicAuthVerifiedSession === 'true') {
-        console.log('[checkAuth] ⚠️ clinic_id 없음 → sessionStorage 인증 정보 제거');
-        sessionStorage.removeItem('clinicAuthVerified');
-      }
-
-      console.log('[checkAuth] 인증 정보 없음 → 모달 표시');
-
-      // 세션에서 clinic_id 가져오기 (위에서 이미 선언된 session 재사용)
-      console.log('[checkAuth] 세션 상태:', { session: !!session, clinic_id: session?.clinic_id });
-
-      if (session?.clinic_id) {
-        clinicId = session.clinic_id;
-        console.log('[checkAuth] ✅ clinicId 설정:', clinicId);
-      } else {
-        console.warn('[checkAuth] ⚠️  세션에서 clinic_id 없음');
-      }
-
-      // 1단계: 대시보드 콘텐츠 숨김
-      const container = document.querySelector('.clinic-container');
-      if (container) {
-        container.style.display = 'none';
-        console.log('[checkAuth] ✅ 콘텐츠 숨김 완료');
-      }
-
-      // 2단계: 병원 관리 인증 모달 표시
-      const modal = document.getElementById('clinicAuthModal');
-      if (!modal) {
-        console.error('[checkAuth] ❌ clinicAuthModal 요소 없음');
         return;
       }
 
+      // 로그인 안 된 경우 → 인증 모달 표시
+      const modal = document.getElementById('clinicAuthModal');
+      if (!modal) return;
       modal.style.display = 'flex';
       modal.style.opacity = '1';
       modal.classList.add('active');
-
-      console.log('[checkAuth] ✅ 인증 모달 표시 완료');
     }
 
     window.verifyClinicAdmin = async function verifyClinicAdmin() {
@@ -1429,26 +1383,19 @@
       }
 
       // 일반 사용자 접속 경우
-      try {
-        checkAuth();
-        console.log('[initClinicDashboard] ✅ checkAuth() 완료');
-      } catch (e) {
-        console.error('[initClinicDashboard] ❌ checkAuth() 에러:', e);
+      checkAuth();  // 로그인 세션 있으면 자동 통과, 없으면 모달 표시
+
+      // clinicId가 세팅됐으면(checkAuth에서 or 세션에서) 병원 정보 로드
+      if (!clinicId) {
+        const s = Session.get();
+        if (s?.clinic_id) clinicId = s.clinic_id;
       }
 
-      // 🔥 세션에서 clinicId 추출 (일반 사용자 경로)
-      const s = Session.get();
-      if (s?.clinic_id && !clinicId) {
-        clinicId = s.clinic_id;
-        console.log('[initClinicDashboard] 세션에서 clinicId 추출:', clinicId);
-
-        // 병원 정보 자동 로드 (tier 포함 - Pro/Free 배지 100% 동기화)
+      if (clinicId) {
         try {
-          console.log('[initClinicDashboard] 병원 정보 자동 로드 중...');
           await loadClinicInfo();
-          console.log('[initClinicDashboard] ✅ 병원 정보 로드 완료 (일반 사용자 모드)');
         } catch (e) {
-          console.error('[initClinicDashboard] ⚠️ 병원 정보 로드 실패:', e);
+          console.error('[initClinicDashboard] 병원 정보 로드 실패:', e);
         }
       }
 
