@@ -226,11 +226,6 @@
   </style>
 </head>
 <body>
-  <!-- 🔥 페이지 로드 확인 -->
-  <div style="position:fixed; top:0; left:0; right:0; background:#ff0000; color:white; padding:20px; font-size:24px; font-weight:bold; text-align:center; z-index:99999;">
-    ✅ clinic-dashboard.html 로드됨! (이 빨간색 메시지가 보이면 페이지가 로드된 것입니다)
-  </div>
-
   <div class="clinic-container">
     <!-- 네비게이션 바 -->
     <div style="margin-bottom:24px; display:flex; gap:12px; align-items:center;">
@@ -519,13 +514,13 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('clinicAuthModal')">취소</button>
-        <button class="btn btn-primary" id="authVerifyBtn" style="cursor:pointer;">✓ 인증</button>
+        <button class="btn btn-primary" id="authVerifyBtn" onclick="if(window.verifyClinicAdmin) window.verifyClinicAdmin()" style="cursor:pointer;">✓ 인증</button>
       </div>
     </div>
   </div>
 
   <script src="js/supabase.js"></script>
-  <script src="js/common.js" defer></script>
+  <script src="js/common.js"></script>
   <script>
     // 🔥 clinic-dashboard에서 updateSessionUI를 오버라이드
     // (로컬 tier를 우선으로 사용)
@@ -743,56 +738,22 @@
     }
 
     window.verifyClinicAdmin = async function verifyClinicAdmin() {
-      console.log('═══════════════════════════════════════');
-      console.log('[verifyClinicAdmin] 🔐 인증 시작');
-      console.log('═══════════════════════════════════════');
+      const errorEl = document.getElementById('authError');
+      const pwdInput = document.getElementById('authPassword');
 
-      try {
-        const errorEl = document.getElementById('authError');
-        const pwdInput = document.getElementById('authPassword');
-        const CLINIC_PASSWORD = '123456';
+      if (!pwdInput) { alert('입력 필드를 찾을 수 없습니다. 페이지를 새로고침하세요.'); return; }
 
-        console.log('[verifyClinicAdmin] ✅ 요소 조회:', {
-          errorEl: !!errorEl,
-          pwdInput: !!pwdInput
-        });
+      const pwd = (pwdInput.value || '').trim();
 
-        if (!pwdInput) {
-          console.error('[verifyClinicAdmin] ❌ authPassword 요소 없음!');
-          alert('입력 필드를 찾을 수 없습니다. 페이지를 새로고침하세요.');
-          return;
-        }
-
-        const pwd = (pwdInput.value || '').trim();
-
-        console.log('[verifyClinicAdmin] 입력값:', {
-          pwdLength: pwd.length,
-          pwdCharacters: Array.from(pwd).map(c => `'${c}'`).join(','),
-          pwd: pwd || '(비어있음)',
-          elementValue: pwdInput.value
-        });
-
-      // 비밀번호 유효성 검사
-      if (pwd.length !== 6) {
-        console.warn('[verifyClinicAdmin] ❌ 비밀번호 길이 오류:', pwd.length);
+      if (pwd.length !== 6 || !/^\d{6}$/.test(pwd)) {
         errorEl.style.display = 'block';
-        errorEl.textContent = '비밀번호는 숫자 6자리를 모두 입력하세요';
+        errorEl.textContent = '비밀번호는 숫자 6자리를 입력하세요';
         return;
       }
-
-      if (!/^\d{6}$/.test(pwd)) {
-        console.warn('[verifyClinicAdmin] ❌ 비밀번호 형식 오류');
-        errorEl.style.display = 'block';
-        errorEl.textContent = '비밀번호는 숫자만 입력하세요';
-        return;
-      }
-
-      console.log('[verifyClinicAdmin] ✅ 입력값 검증 성공');
 
       try {
         errorEl.style.display = 'none';
 
-        // clinic_id 확보 (세션에서)
         const session = Session.get();
         const cid = clinicId || session?.clinic_id;
 
@@ -802,75 +763,42 @@
           return;
         }
 
-        // API로 비밀번호 검증 (Supabase password_hash 기준)
         const verifyRes = await fetch('/api/verify-clinic-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clinic_id: cid, password: pwd })
         });
+
         if (!verifyRes.ok) {
           const err = await verifyRes.json();
-          console.warn('[verifyClinicAdmin] ❌ 비밀번호 불일치');
           errorEl.style.display = 'block';
           errorEl.textContent = err.error === '비밀번호 불일치' ? '비밀번호가 올바르지 않습니다' : ('오류: ' + err.error);
           return;
         }
 
-        console.log('[verifyClinicAdmin] ✅ 비밀번호 인증 성공');
         isClinicAuthVerified = true;
-
-        // 🔑 sessionStorage에 인증 정보 저장 (페이지 새로고침 후에도 유지)
         sessionStorage.setItem('clinicAuthVerified', 'true');
-        console.log('[verifyClinicAdmin] 🔑 sessionStorage에 인증 정보 저장됨');
-
-        // 인증 성공 → 콘텐츠 표시
-        console.log('[verifyClinicAdmin] UI 업데이트 중...');
 
         const modal = document.getElementById('clinicAuthModal');
-        if (modal) {
-          modal.classList.remove('active');
-          modal.classList.add('hidden');  // ✅ CSS .hidden 클래스 적용 (!important로 override)
-          console.log('[verifyClinicAdmin] ✅ 모달 닫음');
-        }
+        if (modal) { modal.classList.remove('active'); modal.classList.add('hidden'); }
 
         const container = document.querySelector('.clinic-container');
-        if (container) {
-          container.style.display = 'block';
-          console.log('[verifyClinicAdmin] ✅ 대시보드 표시');
-        }
+        if (container) container.style.display = 'block';
 
-        console.log('[verifyClinicAdmin] showToast() 호출...');
         showToast('병원 관리자 인증 성공', 'success');
-        console.log('[verifyClinicAdmin] ✅ showToast() 완료');
+        pwdInput.value = '';
 
-        // 비밀번호 입력 필드 초기화
-        if (pwdInput) {
-          pwdInput.value = '';
-          console.log('[verifyClinicAdmin] ✅ 비밀번호 입력 필드 초기화');
-        }
-
-        // 🔥 clinic_id 확보 (세션 또는 환경에서)
         if (!clinicId) {
-          const session = Session.get();
-          if (session?.clinic_id) {
-            clinicId = session.clinic_id;
-            console.log('[verifyClinicAdmin] ✅ Session에서 clinicId 설정:', clinicId);
-          }
+          const s = Session.get();
+          if (s?.clinic_id) clinicId = s.clinic_id;
         }
 
-        // 인증 후 병원 정보 로드
-        if (clinicId) {
-          console.log('[verifyClinicAdmin] 병원 정보 로드 중... (clinicId:', clinicId, ')');
-          await loadClinicInfo();
-          console.log('[verifyClinicAdmin] ✅✅✅ 모든 작업 완료');
-        } else {
-          console.warn('[verifyClinicAdmin] ⚠️ clinicId 없음 - 병원 정보 로드 스킵');
-        }
+        if (clinicId) await loadClinicInfo();
 
       } catch (e) {
-        console.error('[verifyClinicAdmin] ❌ 예외 발생:', e.message, e.stack);
+        console.error('[verifyClinicAdmin]', e);
         errorEl.style.display = 'block';
-        errorEl.textContent = '❌ 오류: ' + e.message;
+        errorEl.textContent = '오류: ' + e.message;
       }
     }
 
@@ -1432,9 +1360,6 @@
 
     // sessionStorage의 clinicAuthVerified는 clinic_id 검증 후에만 유지
     // (checkAuth에서 처리함)
-
-    // 🔥 디버그: 페이지 로드 확인
-    alert('clinic-dashboard.html이 로드되었습니다. 확인을 클릭하세요.');
 
     // 즉시 실행 + DOMContentLoaded 대기 (중복 방지)
     console.log('[clinic-dashboard] ▶️ 초기화 시작');
