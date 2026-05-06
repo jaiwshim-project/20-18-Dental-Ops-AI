@@ -1092,11 +1092,15 @@
         const data = await res.json();
 
         if (data.empty || !data.summary) {
+          const hint = data.debug_total_records > 0
+            ? `<div style="margin-top:10px;font-size:0.75rem;color:#94a3b8;">수퍼베이스에 총 ${data.debug_total_records}건의 상담 기록이 있지만, 이 병원(clinic_id)에 연결된 데이터가 없습니다.<br>상담 AI 코치 사용 시 로그인 상태에서 상담을 진행해야 병원에 연결됩니다.</div>`
+            : `<div style="margin-top:10px;font-size:0.75rem;color:#94a3b8;">수퍼베이스에 상담 기록이 아직 없습니다.</div>`;
           container.innerHTML = `
             <div style="text-align:center;padding:40px 28px;color:#64748b;">
               <div style="font-size:2rem;margin-bottom:10px;">🎯</div>
               <div style="font-weight:600;margin-bottom:6px;">상담 AI 코치 데이터가 없습니다</div>
               <div style="font-size:0.8125rem;">상담 AI 코치를 사용하면 병원의 상담 패턴과 직원 활용 현황을 확인할 수 있습니다.</div>
+              ${hint}
               <a href="consult.html" class="btn btn-primary btn-sm" style="margin-top:16px;display:inline-flex;">➕ 상담 AI 코치 시작</a>
             </div>`;
           return;
@@ -1115,7 +1119,7 @@
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
               <div style="width:22px;height:22px;border-radius:50%;background:${colors[i]};color:#fff;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;">${i+1}</div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:0.8125rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.staff_id.slice(-6) || '직원'}</div>
+                <div style="font-size:0.8125rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name || '직원'}</div>
                 <div style="height:5px;background:#f1f5f9;border-radius:3px;margin-top:4px;">
                   <div style="height:5px;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:3px;width:${pct}%;"></div>
                 </div>
@@ -1136,6 +1140,7 @@
             <tr>
               <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#64748b;">${dateStr}</td>
               <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.875rem;font-weight:600;color:#0f172a;">${r.patient_name}</td>
+              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#475569;">${r.staff_name}</td>
               <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#475569;">${durMin}분</td>
               <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#475569;">${r.turns_count}턴</td>
               <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">${evalBadge}</td>
@@ -1200,12 +1205,13 @@
                   <tr style="background:#f8fafc;">
                     <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">일시</th>
                     <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">환자명</th>
+                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">담당자</th>
                     <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">상담시간</th>
                     <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">코칭 턴</th>
                     <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">AI 평가</th>
                   </tr>
                 </thead>
-                <tbody>${recentRows || '<tr><td colspan="5" style="text-align:center;padding:24px;color:#64748b;font-size:0.875rem;">기록 없음</td></tr>'}</tbody>
+                <tbody>${recentRows || '<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;font-size:0.875rem;">기록 없음</td></tr>'}</tbody>
               </table>
             </div>
           </div>`;

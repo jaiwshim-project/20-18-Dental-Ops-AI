@@ -15,51 +15,64 @@ module.exports = async (req, res) => {
   try {
     const sb = createClient(url, key);
 
-    // 최근 6개월 세션 로그 (type='session'만)
     const sixAgo = new Date();
     sixAgo.setMonth(sixAgo.getMonth() - 6);
 
-    const { data: logs, error } = await sb
+    // staff-consults.js와 동일하게: JSONB 필터 없이 전체 조회 후 클라이언트 필터
+    const { data: allLogs, error } = await sb
       .from('consult_logs')
       .select('id, created_at, metadata')
       .eq('engine', 'consult')
-      .filter('metadata->>type', 'eq', 'session')
-      .filter('metadata->>clinic_id', 'eq', clinic_id)
       .gte('created_at', sixAgo.toISOString())
       .order('created_at', { ascending: false })
-      .limit(200);
+      .limit(500);
 
     if (error) {
-      // 테이블 없으면 빈 데이터
-      if (error.code === '42P01') return res.status(200).json({ empty: true });
+      if (error.code === '42P01') return res.status(200).json({ empty: true, reason: 'no_table' });
       throw error;
     }
-    if (!logs || !logs.length) return res.status(200).json({ empty: true });
+
+    const debugTotal = allLogs?.length || 0;
+
+    // clinic_id로 필터 + type='session' (또는 type 없는 것도 포함)
+    const logs = (allLogs || []).filter(l =>
+      l.metadata &&
+      l.metadata.clinic_id === clinic_id &&
+      (l.metadata.type === 'session' || !l.metadata.type)
+    );
+
+    if (!logs.length) {
+      return res.status(200).json({
+        empty: true,
+        reason: 'no_match',
+        debug_total_records: debugTotal,    // 전체 레코드 수 (진단용)
+      });
+    }
 
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // 이번달 세션
     const thisMonth = logs.filter(l => new Date(l.created_at) >= thisMonthStart);
 
     // 평균 상담 시간 (초 → 분)
-    const durations = logs.map(l => (l.metadata?.duration_sec || 0)).filter(d => d > 0);
+    const durations = logs.map(l => l.metadata?.duration_sec || 0).filter(d => d > 0);
     const avgDurationMin = durations.length
       ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length / 60 * 10) / 10 : 0;
 
     // 평균 코칭 턴
-    const turns = logs.map(l => (l.metadata?.turns_count || 0));
-    const avgTurns = turns.length
-      ? Math.round(turns.reduce((a, b) => a + b, 0) / turns.length * 10) / 10 : 0;
+    const turnsList = logs.map(l => l.metadata?.turns_count || 0);
+    const avgTurns = turnsList.length
+      ? Math.round(turnsList.reduce((a, b) => a + b, 0) / turnsList.length * 10) / 10 : 0;
 
     // AI 평가 완료 건수
     const evaluatedCount = logs.filter(l => l.metadata?.evaluation).length;
 
-    // 직원별 집계
+    // 직원별 집계 (staff_name 우선, 없으면 staff_id 짧게)
     const staffMap = {};
     logs.forEach(l => {
       const sid = l.metadata?.staff_id || 'unknown';
-      if (!staffMap[sid]) staffMap[sid] = { staff_id: sid, count: 0, duration_total: 0 };
+      const name = l.metadata?.author || l.metadata?.staff_name || null;
+      if (!staffMap[sid]) staffMap[sid] = { staff_id: sid, name, count: 0, duration_total: 0 };
+      if (name && !staffMap[sid].name) staffMap[sid].name = name;
       staffMap[sid].count++;
       staffMap[sid].duration_total += l.metadata?.duration_sec || 0;
     });
@@ -68,9 +81,10 @@ module.exports = async (req, res) => {
       .slice(0, 8)
       .map(s => ({
         staff_id: s.staff_id,
+        name: s.name || s.staff_id.slice(-6),
         count: s.count,
         avg_duration_min: s.duration_total > 0
-          ? Math.round(s.duration_total / s.count / 60 * 10) / 10 : 0
+          ? Math.round(s.duration_total / s.count / 60 * 10) / 10 : 0,
       }));
 
     // 월별 트렌드 (최근 6개월)
@@ -92,7 +106,7 @@ module.exports = async (req, res) => {
       id: l.id,
       created_at: l.created_at,
       patient_name: l.metadata?.patient_name || '익명',
-      staff_id: l.metadata?.staff_id || '-',
+      staff_name: l.metadata?.author || l.metadata?.staff_name || l.metadata?.staff_id?.slice(-6) || '-',
       duration_sec: l.metadata?.duration_sec || 0,
       turns_count: l.metadata?.turns_count || 0,
       has_evaluation: !!l.metadata?.evaluation,
@@ -109,6 +123,7 @@ module.exports = async (req, res) => {
       by_staff: byStaff,
       monthly,
       recent,
+      debug_total_records: debugTotal,
     });
 
   } catch (e) {
