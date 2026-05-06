@@ -1147,6 +1147,8 @@
         if (!res.ok) throw new Error('API 오류');
         const { logs, total } = await res.json();
         tlTotal = total;
+        window.tlLogsCache = window.tlLogsCache || {};
+        logs.forEach((log, i) => { window.tlLogsCache[tlOffset + i] = log; });
         renderTranslateLogs(logs, total);
       } catch (e) {
         container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--danger);">로드 실패: ${e.message}</div>`;
@@ -1209,10 +1211,17 @@
                   <div style="font-size:0.775rem;color:var(--text-secondary);">${dateStr} ${timeStr} · ${msgCount}개 대화 · ${dur}분</div>
                 </div>
               </div>
-              <span id="tl-arrow-${globalIdx}" style="color:var(--text-secondary);font-size:0.875rem;">▼</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button id="tl-ai-btn-${globalIdx}" onclick="event.stopPropagation();generateSessionSummary(${globalIdx})"
+                  style="padding:4px 10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                  🤖 AI 분석
+                </button>
+                <span id="tl-arrow-${globalIdx}" style="color:var(--text-secondary);font-size:0.875rem;">▼</span>
+              </div>
             </div>
-            <div id="tl-body-${globalIdx}" style="display:none;padding:16px;max-height:400px;overflow-y:auto;">
+            <div id="tl-body-${globalIdx}" style="display:none;padding:16px;max-height:500px;overflow-y:auto;">
               ${msgHtml || '<div style="color:var(--text-secondary);font-size:0.875rem;">대화 내용 없음</div>'}
+              <div id="tl-ai-${globalIdx}"></div>
             </div>
           </div>`;
       }).join('');
@@ -1233,6 +1242,57 @@
       const open = body.style.display === 'none';
       body.style.display  = open ? 'block' : 'none';
       arrow.textContent   = open ? '▲' : '▼';
+    }
+
+    async function generateSessionSummary(idx) {
+      const log = window.tlLogsCache && window.tlLogsCache[idx];
+      if (!log) return;
+      const btn = document.getElementById(`tl-ai-btn-${idx}`);
+      const box = document.getElementById(`tl-ai-${idx}`);
+      if (!box) return;
+
+      // 아코디언이 닫혀있으면 열기
+      const bodyEl  = document.getElementById(`tl-body-${idx}`);
+      const arrowEl = document.getElementById(`tl-arrow-${idx}`);
+      if (bodyEl && bodyEl.style.display === 'none') {
+        bodyEl.style.display = 'block';
+        if (arrowEl) arrowEl.textContent = '▲';
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = '분석 중...'; }
+      box.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-secondary);font-size:0.875rem;">🤖 AI가 분석 중입니다...</div>';
+
+      try {
+        const res = await fetch('/api/translate-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clinic_id: clinicId,
+            messages: log.messages || [],
+            patient_lang: log.patient_lang,
+            started_at: log.started_at,
+            ended_at: log.ended_at
+          })
+        });
+        if (!res.ok) throw new Error('API 오류');
+        const data = await res.json();
+        if (data.summary) {
+          box.innerHTML = `
+            <div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:8px;padding:16px;margin-top:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-size:0.8rem;font-weight:700;color:#7c3aed;">🤖 AI 건별 분석</div>
+                <div style="font-size:0.7rem;color:var(--text-secondary);">${escapeHTML(data.model || '')}</div>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.75;color:#1f2937;white-space:pre-wrap;">${escapeHTML(data.summary)}</div>
+            </div>`;
+        } else {
+          box.innerHTML = '<div style="color:var(--danger);font-size:0.875rem;padding:8px 0;">분석 데이터 없음</div>';
+        }
+      } catch (e) {
+        box.innerHTML = `<div style="color:var(--danger);font-size:0.875rem;padding:8px 0;">분석 실패: ${e.message}</div>`;
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 분석'; }
+      }
     }
 
     async function loadStaffList() {

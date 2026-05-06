@@ -27,8 +27,58 @@ module.exports = async (req, res) => {
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch {} }
-  const { clinic_id, clinic_name } = body || {};
+  const { clinic_id, clinic_name, messages: sessionMsgs, patient_lang: sessionLang,
+          started_at: sessionStart, ended_at: sessionEnd } = body || {};
   if (!clinic_id) return res.status(400).json({ error: 'clinic_id 필요' });
+
+  // ── 건별 세션 분석 모드 (messages 배열이 제공된 경우)
+  if (Array.isArray(sessionMsgs)) {
+    try {
+      const conversation = sessionMsgs.map(m =>
+        `[${m.who === 'patient' ? '환자' : '직원'}] ${m.original || ''}${m.translated ? ` → (번역) ${m.translated}` : ''}`
+      ).join('\n');
+      const dur = sessionStart && sessionEnd
+        ? Math.round((new Date(sessionEnd) - new Date(sessionStart)) / 60000 * 10) / 10
+        : null;
+      const langLabel = LANG_NAMES[sessionLang] || sessionLang || '알 수 없음';
+      const dateLabel = sessionStart ? new Date(sessionStart).toLocaleDateString('ko-KR') : '알 수 없음';
+
+      const sessionPrompt = `당신은 치과 병원 수석 상담 코디네이터입니다.
+아래는 외국인 환자와의 실제 통역 상담 기록입니다.
+
+[상담 정보]
+- 환자 언어: ${langLabel}
+- 상담 일자: ${dateLabel}
+- 상담 시간: ${dur !== null ? dur + '분' : '기록 없음'}
+- 대화 수: ${sessionMsgs.length}회
+
+[상담 대화록]
+${conversation}
+
+[요청]
+위 상담 내용을 분석하여 아래 형식으로 한국어 분석 레포트를 작성해주세요.
+각 섹션 제목 앞에 이모지를 포함하세요.
+
+1. 🦷 환자 주訴 요약 (환자가 호소한 주된 증상이나 요청 사항을 2~3문장으로)
+2. 💬 상담 내용 (논의된 치료 옵션, 비용, 일정 등 핵심 내용)
+3. ⚠️ 의사소통 이슈 (언어 장벽이나 오해 가능성이 있었던 부분, 없으면 "특이사항 없음"으로 표기)
+4. 📋 후속 조치 권고 (다음 방문 전 준비사항, 직원에게 알릴 사항)
+5. 💡 원장 메모 (이 환자 응대에서 참고할 특이사항이나 개선점)
+
+간결하고 실용적으로 작성해주세요.`;
+
+      const result = await callAI(sessionPrompt, { maxTokens: 800, temperature: 0.5 });
+      return res.status(200).json({
+        summary: result.text,
+        model: result.model,
+        mode: 'session',
+        generated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('[translate-summary/session]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
 
   try {
     const sb = createClient(url, key);
