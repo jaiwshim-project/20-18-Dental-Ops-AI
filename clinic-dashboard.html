@@ -479,6 +479,19 @@
       </div>
     </div>
 
+    <!-- 통역 기록 -->
+    <div class="section">
+      <h2>🌐 상담 통역 기록</h2>
+      <div id="translateLogContainer">
+        <div style="text-align:center; padding:32px; color:var(--text-secondary);">불러오는 중...</div>
+      </div>
+      <div id="translateLogPaging" style="display:none; margin-top:16px; display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+        <button class="btn btn-secondary btn-sm" id="tlPrevBtn" onclick="loadTranslateLogs('prev')">◀ 이전</button>
+        <span id="tlPageInfo" style="font-size:0.875rem; color:var(--text-secondary);"></span>
+        <button class="btn btn-secondary btn-sm" id="tlNextBtn" onclick="loadTranslateLogs('next')">다음 ▶</button>
+      </div>
+    </div>
+
     <!-- 요금제 정보 (읽기 전용) -->
     <div class="section">
       <h2>💳 현재 요금제</h2>
@@ -907,11 +920,118 @@
         console.log('[loadClinicInfo] 직원로그인 비밀번호 로드:', staffPwd);
 
         loadStaffList();
+        loadTranslateLogs();
         console.log('[loadClinicInfo] ✅ 완료');
       } catch (e) {
         console.error('[loadClinicInfo]', e);
         showToast('오류: ' + e.message, 'error');
       }
+    }
+
+    // ── 통역 기록 ──
+    let tlOffset = 0;
+    const TL_LIMIT = 10;
+    let tlTotal = 0;
+
+    async function loadTranslateLogs(dir) {
+      if (!clinicId) return;
+      if (dir === 'prev') tlOffset = Math.max(0, tlOffset - TL_LIMIT);
+      if (dir === 'next' && tlOffset + TL_LIMIT < tlTotal) tlOffset += TL_LIMIT;
+
+      const container = document.getElementById('translateLogContainer');
+      container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-secondary);">불러오는 중...</div>';
+
+      try {
+        const res = await fetch(`/api/translate-logs?clinic_id=${clinicId}&limit=${TL_LIMIT}&offset=${tlOffset}`);
+        if (!res.ok) throw new Error('API 오류');
+        const { logs, total } = await res.json();
+        tlTotal = total;
+        renderTranslateLogs(logs, total);
+      } catch (e) {
+        container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--danger);">로드 실패: ${e.message}</div>`;
+      }
+    }
+
+    const LANG_NAMES = {
+      ko:'한국어', en:'English', zh:'中文', ja:'日本語', vi:'Tiếng Việt',
+      ru:'Русский', th:'ภาษาไทย', ar:'العربية', es:'Español', fr:'Français',
+      de:'Deutsch', pt:'Português', id:'Bahasa Indonesia', mn:'Монгол',
+      uz:'Oʻzbekcha', kk:'Қазақша', tl:'Filipino', my:'မြန်မာ', km:'ខ្មែរ', hi:'हिन्दी'
+    };
+
+    function renderTranslateLogs(logs, total) {
+      const container = document.getElementById('translateLogContainer');
+      const pagingEl  = document.getElementById('translateLogPaging');
+
+      if (!logs.length) {
+        container.innerHTML = `
+          <div style="text-align:center;padding:40px;color:var(--text-secondary);">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🌐</div>
+            <div>저장된 통역 기록이 없습니다.</div>
+          </div>`;
+        pagingEl.style.display = 'none';
+        return;
+      }
+
+      container.innerHTML = logs.map((log, i) => {
+        const date     = new Date(log.started_at);
+        const dateStr  = date.toLocaleDateString('ko-KR');
+        const timeStr  = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        const pLang    = LANG_NAMES[log.patient_lang] || log.patient_lang;
+        const sLang    = LANG_NAMES[log.staff_lang]   || log.staff_lang;
+        const msgCount = Array.isArray(log.messages) ? log.messages.length : 0;
+        const dur      = log.ended_at
+          ? Math.round((new Date(log.ended_at) - new Date(log.started_at)) / 60000)
+          : 0;
+        const globalIdx = tlOffset + i;
+
+        const msgHtml = Array.isArray(log.messages) ? log.messages.map(m => `
+          <div style="margin-bottom:10px; padding:10px 12px; border-radius:8px;
+               background:${m.who === 'patient' ? '#eff6ff' : '#f0fdf4'};
+               border-left:3px solid ${m.who === 'patient' ? '#3b82f6' : '#16a34a'};">
+            <div style="font-size:0.7rem;font-weight:700;color:${m.who === 'patient' ? '#1d4ed8' : '#15803d'};margin-bottom:4px;">
+              ${m.who === 'patient' ? '🧑 환자' : '👩‍⚕️ 직원'}
+            </div>
+            <div style="font-size:0.875rem;color:#111;">${escapeHTML(m.original || '')}</div>
+            ${m.translated ? `<div style="font-size:0.8rem;color:#555;margin-top:4px;border-top:1px solid rgba(0,0,0,0.06);padding-top:4px;">${escapeHTML(m.translated)}</div>` : ''}
+          </div>`).join('') : '';
+
+        return `
+          <div style="border:1px solid var(--gray-200);border-radius:10px;margin-bottom:12px;overflow:hidden;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                 padding:12px 16px;background:#f9fafb;cursor:pointer;user-select:none;"
+                 onclick="toggleTL(${globalIdx})">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:1.1rem;">🌐</span>
+                <div>
+                  <div style="font-weight:600;font-size:0.9rem;">${pLang} ↔ ${sLang}</div>
+                  <div style="font-size:0.775rem;color:var(--text-secondary);">${dateStr} ${timeStr} · ${msgCount}개 대화 · ${dur}분</div>
+                </div>
+              </div>
+              <span id="tl-arrow-${globalIdx}" style="color:var(--text-secondary);font-size:0.875rem;">▼</span>
+            </div>
+            <div id="tl-body-${globalIdx}" style="display:none;padding:16px;max-height:400px;overflow-y:auto;">
+              ${msgHtml || '<div style="color:var(--text-secondary);font-size:0.875rem;">대화 내용 없음</div>'}
+            </div>
+          </div>`;
+      }).join('');
+
+      // 페이징
+      const pageNum   = Math.floor(tlOffset / TL_LIMIT) + 1;
+      const totalPage = Math.ceil(total / TL_LIMIT);
+      document.getElementById('tlPageInfo').textContent = `${pageNum} / ${totalPage} 페이지 (총 ${total}건)`;
+      document.getElementById('tlPrevBtn').disabled = tlOffset === 0;
+      document.getElementById('tlNextBtn').disabled = tlOffset + TL_LIMIT >= total;
+      pagingEl.style.display = 'flex';
+    }
+
+    function toggleTL(idx) {
+      const body  = document.getElementById(`tl-body-${idx}`);
+      const arrow = document.getElementById(`tl-arrow-${idx}`);
+      if (!body) return;
+      const open = body.style.display === 'none';
+      body.style.display  = open ? 'block' : 'none';
+      arrow.textContent   = open ? '▲' : '▼';
     }
 
     async function loadStaffList() {
