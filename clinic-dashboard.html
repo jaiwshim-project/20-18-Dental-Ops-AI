@@ -7,530 +7,566 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🦷%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/common.css">
   <style>
-    body { background: var(--bg-base); }
-    .clinic-container { max-width: 700px; margin: 0 auto; padding: 24px; display: none; }
+    /* ─── PREMIUM DASHBOARD ─── */
+    *, *::before, *::after { box-sizing: border-box; }
 
-    /* 🔐 인증 모달 활성화 */
+    body { background: #f1f5f9 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+    /* ── Auth Modal always visible before login ── */
     #clinicAuthModal { opacity: 1 !important; pointer-events: all !important; display: flex !important; }
     #clinicAuthModal.hidden { opacity: 0 !important; pointer-events: none !important; display: none !important; }
 
-    /* 🎨 프리미엄 헤더 */
-    .clinic-header {
-      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-      color: white;
-      padding: 40px 32px;
-      border-radius: var(--radius-lg);
-      margin-bottom: 32px;
-      box-shadow: 0 8px 24px rgba(30, 58, 138, 0.2);
-      position: relative;
-      overflow: hidden;
+    /* ── Clinic container hidden until auth ── */
+    .clinic-container { display: none; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; left: 0; top: 0;
+      width: 220px; height: 100vh;
+      background: #0f172a;
+      display: flex; flex-direction: column;
+      z-index: 300; overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.04);
     }
 
-    .clinic-header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -10%;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      border-radius: 50%;
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-
-    .clinic-header * { position: relative; z-index: 1; }
-    .clinic-header h1 { font-size: 2.125rem; margin: 0 0 12px 0; font-weight: 700; letter-spacing: -0.5px; }
-    .clinic-header p { margin: 4px 0; opacity: 0.95; font-weight: 500; font-size: 1rem; }
-
-    /* 🎨 프리미엄 정보 카드 */
-    .clinic-info {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
+    .brand-logo {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      background: linear-gradient(135deg,#6366f1,#818cf8);
+      display: flex; align-items: center; justify-content: center; font-size: 1rem;
     }
+    .brand-name { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+    .brand-name em { color: #818cf8; font-style: normal; }
 
-    .info-card {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 16px 20px;
-      border-radius: var(--radius-md);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      transition: all 0.3s ease;
+    .sidebar-clinic {
+      margin: 12px 12px 4px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,0.07);
     }
+    .sc-label { font-size: 0.6rem; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 3px; }
+    .sc-name { font-size: 0.8125rem; font-weight: 600; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .info-card:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    .sidebar-nav { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .nav-section-label {
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: #334155; font-weight: 700; padding: 10px 10px 4px;
     }
-
-    .info-label { font-size: 0.75rem; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-    .info-value { font-size: 1.25rem; font-weight: 700; }
-
-    /* 🎨 프리미엄 섹션 */
-    .section {
-      background: var(--bg-surface);
-      border: 1px solid #e5e7eb;
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      margin-bottom: 28px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
+    .nav-link {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 10px; border-radius: 7px;
+      color: #94a3b8; font-size: 0.8125rem; font-weight: 500;
+      cursor: pointer; border: none; background: transparent;
+      width: 100%; text-align: left; transition: all 0.12s;
     }
+    .nav-link .ni { width: 18px; text-align: center; font-size: 0.875rem; flex-shrink: 0; }
+    .nav-link:hover { background: rgba(255,255,255,0.07); color: #e2e8f0; }
+    .nav-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 6px 8px; }
 
-    .section:hover {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    .sidebar-footer {
+      padding: 12px 8px; border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; gap: 4px;
     }
-
-    .section h2 {
-      font-size: 1.5rem;
-      margin: 0 0 24px 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      color: #1f2937;
+    .sfbtn {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 8px 10px; border-radius: 7px; border: none;
+      cursor: pointer; font-size: 0.8rem; font-weight: 500; text-align: left;
+      transition: all 0.12s; font-family: inherit;
     }
+    .sfbtn-home { background: rgba(255,255,255,0.06); color: #94a3b8; }
+    .sfbtn-home:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+    .sfbtn-exit { background: rgba(239,68,68,0.12); color: #fca5a5; }
+    .sfbtn-exit:hover { background: rgba(239,68,68,0.22); }
 
-    .section-toolbar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+    /* ── Main ── */
+    .dashboard-main { margin-left: 220px; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Page Header ── */
+    .page-header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 48%, #4f46e5 100%);
+      color: white; padding: 36px 44px 32px;
+      position: relative; overflow: hidden;
     }
-
-    /* 🎨 프리미엄 테이블 */
-    .staff-table {
-      width: 100%;
-      border-collapse: collapse;
+    .page-header::before {
+      content: ''; position: absolute; top: -80px; right: -50px;
+      width: 340px; height: 340px;
+      background: radial-gradient(circle, rgba(129,140,248,0.2) 0%, transparent 65%);
+      border-radius: 50%; pointer-events: none;
     }
-
-    .staff-table thead {
-      background: #f9fafb;
-      border-bottom: 2px solid #e5e7eb;
+    .page-header::after {
+      content: ''; position: absolute; bottom: -60px; left: 30%;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none;
     }
-
-    .staff-table th {
-      padding: 14px 12px;
-      text-align: left;
-      font-weight: 700;
-      font-size: 0.8125rem;
-      color: #374151;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: linear-gradient(to right, #f9fafb, #f3f4f6);
+    .ph-inner { position: relative; z-index: 1; }
+    .ph-meta { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+    .page-title { font-size: 1.875rem; font-weight: 800; margin: 0 0 5px; letter-spacing: -0.6px; }
+    .page-subtitle { margin: 0 0 22px; opacity: 0.72; font-size: 0.9rem; }
+    .header-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+    .hstat {
+      display: flex; flex-direction: column; gap: 3px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px; padding: 11px 18px; min-width: 100px;
+      backdrop-filter: blur(8px); transition: background 0.15s;
     }
+    .hstat:hover { background: rgba(255,255,255,0.16); }
+    .hstat-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.09em; opacity: 0.65; font-weight: 700; }
+    .hstat-value { font-size: 1.2rem; font-weight: 800; line-height: 1; }
 
-    .staff-table td {
-      padding: 14px 12px;
-      border-bottom: 1px solid #f3f4f6;
+    /* ── Content ── */
+    .content-area { flex: 1; padding: 28px 44px 48px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 14px; padding: 26px 30px; margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.05), 0 1px 2px rgba(15,23,42,0.03);
+      transition: box-shadow 0.18s;
     }
-
-    .staff-table tbody tr {
-      transition: all 0.2s ease;
+    .card:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.07), 0 2px 5px rgba(15,23,42,0.04); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .card-title {
+      font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0;
+      display: flex; align-items: center; gap: 10px;
     }
-
-    .staff-table tbody tr:hover {
-      background: #f9fafb;
-      box-shadow: inset 0 0 0 1px #e5e7eb;
+    .ti {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;
     }
+    .ti-blue { background: #eff6ff; }
+    .ti-purple { background: #f5f3ff; }
+    .ti-green { background: #f0fdf4; }
+    .ti-amber { background: #fffbeb; }
+    .ti-cyan { background: #ecfeff; }
+    .ti-indigo { background: #eef2ff; }
+    .ti-rose { background: #fff1f2; }
 
-    .staff-name { font-weight: 500; }
-    .staff-email { color: var(--text-secondary); font-size: 0.9375rem; }
+    /* ── Forms ── */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 5px; letter-spacing: 0.01em; }
+    .form-input {
+      width: 100%; padding: 9px 13px;
+      border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 0.9375rem; color: #0f172a; background: #f8fafc;
+      transition: all 0.14s; outline: none; font-family: inherit;
+    }
+    .form-input:focus { border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .form-input[readonly] { background: #f8fafc; color: #475569; cursor: default; }
+    select.form-input { cursor: pointer; }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+
+    /* ── Subform ── */
+    .subform { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin-top: 14px; }
+    .subform-title { font-size: 0.8125rem; font-weight: 700; color: #374151; margin: 0 0 14px; }
+
+    /* ── PIN inputs ── */
+    .pin-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 7px; margin-bottom: 12px; }
+    .pin-input {
+      width: 100%; padding: 10px 4px;
+      background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 9px;
+      font-size: 1.125rem; font-weight: 800; text-align: center; color: #0f172a;
+      outline: none; transition: all 0.14s; font-family: inherit;
+    }
+    .pin-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background: #fff; }
+    .pwd-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; }
+    .pwd-box-label { font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.14s; border: none;
+      text-decoration: none; white-space: nowrap; font-family: inherit; line-height: 1;
+    }
+    .btn-primary { background: #4f46e5; color: #fff; box-shadow: 0 1px 2px rgba(79,70,229,0.2); }
+    .btn-primary:hover { background: #4338ca; box-shadow: 0 4px 12px rgba(79,70,229,0.35); transform: translateY(-1px); }
+    .btn-secondary { background: #f1f5f9; color: #374151; border: 1px solid #e2e8f0; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-danger:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+    .btn-ghost { background: transparent; color: #64748b; border: 1px solid #e2e8f0; }
+    .btn-ghost:hover { background: #f8fafc; }
+    .btn-sm { padding: 5px 11px; font-size: 0.8rem; border-radius: 6px; }
+    .btn-xs { padding: 4px 8px; font-size: 0.75rem; border-radius: 5px; }
+
+    /* ── Tier Badges ── */
+    .tier-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .tier-free { background: #f1f5f9; color: #475569; }
+    .tier-pro { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .tier-max { background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe; }
+
+    /* ── Table ── */
+    .staff-table { width: 100%; border-collapse: collapse; }
+    .staff-table thead th {
+      padding: 10px 13px; text-align: left;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+      color: #64748b; background: #f8fafc; border-bottom: 1.5px solid #e2e8f0;
+    }
+    .staff-table tbody td {
+      padding: 12px 13px; border-bottom: 1px solid #f1f5f9;
+      font-size: 0.875rem; color: #1e293b; vertical-align: middle;
+    }
+    .staff-table tbody tr:last-child td { border-bottom: none; }
+    .staff-table tbody tr { transition: background 0.1s; }
+    .staff-table tbody tr:hover td { background: #f8fafc; }
+    .staff-name { font-weight: 600; color: #0f172a; }
+    .staff-email { color: #64748b; font-size: 0.8125rem; }
 
     .action-btn {
-      padding: 4px 10px;
-      font-size: 0.8125rem;
-      border-radius: 4px;
-      cursor: pointer;
-      border: none;
-      transition: all var(--duration) var(--ease);
+      display: inline-flex; align-items: center;
+      padding: 4px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.13s; font-family: inherit;
     }
+    .action-btn.delete { background: #fef2f2; color: #dc2626; }
+    .action-btn.delete:hover { background: #dc2626; color: #fff; }
 
-    .action-btn.delete {
-      background: var(--danger-bg);
-      color: var(--danger);
-    }
-
-    .action-btn.delete:hover {
-      background: var(--danger);
-      color: white;
-    }
-
-    .tier-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.8125rem;
-      font-weight: 600;
-    }
-
-    .tier-free { background: var(--gray-100); color: var(--text-secondary); }
-    .tier-pro { background: var(--primary-bg); color: var(--primary); }
-    .tier-max { background: var(--success-bg); color: var(--success); }
-
-    .form-group { margin-bottom: 16px; }
-    .form-label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 6px;
-      color: var(--text-primary);
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--gray-300);
-      border-radius: 6px;
-      font-size: 0.9375rem;
-      transition: border-color var(--duration) var(--ease);
-    }
-
-    .form-input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-bg);
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-secondary);
-    }
-
-    .empty-state-icon { font-size: 3rem; margin-bottom: 12px; }
-
-    .exit-btn {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      padding: 12px 20px;
-      background: var(--gray-200);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all var(--duration) var(--ease);
-    }
-
-    .exit-btn:hover {
-      background: var(--gray-300);
-      transform: translateY(-2px);
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { width: 58px; }
+      .brand-name, .sc-name, .sc-label, .nav-link .nl-text,
+      .nav-section-label, .sfbtn .sf-text { display: none; }
+      .sidebar-brand { justify-content: center; padding: 14px 10px; }
+      .nav-link { justify-content: center; padding: 10px; }
+      .sidebar-footer { align-items: center; }
+      .sfbtn { justify-content: center; padding: 9px; }
+      .dashboard-main { margin-left: 58px; }
+      .page-header, .content-area { padding-left: 22px; padding-right: 22px; }
     }
   </style>
 </head>
 <body>
   <div class="clinic-container">
-    <!-- 네비게이션 바 -->
-    <div style="margin-bottom:24px; display:flex; gap:12px; align-items:center;">
-      <a href="index.html" class="btn" style="background:var(--primary); color:white; padding:10px 18px; border-radius:6px; text-decoration:none; font-size:0.9375rem; font-weight:600; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s ease;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='var(--primary)'" title="홈으로 이동">← 홈으로 돌아가기</a>
-    </div>
-    <!-- 헤더 -->
-    <div class="clinic-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
-      <div>
-        <h1 id="clinicTitle">병원 관리</h1>
-        <p>병원 정보, 직원 관리, 요금제 변경</p>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-        <!-- 세션 배지 (js/common.js에서 생성) -->
-        <div id="sessionBadge" style="color:white;"></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn" onclick="window.location.href='index.html';" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.875rem; white-space:nowrap; margin-top:4px; font-weight:500; text-shadow: 0 1px 2px rgba(0,0,0,0.2); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">🏠 홈</button>
-          <button class="btn" onclick="exitClinic()" style="background:rgba(0,0,0,0.2); color:white; border:1px solid rgba(0,0,0,0.4); padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.875rem; white-space:nowrap; margin-top:4px; font-weight:500; text-shadow: 0 1px 2px rgba(0,0,0,0.2); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(0,0,0,0.35)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'">← 이전 단계</button>
-        </div>
-      </div>
-    </div>
-    <div style="margin-top:16px;">
-      <div class="clinic-info">
-        <div class="info-card">
-          <div class="info-label">현재 요금제</div>
-          <div class="info-value" id="tierDisplay">-</div>
-        </div>
-        <div class="info-card">
-          <div class="info-label">직원 수</div>
-          <div class="info-value" id="staffCountDisplay">-</div>
-        </div>
-        <div class="info-card">
-          <div class="info-label">가입일</div>
-          <div class="info-value" id="createdAtDisplay">-</div>
-        </div>
-      </div>
-    </div>
-    </div>
 
-    <!-- 병원 정보 -->
-    <div class="section">
-      <h2 style="display:flex; justify-content:space-between; align-items:center;">
-        🏥 병원 정보
-        <button class="btn btn-primary btn-sm" onclick="toggleEditClinicForm()">✏️ 수정</button>
-      </h2>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">병원명</label>
-          <input type="text" class="form-input" id="clinicName" readonly>
-        </div>
-        <div class="form-group">
-          <label class="form-label">대표원장</label>
-          <input type="text" class="form-input" id="directorName" readonly>
-        </div>
-        <div class="form-group">
-          <label class="form-label">지역</label>
-          <input type="text" class="form-input" id="region" readonly>
-        </div>
-        <div class="form-group">
-          <label class="form-label">가입일</label>
-          <input type="text" class="form-input" id="createdAt" readonly>
-        </div>
+    <!-- ── 사이드바 ── -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">🦷</div>
+        <span class="brand-name">Med<em>vo</em></span>
       </div>
-
-      <!-- 병원 정보 수정 폼 -->
-      <div id="editClinicFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-top:16px;">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">대표원장</label>
-            <input type="text" class="form-input" id="editDirectorName" placeholder="홍길동">
-          </div>
-          <div class="form-group">
-            <label class="form-label">지역</label>
-            <input type="text" class="form-input" id="editRegion" placeholder="예: 서울 강남">
-          </div>
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="updateClinicInfo()">저장</button>
-          <button class="btn btn-secondary btn-sm" onclick="toggleEditClinicForm()">취소</button>
-        </div>
+      <div class="sidebar-clinic">
+        <div class="sc-label">현재 병원</div>
+        <div class="sc-name" id="sidebarClinicLabel">병원 관리</div>
       </div>
-    </div>
-
-    <!-- 병원관리 로그인 비밀번호 변경 -->
-    <div class="section" id="clinicPasswordSection">
-      <h2>🏥 병원관리 로그인 비밀번호</h2>
-      <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:16px;">
-        병원 관리 대시보드에 접근할 때 사용하는 6자리 비밀번호입니다. 이 비밀번호를 변경할 수 있습니다.
-      </p>
-      <div style="background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:16px;">
-        <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:12px;">현재 설정</div>
-        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px;">
-          <input type="text" readonly class="form-input" id="clinicCurrentPwd1" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="clinicCurrentPwd2" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="clinicCurrentPwd3" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="clinicCurrentPwd4" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="clinicCurrentPwd5" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="clinicCurrentPwd6" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-        </div>
-        <div style="display:flex; gap:12px;">
-          <button class="btn btn-secondary btn-sm" onclick="toggleClinicPasswordDisplay(this)">숨김</button>
-          <span style="font-size:0.875rem; color:var(--text-secondary);">설정됨</span>
-        </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">관리</div>
+        <button class="nav-link" onclick="document.getElementById('sec-info').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">🏥</span><span class="nl-text">병원 정보</span>
+        </button>
+        <button class="nav-link" onclick="document.getElementById('sec-clinic-pwd').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">🔐</span><span class="nl-text">병원 비밀번호</span>
+        </button>
+        <button class="nav-link" onclick="document.getElementById('sec-staff-pwd').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">🔑</span><span class="nl-text">직원 비밀번호</span>
+        </button>
+        <button class="nav-link" onclick="document.getElementById('sec-staff').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">👥</span><span class="nl-text">직원 관리</span>
+        </button>
+        <div class="nav-divider"></div>
+        <div class="nav-section-label">통역 AI</div>
+        <button class="nav-link" onclick="document.getElementById('sec-insights').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">📊</span><span class="nl-text">통역 인사이트</span>
+        </button>
+        <button class="nav-link" onclick="document.getElementById('sec-logs').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">🌐</span><span class="nl-text">통역 기록</span>
+        </button>
+        <div class="nav-divider"></div>
+        <div class="nav-section-label">계정</div>
+        <button class="nav-link" onclick="document.getElementById('sec-plan').scrollIntoView({behavior:'smooth'})">
+          <span class="ni">💳</span><span class="nl-text">요금제</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sfbtn sfbtn-home" onclick="window.location.href='index.html'">
+          <span>🏠</span><span class="sf-text">홈으로</span>
+        </button>
+        <button class="sfbtn sfbtn-exit" onclick="exitClinic()">
+          <span>←</span><span class="sf-text">나가기</span>
+        </button>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="toggleClinicPasswordForm()">비밀번호 변경</button>
+    </aside>
 
-      <!-- 비밀번호 변경 폼 -->
-      <div id="clinicPasswordFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-top:16px;">
-        <div class="form-group">
-          <label class="form-label">새 비밀번호 (숫자 6자리)</label>
-          <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:16px;">
-            <input type="text" class="form-input" id="clinicNewPwd1" placeholder="1" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="clinicNewPwd2" placeholder="2" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="clinicNewPwd3" placeholder="3" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="clinicNewPwd4" placeholder="4" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="clinicNewPwd5" placeholder="5" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="clinicNewPwd6" placeholder="6" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
+    <!-- ── 메인 ── -->
+    <div class="dashboard-main">
+
+      <!-- 페이지 헤더 -->
+      <header class="page-header">
+        <div class="ph-inner">
+          <div class="ph-meta"><div id="sessionBadge"></div></div>
+          <h1 id="clinicTitle" class="page-title">병원 관리 대시보드</h1>
+          <p class="page-subtitle">병원 정보, 직원 관리, 통역 인사이트</p>
+          <div class="header-stats">
+            <div class="hstat">
+              <span class="hstat-label">요금제</span>
+              <span class="hstat-value" id="tierDisplay">-</span>
+            </div>
+            <div class="hstat">
+              <span class="hstat-label">직원 수</span>
+              <span class="hstat-value"><span id="staffCountDisplay">-</span> 명</span>
+            </div>
+            <div class="hstat">
+              <span class="hstat-label">가입일</span>
+              <span class="hstat-value" id="createdAtDisplay" style="font-size:0.85rem;">-</span>
+            </div>
           </div>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="updateClinicPassword()">저장</button>
-          <button class="btn btn-secondary btn-sm" onclick="toggleClinicPasswordForm()">취소</button>
-        </div>
-      </div>
-    </div>
+      </header>
 
-    <!-- 직원로그인 비밀번호 변경 -->
-    <div class="section" id="staffPasswordSection">
-      <h2>🔐 직원로그인 비밀번호</h2>
-      <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:16px;">
-        직원들이 로그인할 때 사용하는 6자리 비밀번호를 변경할 수 있습니다.
-      </p>
-      <div style="background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:16px;">
-        <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:12px;">현재 설정</div>
-        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px;">
-          <input type="text" readonly class="form-input" id="currentPwd1" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="currentPwd2" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="currentPwd3" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="currentPwd4" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="currentPwd5" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-          <input type="text" readonly class="form-input" id="currentPwd6" value="•" style="text-align:center; font-size:1.5rem; font-weight:700; background:var(--bg-base);">
-        </div>
-        <div style="display:flex; gap:12px;">
-          <button class="btn btn-secondary btn-sm" onclick="togglePasswordDisplay(this)">숨김</button>
-          <span style="font-size:0.875rem; color:var(--text-secondary);">설정됨</span>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="togglePasswordForm()">비밀번호 변경</button>
+      <!-- 콘텐츠 -->
+      <div class="content-area">
 
-      <!-- 비밀번호 변경 폼 -->
-      <div id="passwordFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-top:16px;">
-        <div class="form-group">
-          <label class="form-label">새 비밀번호 (숫자 6자리)</label>
-          <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:16px;">
-            <input type="text" class="form-input" id="newPwd1" placeholder="1" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="newPwd2" placeholder="2" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="newPwd3" placeholder="3" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="newPwd4" placeholder="4" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="newPwd5" placeholder="5" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            <input type="text" class="form-input" id="newPwd6" placeholder="6" maxlength="1" pattern="\\d" inputmode="numeric" style="text-align:center; font-size:1.5rem; font-weight:700;">
+        <!-- 병원 정보 -->
+        <div class="card" id="sec-info">
+          <div class="card-header">
+            <h2 class="card-title"><span class="ti ti-blue">🏥</span>병원 정보</h2>
+            <button class="btn btn-secondary btn-sm" onclick="toggleEditClinicForm()">✏️ 수정</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">병원명</label>
+              <input type="text" class="form-input" id="clinicName" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">대표원장</label>
+              <input type="text" class="form-input" id="directorName" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">지역</label>
+              <input type="text" class="form-input" id="region" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">가입일</label>
+              <input type="text" class="form-input" id="createdAt" readonly>
+            </div>
+          </div>
+          <div id="editClinicFormContainer" style="display:none;" class="subform">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">대표원장</label>
+                <input type="text" class="form-input" id="editDirectorName" placeholder="홍길동">
+              </div>
+              <div class="form-group">
+                <label class="form-label">지역</label>
+                <input type="text" class="form-input" id="editRegion" placeholder="예: 서울 강남">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="updateClinicInfo()">저장</button>
+              <button class="btn btn-secondary btn-sm" onclick="toggleEditClinicForm()">취소</button>
+            </div>
           </div>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="updatePassword()">저장</button>
-          <button class="btn btn-secondary btn-sm" onclick="togglePasswordForm()">취소</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- 직원 관리 -->
-    <div class="section">
-      <h2>👥 직원 관리</h2>
-      <div class="section-toolbar">
-        <button class="btn btn-primary btn-sm" onclick="showStaffForm()">➕ 직원 추가</button>
-      </div>
-
-      <!-- 직원 추가 폼 -->
-      <div id="staffFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:20px;">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">이름</label>
-            <input type="text" class="form-input" id="newStaffName" placeholder="예: 김치과 의사">
+        <!-- 병원관리 비밀번호 -->
+        <div class="card" id="sec-clinic-pwd">
+          <div class="card-header">
+            <h2 class="card-title"><span class="ti ti-purple">🔐</span>병원관리 비밀번호</h2>
+            <button class="btn btn-secondary btn-sm" onclick="toggleClinicPasswordForm()">변경</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">이메일</label>
-            <input type="email" class="form-input" id="newStaffEmail" placeholder="staff@clinic.com">
+          <p style="color:#64748b;font-size:0.875rem;margin:0 0 14px;">병원 관리 대시보드 접근에 사용하는 6자리 비밀번호입니다.</p>
+          <div class="pwd-box">
+            <div class="pwd-box-label">현재 비밀번호</div>
+            <div class="pin-grid">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd1" value="•">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd2" value="•">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd3" value="•">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd4" value="•">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd5" value="•">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd6" value="•">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleClinicPasswordDisplay(this)">숨김</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">휴대폰</label>
-            <input type="tel" class="form-input" id="newStaffPhone" placeholder="010-1234-5678">
-          </div>
-          <div class="form-group">
-            <label class="form-label">직급</label>
-            <select class="form-input" id="newStaffRole">
-              <option value="대표원장">대표원장</option>
-              <option value="원장">원장</option>
-              <option value="의사">의사</option>
-              <option value="상담실장">상담실장</option>
-              <option value="간호사">간호사</option>
-              <option value="위생사">위생사</option>
-            </select>
+          <div id="clinicPasswordFormContainer" style="display:none;" class="subform">
+            <div class="subform-title">새 비밀번호 (숫자 6자리)</div>
+            <div class="pin-grid">
+              <input type="text" class="pin-input" id="clinicNewPwd1" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="clinicNewPwd2" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="clinicNewPwd3" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="clinicNewPwd4" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="clinicNewPwd5" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="clinicNewPwd6" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="updateClinicPassword()">저장</button>
+              <button class="btn btn-secondary btn-sm" onclick="toggleClinicPasswordForm()">취소</button>
+            </div>
           </div>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="addStaff()">저장</button>
-          <button class="btn btn-secondary btn-sm" onclick="hideStaffForm()">취소</button>
-        </div>
-      </div>
 
-      <!-- 직원 수정 폼 -->
-      <div id="editStaffFormContainer" style="display:none; background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:20px;">
-        <h3 style="margin-top:0; font-size:1rem;">직원 정보 수정</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">휴대폰</label>
-            <input type="tel" class="form-input" id="editStaffPhone" placeholder="010-1234-5678">
+        <!-- 직원로그인 비밀번호 -->
+        <div class="card" id="sec-staff-pwd">
+          <div class="card-header">
+            <h2 class="card-title"><span class="ti ti-green">🔑</span>직원로그인 비밀번호</h2>
+            <button class="btn btn-secondary btn-sm" onclick="togglePasswordForm()">변경</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">직급</label>
-            <select class="form-input" id="editStaffRole">
-              <option value="대표원장">대표원장</option>
-              <option value="원장">원장</option>
-              <option value="의사">의사</option>
-              <option value="상담실장">상담실장</option>
-              <option value="간호사">간호사</option>
-              <option value="위생사">위생사</option>
-            </select>
+          <p style="color:#64748b;font-size:0.875rem;margin:0 0 14px;">직원들이 로그인할 때 사용하는 6자리 비밀번호입니다.</p>
+          <div class="pwd-box">
+            <div class="pwd-box-label">현재 비밀번호</div>
+            <div class="pin-grid">
+              <input type="text" readonly class="pin-input" id="currentPwd1" value="•">
+              <input type="text" readonly class="pin-input" id="currentPwd2" value="•">
+              <input type="text" readonly class="pin-input" id="currentPwd3" value="•">
+              <input type="text" readonly class="pin-input" id="currentPwd4" value="•">
+              <input type="text" readonly class="pin-input" id="currentPwd5" value="•">
+              <input type="text" readonly class="pin-input" id="currentPwd6" value="•">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="togglePasswordDisplay(this)">숨김</button>
+          </div>
+          <div id="passwordFormContainer" style="display:none;" class="subform">
+            <div class="subform-title">새 비밀번호 (숫자 6자리)</div>
+            <div class="pin-grid">
+              <input type="text" class="pin-input" id="newPwd1" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="newPwd2" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="newPwd3" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="newPwd4" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="newPwd5" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+              <input type="text" class="pin-input" id="newPwd6" placeholder="·" maxlength="1" pattern="\d" inputmode="numeric">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="updatePassword()">저장</button>
+              <button class="btn btn-secondary btn-sm" onclick="togglePasswordForm()">취소</button>
+            </div>
           </div>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="updateStaff()">저장</button>
-          <button class="btn btn-secondary btn-sm" onclick="hideEditStaffForm()">취소</button>
-        </div>
-      </div>
 
-      <!-- 직원 목록 -->
-      <div id="staffTableContainer">
-        <table class="staff-table">
-          <thead>
-            <tr>
-              <th>이름</th>
-              <th>이메일</th>
-              <th>휴대폰</th>
-              <th>직급</th>
-              <th>가입일</th>
-              <th style="width:200px;">작업</th>
-            </tr>
-          </thead>
-          <tbody id="staffTableBody">
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 통역 인사이트 -->
-    <div class="section">
-      <h2>📊 통역 인사이트 <span id="insightBadge" style="font-size:0.75rem;font-weight:500;color:var(--text-secondary);margin-left:8px;">최근 6개월</span></h2>
-      <div id="insightContainer">
-        <div style="text-align:center;padding:32px;color:var(--text-secondary);">불러오는 중...</div>
-      </div>
-
-      <!-- AI 요약 레포트 -->
-      <div style="margin-top:28px;border-top:1px solid var(--gray-200);padding-top:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <div>
-            <div style="font-weight:700;font-size:0.875rem;color:#374151;">🤖 AI 요약 레포트</div>
-            <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">최근 30일 데이터를 AI가 분석하여 원장님께 드리는 인사이트</div>
+        <!-- 직원 관리 -->
+        <div class="card" id="sec-staff">
+          <div class="card-header">
+            <h2 class="card-title"><span class="ti ti-amber">👥</span>직원 관리</h2>
+            <button class="btn btn-primary btn-sm" onclick="showStaffForm()">➕ 직원 추가</button>
           </div>
-          <button id="genSummaryBtn" onclick="generateAISummary()"
-            style="padding:10px 20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity 0.2s;"
-            onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-            ✨ AI 레포트 생성
-          </button>
+          <div id="staffFormContainer" style="display:none;" class="subform">
+            <div class="subform-title">새 직원 등록</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">이름</label>
+                <input type="text" class="form-input" id="newStaffName" placeholder="예: 김치과 의사">
+              </div>
+              <div class="form-group">
+                <label class="form-label">이메일</label>
+                <input type="email" class="form-input" id="newStaffEmail" placeholder="staff@clinic.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">휴대폰</label>
+                <input type="tel" class="form-input" id="newStaffPhone" placeholder="010-1234-5678">
+              </div>
+              <div class="form-group">
+                <label class="form-label">직급</label>
+                <select class="form-input" id="newStaffRole">
+                  <option value="대표원장">대표원장</option>
+                  <option value="원장">원장</option>
+                  <option value="의사">의사</option>
+                  <option value="상담실장">상담실장</option>
+                  <option value="간호사">간호사</option>
+                  <option value="위생사">위생사</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="addStaff()">저장</button>
+              <button class="btn btn-secondary btn-sm" onclick="hideStaffForm()">취소</button>
+            </div>
+          </div>
+          <div id="editStaffFormContainer" style="display:none;" class="subform">
+            <div class="subform-title">직원 정보 수정</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">휴대폰</label>
+                <input type="tel" class="form-input" id="editStaffPhone" placeholder="010-1234-5678">
+              </div>
+              <div class="form-group">
+                <label class="form-label">직급</label>
+                <select class="form-input" id="editStaffRole">
+                  <option value="대표원장">대표원장</option>
+                  <option value="원장">원장</option>
+                  <option value="의사">의사</option>
+                  <option value="상담실장">상담실장</option>
+                  <option value="간호사">간호사</option>
+                  <option value="위생사">위생사</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="updateStaff()">저장</button>
+              <button class="btn btn-secondary btn-sm" onclick="hideEditStaffForm()">취소</button>
+            </div>
+          </div>
+          <div id="staffTableContainer">
+            <table class="staff-table">
+              <thead>
+                <tr>
+                  <th>이름</th><th>이메일</th><th>휴대폰</th><th>직급</th><th>가입일</th>
+                  <th style="width:190px;">작업</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody"></tbody>
+            </table>
+          </div>
         </div>
-        <div id="aiSummaryContainer" style="display:none;"></div>
-      </div>
-    </div>
 
-    <!-- 통역 기록 -->
-    <div class="section">
-      <h2>🌐 상담 통역 기록</h2>
-      <div id="translateLogContainer">
-        <div style="text-align:center; padding:32px; color:var(--text-secondary);">불러오는 중...</div>
-      </div>
-      <div id="translateLogPaging" style="display:none; margin-top:16px; display:flex; gap:8px; align-items:center; justify-content:flex-end;">
-        <button class="btn btn-secondary btn-sm" id="tlPrevBtn" onclick="loadTranslateLogs('prev')">◀ 이전</button>
-        <span id="tlPageInfo" style="font-size:0.875rem; color:var(--text-secondary);"></span>
-        <button class="btn btn-secondary btn-sm" id="tlNextBtn" onclick="loadTranslateLogs('next')">다음 ▶</button>
-      </div>
-    </div>
+        <!-- 통역 인사이트 -->
+        <div class="card" id="sec-insights">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="ti ti-cyan">📊</span>통역 인사이트
+              <span id="insightBadge" style="font-size:0.68rem;font-weight:500;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:8px;margin-left:4px;">최근 6개월</span>
+            </h2>
+          </div>
+          <div id="insightContainer">
+            <div style="text-align:center;padding:32px;color:#64748b;">불러오는 중...</div>
+          </div>
+          <div style="margin-top:24px;border-top:1px solid #f1f5f9;padding-top:22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+              <div>
+                <div style="font-weight:700;font-size:0.875rem;color:#0f172a;">🤖 AI 월간 레포트</div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:2px;">최근 30일 데이터를 AI가 분석하여 원장님께 드리는 인사이트</div>
+              </div>
+              <button id="genSummaryBtn" onclick="generateAISummary()"
+                style="padding:9px 18px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.15s;box-shadow:0 2px 8px rgba(124,58,237,0.28);"
+                onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 14px rgba(124,58,237,0.4)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(124,58,237,0.28)'">
+                ✨ AI 레포트 생성
+              </button>
+            </div>
+            <div id="aiSummaryContainer" style="display:none;"></div>
+          </div>
+        </div>
 
-    <!-- 요금제 정보 (읽기 전용) -->
-    <div class="section">
-      <h2>💳 현재 요금제</h2>
-      <div class="info-card" style="background:var(--primary-bg); border:1px solid var(--primary); padding:16px; border-radius:8px; display:inline-block;">
-        <div class="info-label" style="color:var(--primary);">요금제</div>
-        <div class="info-value" style="color:var(--primary);" id="tierInfo">-</div>
-      </div>
-      <p style="color:var(--text-secondary); font-size:0.875rem; margin-top:12px;">
-        💡 요금제 변경은 시스템 관리자 대시보드에서만 가능합니다.
-      </p>
-    </div>
-  </div>
+        <!-- 통역 기록 -->
+        <div class="card" id="sec-logs">
+          <div class="card-header">
+            <h2 class="card-title"><span class="ti ti-indigo">🌐</span>상담 통역 기록</h2>
+          </div>
+          <div id="translateLogContainer">
+            <div style="text-align:center;padding:32px;color:#64748b;">불러오는 중...</div>
+          </div>
+          <div id="translateLogPaging" style="display:none;margin-top:14px;display:flex;gap:8px;align-items:center;justify-content:flex-end;">
+            <button class="btn btn-secondary btn-sm" id="tlPrevBtn" onclick="loadTranslateLogs('prev')">◀ 이전</button>
+            <span id="tlPageInfo" style="font-size:0.8125rem;color:#64748b;"></span>
+            <button class="btn btn-secondary btn-sm" id="tlNextBtn" onclick="loadTranslateLogs('next')">다음 ▶</button>
+          </div>
+        </div>
 
-  <!-- 나가기 버튼 -->
-  <button class="exit-btn" onclick="exitClinic()">🚪 나가기</button>
+        <!-- 요금제 -->
+        <div class="card" id="sec-plan">
+          <div class="card-header">
+            <h2 class="card-title"><span class="ti ti-rose">💳</span>현재 요금제</h2>
+          </div>
+          <div style="display:inline-flex;flex-direction:column;gap:5px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 22px;">
+            <div style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;">요금제</div>
+            <div style="font-size:1.5rem;font-weight:800;color:#0f172a;" id="tierInfo">-</div>
+          </div>
+          <p style="color:#64748b;font-size:0.875rem;margin-top:12px;">💡 요금제 변경은 시스템 관리자 대시보드에서만 가능합니다.</p>
+        </div>
+
+      </div><!-- /content-area -->
+    </div><!-- /dashboard-main -->
+  </div><!-- /clinic-container -->
 
   <!-- 병원 관리자 인증 모달 -->
   <div class="modal-overlay" id="clinicAuthModal">
@@ -829,9 +865,11 @@
           console.error('[loadClinicInfo] localStorage 업데이트 실패:', e);
         }
 
-        // 대시보드 제목 업데이트
+        // 대시보드 제목 + 사이드바 업데이트
         const titleEl = document.getElementById('clinicTitle');
         if (titleEl) titleEl.textContent = `${clinicData.name} 관리 대시보드`;
+        const sidebarLabel = document.getElementById('sidebarClinicLabel');
+        if (sidebarLabel) sidebarLabel.textContent = clinicData.name;
 
         // 병원 정보 표시
         const clinicNameEl = document.getElementById('clinicName');
@@ -1162,13 +1200,55 @@
       uz:'Oʻzbekcha', kk:'Қазақша', tl:'Filipino', my:'မြန်မာ', km:'ខ្មែរ', hi:'हिन्दी'
     };
 
+    // 로그 키워드 5개 추출 (환자 발화 기준)
+    const TL_STOP = new Set([
+      '이','가','을','를','은','는','의','에','에서','과','와','도','으로','로','이다',
+      '있다','없다','그','저','것','수','때','등','및','더','좀','제','어떻게','어디',
+      '언제','왜','뭐','아','네','예','아니요','안','못','할','하다','해요','해서',
+      '있어요','없어요','같아요','싶어요','주세요','해주세요','합니다','입니다',
+      '치과','병원','선생님','의사','저는','제가','우리','나는','나','저','그게',
+    ]);
+    function extractLogKeywords(messages) {
+      const wc = {};
+      (messages || []).forEach(m => {
+        if (m.who !== 'patient' || !m.original) return;
+        (m.original.match(/[가-힣]{2,}|[a-zA-Z]{4,}/g) || []).forEach(w => {
+          if (!TL_STOP.has(w) && !TL_STOP.has(w.toLowerCase()))
+            wc[w] = (wc[w] || 0) + 1;
+        });
+      });
+      return Object.entries(wc).sort((a,b) => b[1]-a[1]).slice(0,5).map(([w]) => w);
+    }
+
+    // 상담 결과 추론 (환자/직원 마지막 발화 기반 휴리스틱)
+    const CONFIRM_KW = ['예약','확정','다음','방문','진행','치료','해드릴','결정','오세요','접수'];
+    const HOLD_KW    = ['생각','고민','상담후','연락','알아보고','다시','나중에','부담','비용'];
+    const REJECT_KW  = ['괜찮아요','아니에요','안할','취소','싫어요','안해','필요없','다음에'];
+    function inferOutcome(messages) {
+      if (!messages || !messages.length) return null;
+      const last5 = messages.slice(-5).map(m => (m.translated || m.original || '').toLowerCase());
+      const joined = last5.join(' ');
+      const cScore = CONFIRM_KW.filter(k => joined.includes(k)).length;
+      const hScore = HOLD_KW.filter(k => joined.includes(k)).length;
+      const rScore = REJECT_KW.filter(k => joined.includes(k)).length;
+      if (cScore === 0 && hScore === 0 && rScore === 0) return null;
+      if (cScore >= hScore && cScore >= rScore) return 'confirm';
+      if (rScore >= hScore) return 'reject';
+      return 'hold';
+    }
+    const OUTCOME_META = {
+      confirm: { label: '치료확정', bg: '#dcfce7', color: '#15803d', dot: '#22c55e' },
+      hold:    { label: '보류',     bg: '#fef9c3', color: '#b45309', dot: '#eab308' },
+      reject:  { label: '거절',     bg: '#fee2e2', color: '#b91c1c', dot: '#ef4444' },
+    };
+
     function renderTranslateLogs(logs, total) {
       const container = document.getElementById('translateLogContainer');
       const pagingEl  = document.getElementById('translateLogPaging');
 
       if (!logs.length) {
         container.innerHTML = `
-          <div style="text-align:center;padding:40px;color:var(--text-secondary);">
+          <div style="text-align:center;padding:40px;color:#64748b;">
             <div style="font-size:2.5rem;margin-bottom:12px;">🌐</div>
             <div>저장된 통역 기록이 없습니다.</div>
           </div>`;
@@ -1188,6 +1268,11 @@
           : 0;
         const globalIdx = tlOffset + i;
 
+        // 키워드 + 상담 결과
+        const keywords = extractLogKeywords(log.messages);
+        const outcome  = inferOutcome(log.messages);
+        const om       = outcome ? OUTCOME_META[outcome] : null;
+
         const msgHtml = Array.isArray(log.messages) ? log.messages.map(m => `
           <div style="margin-bottom:10px; padding:10px 12px; border-radius:8px;
                background:${m.who === 'patient' ? '#eff6ff' : '#f0fdf4'};
@@ -1199,28 +1284,40 @@
             ${m.translated ? `<div style="font-size:0.8rem;color:#555;margin-top:4px;border-top:1px solid rgba(0,0,0,0.06);padding-top:4px;">${escapeHTML(m.translated)}</div>` : ''}
           </div>`).join('') : '';
 
+        const kwHtml = keywords.length
+          ? keywords.map(k => `<span style="background:#f1f5f9;color:#374151;border-radius:5px;padding:2px 7px;font-size:0.68rem;font-weight:600;">${escapeHTML(k)}</span>`).join('')
+          : '';
+        const outcomeHtml = om
+          ? `<span style="display:inline-flex;align-items:center;gap:4px;background:${om.bg};color:${om.color};border-radius:6px;padding:2px 8px;font-size:0.68rem;font-weight:700;white-space:nowrap;">
+               <span style="width:6px;height:6px;border-radius:50%;background:${om.dot};display:inline-block;"></span>${om.label}
+             </span>`
+          : '';
+
         return `
-          <div style="border:1px solid var(--gray-200);border-radius:10px;margin-bottom:12px;overflow:hidden;">
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                 padding:12px 16px;background:#f9fafb;cursor:pointer;user-select:none;"
+          <div style="border:1px solid #e2e8f0;border-radius:11px;margin-bottom:10px;overflow:hidden;background:#fff;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 3px 10px rgba(15,23,42,0.07)'" onmouseout="this.style.boxShadow=''">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8fafc;cursor:pointer;user-select:none;border-bottom:1px solid #f1f5f9;"
                  onclick="toggleTL(${globalIdx})">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <span style="font-size:1.1rem;">🌐</span>
-                <div>
-                  <div style="font-weight:600;font-size:0.9rem;">${pLang} ↔ ${sLang}</div>
-                  <div style="font-size:0.775rem;color:var(--text-secondary);">${dateStr} ${timeStr} · ${msgCount}개 대화 · ${dur}분</div>
+              <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                <span style="font-size:1rem;flex-shrink:0;">🌐</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-weight:700;font-size:0.875rem;color:#0f172a;">${pLang} ↔ ${sLang}</span>
+                    ${outcomeHtml}
+                  </div>
+                  <div style="font-size:0.72rem;color:#64748b;margin-top:3px;">${dateStr} ${timeStr} · ${msgCount}개 대화 · ${dur}분</div>
+                  ${kwHtml ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${kwHtml}</div>` : ''}
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px;">
                 <button id="tl-ai-btn-${globalIdx}" onclick="event.stopPropagation();generateSessionSummary(${globalIdx})"
-                  style="padding:4px 10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                  style="padding:4px 10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 4px rgba(124,58,237,0.25);">
                   🤖 AI 분석
                 </button>
-                <span id="tl-arrow-${globalIdx}" style="color:var(--text-secondary);font-size:0.875rem;">▼</span>
+                <span id="tl-arrow-${globalIdx}" style="color:#94a3b8;font-size:0.8rem;">▼</span>
               </div>
             </div>
             <div id="tl-body-${globalIdx}" style="display:none;padding:16px;max-height:500px;overflow-y:auto;">
-              ${msgHtml || '<div style="color:var(--text-secondary);font-size:0.875rem;">대화 내용 없음</div>'}
+              ${msgHtml || '<div style="color:#64748b;font-size:0.875rem;">대화 내용 없음</div>'}
               <div id="tl-ai-${globalIdx}"></div>
             </div>
           </div>`;
