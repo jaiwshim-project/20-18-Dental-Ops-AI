@@ -835,13 +835,15 @@ function startSession() {
   if (currentSession) return;
   const patient = getSelectedPatient();
   const author = Session.get();
+  // clinic_id: 세션 → URL 파라미터 순으로 폴백
+  const urlClinicId = new URLSearchParams(window.location.search).get('clinic_id') || '';
   currentSession = {
     id: 'SES_' + Date.now(),
     patientId: patient?.id || null,
     patientName: patient?.name || '익명',
     author: author?.name || '익명',
     clinic: author?.clinic || '',
-    clinic_id: author?.clinic_id || '',
+    clinic_id: author?.clinic_id || urlClinicId,
     staff_id: author?.userId || '',
     startedAt: Date.now(),
     endedAt: null,

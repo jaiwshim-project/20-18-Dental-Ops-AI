@@ -57,12 +57,13 @@ module.exports = async (req, res) => {
       });
     }
 
-    // clinic_id로 필터 + type='session' (또는 type 없는 것도 포함)
+    // clinic_id 매칭 + clinic_id가 없는 레코드도 포함 (구버전 호환)
     const logs = (allLogs || []).filter(l =>
       l.metadata &&
-      l.metadata.clinic_id === clinic_id &&
+      (l.metadata.clinic_id === clinic_id || !l.metadata.clinic_id) &&
       (l.metadata.type === 'session' || !l.metadata.type)
     );
+    const unlinkedCount = logs.filter(l => !l.metadata.clinic_id).length;
 
     if (!logs.length) {
       // 어떤 clinic_id / type 값이 실제로 저장되어 있는지 진단
@@ -148,6 +149,7 @@ module.exports = async (req, res) => {
         avg_duration_min: avgDurationMin,
         avg_turns: avgTurns,
         evaluated_count: evaluatedCount,
+        unlinked_count: unlinkedCount,
       },
       by_staff: byStaff,
       monthly,
