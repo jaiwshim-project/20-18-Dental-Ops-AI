@@ -485,6 +485,22 @@
       <div id="insightContainer">
         <div style="text-align:center;padding:32px;color:var(--text-secondary);">불러오는 중...</div>
       </div>
+
+      <!-- AI 요약 레포트 -->
+      <div style="margin-top:28px;border-top:1px solid var(--gray-200);padding-top:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-weight:700;font-size:0.875rem;color:#374151;">🤖 AI 요약 레포트</div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">최근 30일 데이터를 AI가 분석하여 원장님께 드리는 인사이트</div>
+          </div>
+          <button id="genSummaryBtn" onclick="generateAISummary()"
+            style="padding:10px 20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity 0.2s;"
+            onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            ✨ AI 레포트 생성
+          </button>
+        </div>
+        <div id="aiSummaryContainer" style="display:none;"></div>
+      </div>
     </div>
 
     <!-- 통역 기록 -->
@@ -1037,6 +1053,80 @@
 
       document.getElementById('insightContainer').innerHTML =
         summaryHtml + twoColHtml + monthHtml + hourHtml + kwHtml;
+    }
+
+    // ── AI 요약 레포트 ──
+    async function generateAISummary() {
+      if (!clinicId) return;
+      const btn = document.getElementById('genSummaryBtn');
+      const box = document.getElementById('aiSummaryContainer');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ AI 분석 중...';
+      box.style.display = 'block';
+      box.innerHTML = `
+        <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:24px;text-align:center;color:#6d28d9;">
+          <div style="font-size:1.5rem;margin-bottom:10px;">🤖</div>
+          <div style="font-weight:600;margin-bottom:6px;">AI가 데이터를 분석하고 있습니다...</div>
+          <div style="font-size:0.8rem;opacity:0.8;">최근 30일 통역 기록을 기반으로 원장님께 드릴 인사이트를 생성 중입니다.</div>
+        </div>`;
+
+      try {
+        const res = await fetch('/api/translate-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinic_id: clinicId, clinic_name: clinicData?.name || '' })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'API 오류');
+        if (data.reason === 'no_data') {
+          box.innerHTML = `<div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:10px;padding:20px;color:#92400e;font-size:0.875rem;">
+            최근 30일간 통역 기록이 없습니다. 상담 AI 통역 사용 후 다시 시도해주세요.
+          </div>`;
+          return;
+        }
+
+        // 마크다운 → HTML 간단 변환
+        const html = (data.summary || '')
+          .replace(/^### (.+)$/gm, '<h4 style="font-size:0.9rem;font-weight:700;color:#374151;margin:16px 0 6px;">$1</h4>')
+          .replace(/^## (.+)$/gm,  '<h3 style="font-size:1rem;font-weight:700;color:#1f2937;margin:18px 0 8px;">$1</h3>')
+          .replace(/^# (.+)$/gm,   '<h2 style="font-size:1.1rem;font-weight:800;color:#111827;margin:20px 0 10px;">$1</h2>')
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/^- (.+)$/gm,   '<li style="margin-bottom:4px;">$1</li>')
+          .replace(/(<li.*<\/li>\n?)+/g, '<ul style="margin:6px 0 10px 16px;padding:0;">$&</ul>')
+          .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
+          .replace(/\n/g, '<br>');
+
+        const modelLabel = { claude:'Claude AI', gemini:'Gemini AI', 'geo-aio':'GPT-4o' }[data.model] || 'AI';
+
+        box.innerHTML = `
+          <div style="background:linear-gradient(135deg,#faf5ff,#f5f3ff);border:1px solid #ddd6fe;border-radius:12px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+              <div style="font-weight:700;font-size:0.9rem;color:#6d28d9;">🤖 ${modelLabel} 분석 레포트</div>
+              <div style="font-size:0.7rem;color:var(--text-secondary);">
+                분석 기간: ${escapeHTML(data.data_period)} · 총 ${data.total_logs}건 기반
+              </div>
+            </div>
+            <div style="font-size:0.875rem;line-height:1.75;color:#1f2937;"><p style="margin:8px 0;">${html}</p></div>
+            <div style="margin-top:20px;padding-top:14px;border-top:1px solid #ede9fe;display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:0.7rem;color:var(--text-secondary);">
+                생성: ${new Date(data.generated_at).toLocaleString('ko-KR')}
+              </div>
+              <button onclick="generateAISummary()" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:0.75rem;cursor:pointer;">
+                🔄 재생성
+              </button>
+            </div>
+          </div>`;
+      } catch(e) {
+        box.innerHTML = `<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:16px;color:#dc2626;font-size:0.875rem;">
+          오류: ${escapeHTML(e.message)}<br>
+          <span style="font-size:0.8rem;opacity:0.8;">AI API 키(CLAUDE_API_KEY 또는 GEMINI_API_KEY)가 설정되어 있는지 확인해주세요.</span>
+        </div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✨ AI 레포트 생성';
+      }
     }
 
     // ── 통역 기록 ──
