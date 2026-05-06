@@ -65,10 +65,16 @@ module.exports = async (req, res) => {
     );
 
     if (!logs.length) {
+      // 어떤 clinic_id / type 값이 실제로 저장되어 있는지 진단
+      const distinctClinicIds = [...new Set((allLogs || []).map(l => l.metadata?.clinic_id ?? '(없음)'))];
+      const distinctTypes     = [...new Set((allLogs || []).map(l => l.metadata?.type     ?? '(없음)'))];
       return res.status(200).json({
         empty: true,
         reason: 'no_match',
         debug_total_records: debugTotal,
+        debug_your_clinic_id: clinic_id,
+        debug_stored_clinic_ids: distinctClinicIds,
+        debug_stored_types: distinctTypes,
       });
     }
 
