@@ -691,11 +691,57 @@
           <div class="card-header">
             <h2 class="card-title"><span class="ti ti-rose">💳</span>현재 요금제</h2>
           </div>
-          <div style="display:inline-flex;flex-direction:column;gap:5px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 22px;">
-            <div style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;">요금제</div>
+          <!-- 현재 요금제 배지 -->
+          <div style="display:inline-flex;flex-direction:column;gap:5px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 22px;margin-bottom:20px;">
+            <div style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;">현재 요금제</div>
             <div style="font-size:1.5rem;font-weight:800;color:#0f172a;" id="tierInfo">-</div>
           </div>
-          <p style="color:#64748b;font-size:0.875rem;margin-top:12px;">💡 요금제 변경은 시스템 관리자 대시보드에서만 가능합니다.</p>
+
+          <!-- 요금제 비교표 -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;">
+            <!-- Free -->
+            <div id="plan-free" style="border:2px solid #e2e8f0;border-radius:14px;padding:18px 16px;position:relative;transition:all 0.15s;">
+              <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:8px;">FREE</div>
+              <div style="font-size:1.5rem;font-weight:800;color:#0f172a;margin-bottom:4px;">₩0<span style="font-size:0.8rem;font-weight:400;color:#94a3b8;">/월</span></div>
+              <div style="font-size:0.72rem;color:#64748b;margin-bottom:14px;">체험용 · 소규모</div>
+              <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;">
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>통역 AI 월 30건</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>상담 AI 코치 월 10건</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>직원 계정 2명</li>
+                <li style="font-size:0.78rem;color:#94a3b8;display:flex;gap:6px;"><span>✗</span>AI 월간 레포트</li>
+                <li style="font-size:0.78rem;color:#94a3b8;display:flex;gap:6px;"><span>✗</span>우선 지원</li>
+              </ul>
+            </div>
+            <!-- Pro -->
+            <div id="plan-pro" style="border:2px solid #bfdbfe;border-radius:14px;padding:18px 16px;position:relative;background:linear-gradient(160deg,#f0f9ff,#fff);transition:all 0.15s;">
+              <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;font-size:0.65rem;font-weight:800;padding:2px 10px;border-radius:20px;white-space:nowrap;">추천</div>
+              <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#1d4ed8;margin-bottom:8px;">PRO</div>
+              <div style="font-size:1.5rem;font-weight:800;color:#0f172a;margin-bottom:4px;">₩99,000<span style="font-size:0.8rem;font-weight:400;color:#94a3b8;">/월</span></div>
+              <div style="font-size:0.72rem;color:#64748b;margin-bottom:14px;">일반 병원 · 성장형</div>
+              <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;">
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>통역 AI 무제한</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>상담 AI 코치 무제한</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>직원 계정 10명</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>AI 월간 레포트</li>
+                <li style="font-size:0.78rem;color:#94a3b8;display:flex;gap:6px;"><span>✗</span>전담 CS 지원</li>
+              </ul>
+            </div>
+            <!-- Max -->
+            <div id="plan-max" style="border:2px solid #ddd6fe;border-radius:14px;padding:18px 16px;position:relative;background:linear-gradient(160deg,#faf5ff,#fff);transition:all 0.15s;">
+              <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#6d28d9;margin-bottom:8px;">MAX</div>
+              <div style="font-size:1.5rem;font-weight:800;color:#0f172a;margin-bottom:4px;">₩249,000<span style="font-size:0.8rem;font-weight:400;color:#94a3b8;">/월</span></div>
+              <div style="font-size:0.72rem;color:#64748b;margin-bottom:14px;">대형 병원 · 네트워크</div>
+              <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;">
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>통역 AI 무제한</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>상담 AI 코치 무제한</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>직원 계정 무제한</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>AI 월간 레포트</li>
+                <li style="font-size:0.78rem;color:#475569;display:flex;gap:6px;"><span style="color:#22c55e;">✓</span>전담 CS + 맞춤 설정</li>
+              </ul>
+            </div>
+          </div>
+
+          <p style="color:#64748b;font-size:0.8125rem;margin:0;">💡 요금제 변경은 시스템 관리자 대시보드에서만 가능합니다. 업그레이드 문의: <a href="mailto:support@medvo.ai" style="color:#4f46e5;text-decoration:none;">support@medvo.ai</a></p>
         </div>
 
       </div><!-- /content-area -->
@@ -1024,6 +1070,18 @@
         const tierInfoEl = document.getElementById('tierInfo');
         if (tierInfoEl) tierInfoEl.textContent = clinicData.tier.toUpperCase();
 
+        // 현재 요금제 카드 하이라이트
+        const tierKey = (clinicData.tier || 'free').toLowerCase();
+        const planCard = document.getElementById(`plan-${tierKey}`);
+        if (planCard) {
+          planCard.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.3), 0 4px 16px rgba(79,70,229,0.12)';
+          planCard.style.transform = 'translateY(-2px)';
+          const badge = document.createElement('div');
+          badge.style.cssText = 'position:absolute;top:-10px;right:12px;background:#4f46e5;color:#fff;font-size:0.65rem;font-weight:800;padding:2px 10px;border-radius:20px;';
+          badge.textContent = '현재 플랜';
+          planCard.appendChild(badge);
+        }
+
         const createdDisplayEl = document.getElementById('createdAtDisplay');
         if (createdDisplayEl) createdDisplayEl.textContent = new Date(clinicData.created_at).toLocaleDateString('ko-KR');
 
@@ -1128,8 +1186,12 @@
             </div>`;
         }).join('');
 
-        // 최근 기록 행
-        const recentRows = recent.map(r => {
+        // 최근 기록 캐시 저장
+        window.coachLogsCache = {};
+        recent.forEach((r, i) => { window.coachLogsCache[i] = r; });
+
+        // 최근 기록 아코디언 카드
+        const recentCards = recent.length ? recent.map((r, i) => {
           const dt = new Date(r.created_at);
           const dateStr = `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
           const durMin = r.duration_sec ? Math.round(r.duration_sec / 60 * 10) / 10 : 0;
@@ -1137,15 +1199,29 @@
             ? `<span style="font-size:0.7rem;background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:10px;font-weight:700;">평가완료</span>`
             : `<span style="font-size:0.7rem;background:#f1f5f9;color:#64748b;padding:2px 7px;border-radius:10px;">미평가</span>`;
           return `
-            <tr>
-              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#64748b;">${dateStr}</td>
-              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.875rem;font-weight:600;color:#0f172a;">${r.patient_name}</td>
-              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#475569;">${r.staff_name}</td>
-              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#475569;">${durMin}분</td>
-              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:0.8125rem;color:#475569;">${r.turns_count}턴</td>
-              <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">${evalBadge}</td>
-            </tr>`;
-        }).join('');
+            <div style="border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;overflow:hidden;background:#fff;">
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;"
+                   onclick="toggleCoachCard(${i})">
+                <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <span style="font-size:0.75rem;color:#94a3b8;flex-shrink:0;">${dateStr}</span>
+                  <span style="font-size:0.875rem;font-weight:700;color:#0f172a;">${r.patient_name}</span>
+                  <span style="font-size:0.8rem;color:#64748b;">${r.staff_name}</span>
+                  <span style="font-size:0.75rem;color:#64748b;">${durMin}분 · ${r.turns_count}턴</span>
+                  ${evalBadge}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                  <button id="coach-ai-btn-${i}" onclick="event.stopPropagation();generateCoachSummary(${i})"
+                    style="padding:4px 10px;background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 4px rgba(234,88,12,0.25);">
+                    🤖 AI 분석
+                  </button>
+                  <span id="coach-arrow-${i}" style="color:#94a3b8;font-size:0.8rem;">▼</span>
+                </div>
+              </div>
+              <div id="coach-body-${i}" style="display:none;border-top:1px solid #f1f5f9;padding:14px 16px;">
+                <div id="coach-ai-${i}"></div>
+              </div>
+            </div>`;
+        }).join('') : '<div style="text-align:center;padding:24px;color:#64748b;font-size:0.875rem;">기록 없음</div>';
 
         container.innerHTML = `
           <!-- 요약 스탯 -->
@@ -1201,23 +1277,9 @@
           </div>
 
           <!-- 최근 상담 기록 -->
-          <div style="padding:0 0 22px;">
-            <div style="font-weight:700;font-size:0.875rem;color:#0f172a;padding:0 28px 12px;">🕐 최근 상담 기록</div>
-            <div style="overflow-x:auto;">
-              <table style="width:100%;border-collapse:collapse;">
-                <thead>
-                  <tr style="background:#f8fafc;">
-                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">일시</th>
-                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">환자명</th>
-                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">담당자</th>
-                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">상담시간</th>
-                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">코칭 턴</th>
-                    <th style="padding:8px 14px;text-align:left;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#475569;border-bottom:2px solid #e8edf5;">AI 평가</th>
-                  </tr>
-                </thead>
-                <tbody>${recentRows || '<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;font-size:0.875rem;">기록 없음</td></tr>'}</tbody>
-              </table>
-            </div>
+          <div style="padding:0 28px 22px;">
+            <div style="font-weight:700;font-size:0.875rem;color:#0f172a;margin-bottom:12px;">🕐 최근 상담 기록</div>
+            ${recentCards}
           </div>`;
 
       } catch (e) {
@@ -1667,6 +1729,60 @@
         }
       } catch (e) {
         box.innerHTML = `<div style="color:var(--danger);font-size:0.875rem;padding:8px 0;">분석 실패: ${e.message}</div>`;
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 분석'; }
+      }
+    }
+
+    function toggleCoachCard(idx) {
+      const body  = document.getElementById(`coach-body-${idx}`);
+      const arrow = document.getElementById(`coach-arrow-${idx}`);
+      if (!body) return;
+      const open = body.style.display === 'none';
+      body.style.display  = open ? 'block' : 'none';
+      if (arrow) arrow.textContent = open ? '▲' : '▼';
+    }
+
+    async function generateCoachSummary(idx) {
+      const rec = window.coachLogsCache && window.coachLogsCache[idx];
+      if (!rec) return;
+      const btn = document.getElementById(`coach-ai-btn-${idx}`);
+      const box = document.getElementById(`coach-ai-${idx}`);
+      const body = document.getElementById(`coach-body-${idx}`);
+      const arrow = document.getElementById(`coach-arrow-${idx}`);
+      if (!box) return;
+
+      // 아코디언 열기
+      if (body && body.style.display === 'none') {
+        body.style.display = 'block';
+        if (arrow) arrow.textContent = '▲';
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = '분석 중...'; }
+      box.innerHTML = '<div style="text-align:center;padding:16px;color:#64748b;font-size:0.875rem;">🤖 AI가 분석 중입니다...</div>';
+
+      try {
+        const res = await fetch('/api/consult-session-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ log_id: rec.id })
+        });
+        if (!res.ok) throw new Error('API 오류');
+        const data = await res.json();
+        if (data.summary) {
+          box.innerHTML = `
+            <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1px solid #fed7aa;border-radius:8px;padding:16px;margin-top:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-size:0.8rem;font-weight:700;color:#c2410c;">🤖 AI 상담 분석</div>
+                <div style="font-size:0.7rem;color:#94a3b8;">${escapeHTML(data.model || '')}</div>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.75;color:#1f2937;white-space:pre-wrap;">${escapeHTML(data.summary)}</div>
+            </div>`;
+        } else {
+          box.innerHTML = '<div style="color:#dc2626;font-size:0.875rem;padding:8px 0;">분석 데이터 없음</div>';
+        }
+      } catch (e) {
+        box.innerHTML = `<div style="color:#dc2626;font-size:0.875rem;padding:8px 0;">분석 실패: ${e.message}</div>`;
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 분석'; }
       }
