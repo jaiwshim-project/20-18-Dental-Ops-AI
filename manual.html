@@ -210,13 +210,16 @@
             <a class="toc-link" onclick="scrollTo2('sec-engines')">2. 8대 엔진 소개</a>
             <a class="toc-link" onclick="scrollTo2('sec-methodology')">3. 상담 방법론 (5단계 × QLRCQ)</a>
             <a class="toc-link" onclick="scrollTo2('sec-consult')">4. 상담 AI 사용법</a>
-            <a class="toc-link" onclick="scrollTo2('sec-conversion')">5. 전환 전략 활용법</a>
-            <a class="toc-link" onclick="scrollTo2('sec-automation')">6. 자동화 설정</a>
-            <a class="toc-link" onclick="scrollTo2('sec-kpi')">7. KPI 해석 가이드</a>
-            <a class="toc-link" onclick="scrollTo2('sec-training')">8. 교육/훈련 활용</a>
-            <a class="toc-link" onclick="scrollTo2('sec-insight')">9. 인사이트 리포트</a>
-            <a class="toc-link" onclick="scrollTo2('sec-ceo')">10. CEO 대시보드</a>
-            <a class="toc-link" onclick="scrollTo2('sec-faq')">11. FAQ</a>
+            <a class="toc-link" onclick="scrollTo2('sec-translate')">5. 통역 AI 사용법</a>
+            <a class="toc-link" onclick="scrollTo2('sec-coach')">6. 상담 AI 코치</a>
+            <a class="toc-link" onclick="scrollTo2('sec-conversion')">7. 전환 전략 활용법</a>
+            <a class="toc-link" onclick="scrollTo2('sec-automation')">8. 자동화 설정</a>
+            <a class="toc-link" onclick="scrollTo2('sec-kpi')">9. KPI 해석 가이드</a>
+            <a class="toc-link" onclick="scrollTo2('sec-training')">10. 교육/훈련 활용</a>
+            <a class="toc-link" onclick="scrollTo2('sec-insight')">11. 인사이트 리포트</a>
+            <a class="toc-link" onclick="scrollTo2('sec-ceo')">12. CEO 대시보드</a>
+            <a class="toc-link" onclick="scrollTo2('sec-tier')">13. 요금제</a>
+            <a class="toc-link" onclick="scrollTo2('sec-faq')">14. FAQ</a>
           </aside>
 
           <!-- MAIN -->
@@ -272,9 +275,10 @@
               </div>
 
               <h3>1.3 기본 메뉴 구성</h3>
-              <p>로그인 후 왼쪽 사이드바에서 8가지 주요 메뉴에 접근할 수 있습니다:</p>
+              <p>로그인 후 왼쪽 사이드바에서 아래 메뉴에 접근할 수 있습니다:</p>
               <ul>
                 <li><strong>📱 상담 AI</strong> — 환자 상담 녹음, 실시간 AI 코칭</li>
+                <li><strong>🌐 통역 AI</strong> — 외국인 환자 실시간 양방향 통역</li>
                 <li><strong>🎯 전환 전략</strong> — 환자 반대 상황 극복 전략</li>
                 <li><strong>⚙️ 자동화</strong> — 신환 환영, 상담 후속, 재방문 유도 메시지</li>
                 <li><strong>👥 환자 관리</strong> — 환자 정보 CRUD, 상태 추적</li>
@@ -283,6 +287,7 @@
                 <li><strong>📈 인사이트 리포트</strong> — 주간/월간 경영 분석 리포트</li>
                 <li><strong>👨‍💼 CEO 대시보드</strong> — 원장/관리자 전용 전략 조언</li>
               </ul>
+              <p style="font-size:0.9375rem; color:var(--text-secondary);">병원 관리 기능(직원 관리, 통역 기록, 상담 AI 코치 인사이트)은 사이드바 우측 상단 <strong>[⚙️ 병원 관리]</strong>에서 접근하세요.</p>
               <div style="padding:14px 18px; background:var(--danger-light-bg); border-left:4px solid var(--danger); border-radius:var(--radius-sm);">
                 <strong style="color:var(--danger-text);">🏢 병원 관리:</strong> <span style="color:var(--text-secondary);">사이드바 우측 상단에 <strong>[⚙️ 병원 관리]</strong> 버튼이 있습니다. 직원 추가, 비밀번호 변경 등의 관리 작업은 여기서 수행합니다.</span>
               </div>
@@ -458,8 +463,73 @@
               </ul>
             </section>
 
+            <!-- 통역 AI -->
+            <section class="manual-section" id="sec-translate">
+              <h2>5. 통역 AI 사용법</h2>
+              <p>외국인 환자와 한국어 직원 사이의 대화를 <strong>실시간으로 양방향 통역</strong>합니다. 사이드바의 <strong>🌐 통역 AI</strong> 메뉴에서 이용할 수 있습니다.</p>
+
+              <h3>5.1 통역 시작하기</h3>
+              <ol>
+                <li><strong>언어 쌍 선택</strong> — 왼쪽(환자 언어) → 오른쪽(직원 언어) 선택. 예: 中文 → 한국어</li>
+                <li><strong>[통역 시작] 버튼 클릭</strong> — 화면이 좌(환자)·우(직원) 두 패널로 나뉩니다.</li>
+                <li><strong>각 패널의 🎙 마이크 버튼</strong>을 눌러 말하면 상대 패널에 자동 번역 결과가 표시됩니다.</li>
+                <li>대화가 끝나면 세션 바 우측 <strong>[통역 종료]</strong>를 클릭합니다.</li>
+              </ol>
+
+              <h3>5.2 스플릿 뷰 구조</h3>
+              <ul>
+                <li><strong>파란 패널 (환자)</strong> — 환자가 말한 원문 + 번역된 한국어 표시</li>
+                <li><strong>초록 패널 (직원)</strong> — 직원이 말한 한국어 + 환자 언어로 번역 결과 표시</li>
+                <li>각 패널은 독립 마이크로 동작 — 서로 방해 없이 교대로 사용</li>
+                <li>실시간 음성 인식 미리보기(이탤릭 텍스트)가 패널 하단에 표시됨</li>
+              </ul>
+
+              <h3>5.3 통역 기록 & 인사이트</h3>
+              <ul>
+                <li>모든 통역 세션은 Supabase에 자동 저장됨</li>
+                <li><strong>병원 관리 대시보드 → 통역 인사이트</strong>: 월별 사용 현황, 언어 분포, 평균 세션 시간 등 리포트</li>
+                <li><strong>병원 관리 대시보드 → 통역 기록</strong>: 건별 대화 내용 및 <strong>AI 분석 요청</strong> 버튼으로 세션 품질 확인 가능</li>
+              </ul>
+
+              <div style="padding:14px 18px; background:var(--info-light-bg); border-left:4px solid var(--info); border-radius:var(--radius-sm); font-size:0.9375rem;">
+                <strong style="color:var(--info-text);">요금제별 월 사용 한도</strong><br>
+                <span style="color:var(--text-secondary);">Free: 5건 / Pro: 50건 / Max: 무제한. 한도 초과 시 병원 관리 대시보드에서 요금제 업그레이드 안내를 확인하세요.</span>
+              </div>
+            </section>
+
+            <!-- 상담 AI 코치 -->
+            <section class="manual-section" id="sec-coach">
+              <h2>6. 상담 AI 코치</h2>
+              <p>과거 상담 기록을 AI가 분석하여 <strong>직원별 코칭 인사이트</strong>를 제공합니다. 병원 관리 대시보드의 <strong>🎯 상담 AI 코치</strong> 섹션에서 확인할 수 있습니다.</p>
+
+              <h3>6.1 코치 인사이트 보기</h3>
+              <ol>
+                <li><strong>병원 관리 대시보드</strong>로 이동 (사이드바 ⚙️ 병원 관리 또는 <code class="inline">clinic-dashboard.html</code>)</li>
+                <li>좌측 메뉴에서 <strong>🎯 상담 AI 코치</strong> 클릭</li>
+                <li>최근 6개월간의 상담 기록이 카드 목록으로 표시됩니다.</li>
+              </ol>
+
+              <h3>6.2 건별 AI 분석</h3>
+              <ul>
+                <li>각 상담 카드 우측의 <strong>[🤖 AI 분석]</strong> 버튼을 클릭합니다.</li>
+                <li>Gemini가 해당 세션의 상담 내용 전체를 분석하여 <strong>강점, 개선점, 5단계 준수 여부, 종합 점수</strong>를 반환합니다.</li>
+                <li>분석 결과는 카드 본문에 즉시 표시되며 재분석도 가능합니다.</li>
+              </ul>
+
+              <h3>6.3 인사이트 요약</h3>
+              <ul>
+                <li>섹션 상단에 <strong>전체 AI 요약 리포트</strong> 버튼이 있어, 기간 내 전체 상담 패턴을 한 번에 요약합니다.</li>
+                <li>직원별 상담 비중, 자주 등장한 환자 우려, 전환 성공/실패 패턴 등이 포함됩니다.</li>
+              </ul>
+
+              <div style="padding:14px 18px; background:var(--info-light-bg); border-left:4px solid var(--info); border-radius:var(--radius-sm); font-size:0.9375rem;">
+                <strong style="color:var(--info-text);">요금제별 월 사용 한도</strong><br>
+                <span style="color:var(--text-secondary);">Free: 5건 / Pro: 50건 / Max: 무제한. 로그인 상태로 상담을 진행해야 병원 계정에 데이터가 연결됩니다.</span>
+              </div>
+            </section>
+
             <section class="manual-section" id="sec-conversion">
-              <h2>5. 전환 전략 활용법</h2>
+              <h2>7. 전환 전략 활용법</h2>
               <p>환자가 "가격이 부담된다", "생각해보겠다" 같은 반대를 표현할 때 사용합니다.</p>
               <div class="screenshot-placeholder">&#x1F4F7; 스크린샷 자리 — 전환 전략 생성 화면</div>
               <ul>
@@ -471,7 +541,7 @@
             </section>
 
             <section class="manual-section" id="sec-automation">
-              <h2>6. 자동화 설정</h2>
+              <h2>8. 자동화 설정</h2>
               <p>자동화 메뉴에서 5종 템플릿을 선택하거나 커스텀 메시지를 생성할 수 있습니다.</p>
               <ul>
                 <li><strong>신환 환영</strong>: 첫 방문 후 환영 메시지</li>
@@ -484,7 +554,7 @@
             </section>
 
             <section class="manual-section" id="sec-kpi">
-              <h2>7. KPI 해석 가이드</h2>
+              <h2>9. KPI 해석 가이드</h2>
               <p>대시보드의 6개 KPI 의미와 목표값:</p>
               <ul>
                 <li><strong>전환율</strong>: 상담 대비 계약 성공률. 목표 70% 이상</li>
@@ -497,7 +567,7 @@
             </section>
 
             <section class="manual-section" id="sec-training">
-              <h2>8. 교육/훈련 활용</h2>
+              <h2>10. 교육/훈련 활용</h2>
               <p>신규 상담실장·코디를 위한 롤플레이 훈련 도구입니다. 5종 시나리오(비용부담/공포/기간고민/재방문/소아)로 반복 훈련할 수 있습니다.</p>
               <ul>
                 <li>시나리오 선택 → 환자의 반대 멘트 확인</li>
@@ -508,7 +578,7 @@
             </section>
 
             <section class="manual-section" id="sec-insight">
-              <h2>9. 인사이트 리포트 생성</h2>
+              <h2>11. 인사이트 리포트 생성</h2>
               <p>주간/월간 경영 리포트를 AI가 자동 생성합니다. 6단계 하네스 방법론으로 데이터→인사이트→전략까지 한 번에.</p>
               <ul>
                 <li>주제 입력 (예: "이번 주 전환율 하락 원인")</li>
@@ -519,7 +589,7 @@
             </section>
 
             <section class="manual-section" id="sec-ceo">
-              <h2>10. CEO 대시보드</h2>
+              <h2>12. CEO 대시보드</h2>
               <p>원장/관리자만 접근 가능한 전용 페이지입니다. 로그인 시 역할을 <strong>원장</strong> 또는 <strong>관리자 (CEO)</strong>로 선택해야 합니다.</p>
               <ul>
                 <li>전체 KPI 요약 + 상태 진단 (성장/안정/주의/위험)</li>
@@ -530,7 +600,7 @@
             </section>
 
             <section class="manual-section" id="sec-faq">
-              <h2>11. FAQ</h2>
+              <h2>14. FAQ</h2>
 
               <div class="faq-item">
                 <div class="faq-q">Gemini API 키는 어디서 발급받나요?</div>
@@ -568,43 +638,57 @@
               </div>
             </section>
 
-            <!-- SaaS 신규 기능 섹션 (Step B + Phase 2) -->
-            <section class="manual-section">
-              <h2>&#x1F195; SaaS 신규 기능 (2026-04)</h2>
+            <!-- 요금제 섹션 -->
+            <section class="manual-section" id="sec-tier">
+              <h2>13. 요금제</h2>
+              <p>Medvo는 병원 규모에 따라 세 가지 요금제를 제공합니다. 등급은 <strong>본사 관리자</strong>가 관리자 대시보드에서 변경합니다.</p>
 
-              <h3>&#x1F680; 간편 로그인</h3>
-              <p>이메일 한 번 가입한 사용자는 <strong>이메일만 입력</strong>하면 즉시 로그인됩니다. 신규는 가입 정보(이름·병원·역할) 입력 후 매직링크 발송.</p>
-
-              <h3>&#x1F4CA; 요금제 (Tier)</h3>
-              <table class="tbl">
-                <thead><tr><th>등급</th><th>월 상담 AI 사용</th><th>비고</th></tr></thead>
+              <table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:0.925rem;">
+                <thead>
+                  <tr style="background:var(--primary-bg);">
+                    <th style="padding:12px 16px; text-align:left; border-bottom:2px solid var(--primary);">등급</th>
+                    <th style="padding:12px 16px; text-align:center; border-bottom:2px solid var(--primary);">🌐 통역 AI</th>
+                    <th style="padding:12px 16px; text-align:center; border-bottom:2px solid var(--primary);">🎯 상담 AI 코치</th>
+                    <th style="padding:12px 16px; text-align:center; border-bottom:2px solid var(--primary);">👥 직원 계정</th>
+                    <th style="padding:12px 16px; text-align:left; border-bottom:2px solid var(--primary);">대상</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  <tr><td>&#x1F193; Free</td><td>3회</td><td>데모/체험</td></tr>
-                  <tr><td>&#x2B50; Pro</td><td>20회</td><td>소규모 병원</td></tr>
-                  <tr><td>&#x1F680; Max</td><td>60회</td><td>중대형 병원</td></tr>
+                  <tr style="border-bottom:1px solid var(--gray-200);">
+                    <td style="padding:12px 16px; font-weight:700;">🆓 Free</td>
+                    <td style="padding:12px 16px; text-align:center;">월 5건</td>
+                    <td style="padding:12px 16px; text-align:center;">월 5건</td>
+                    <td style="padding:12px 16px; text-align:center;">1명</td>
+                    <td style="padding:12px 16px; color:var(--text-secondary);">데모/체험</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid var(--gray-200); background:var(--gray-50);">
+                    <td style="padding:12px 16px; font-weight:700; color:#1d4ed8;">⭐ Pro</td>
+                    <td style="padding:12px 16px; text-align:center;">월 50건</td>
+                    <td style="padding:12px 16px; text-align:center;">월 50건</td>
+                    <td style="padding:12px 16px; text-align:center;">3명</td>
+                    <td style="padding:12px 16px; color:var(--text-secondary);">소규모 병원</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px; font-weight:700; color:#4c1d95;">🚀 Max</td>
+                    <td style="padding:12px 16px; text-align:center; font-weight:600;">무제한</td>
+                    <td style="padding:12px 16px; text-align:center; font-weight:600;">무제한</td>
+                    <td style="padding:12px 16px; text-align:center; font-weight:600;">무제한</td>
+                    <td style="padding:12px 16px; color:var(--text-secondary);">중대형 병원</td>
+                  </tr>
                 </tbody>
               </table>
-              <p style="font-size:0.9375rem; color:var(--text-secondary);">등급은 <strong>본사 관리자</strong>가 회원 관리에서 변경.</p>
 
-              <h3>&#x1F6E0; 관리자 대시보드 (본사 전용)</h3>
-              <p>푸터 하단 <strong>&#x1F6E0; 관리자 대시보드</strong> 링크 → 비밀번호 <code>9633</code> 입력. KPI 4카드 + 회원 관리(tier 드롭다운 변경) + 최근 API 호출 로그 50건.</p>
+              <div style="padding:14px 18px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--radius-sm); font-size:0.9375rem;">
+                요금제 변경은 <strong>병원 관리 대시보드 하단</strong> 또는 <strong>본사 관리자 대시보드</strong>에서 가능합니다. 관리자 대시보드 접근은 담당자에게 문의하세요.
+              </div>
 
-              <h3>&#x26A1; 투-스테이지 상담 코칭 (Phase 2 A+D)</h3>
-              <p>전송 버튼 클릭 시 두 단계로 응답:</p>
+              <h3>기타 플랫폼 기능</h3>
               <ul>
-                <li><strong>1단계 즉시 응답 (~1~1.5초)</strong>: 상단 ⚡ 박스에 <em>속마음 + 말할 문장</em> 3필드만 먼저 표시</li>
-                <li><strong>2단계 상세 분석 (~3~5초, 백그라운드)</strong>: 하단 상세 코칭 카드 (QLRCQ 위치, 준비도, 다음 행동 등) 업데이트</li>
+                <li><strong>⚡ 투-스테이지 상담 코칭</strong> — 전송 클릭 시 1~1.5초 내 즉시 응답(속마음·말할 문장) 먼저 표시 후, 3~5초 내 상세 분석(QLRCQ 위치·다음 행동) 업데이트</li>
+                <li><strong>📅 상담 회차 선택</strong> — 동일 환자의 여러 상담 중 원하는 회차 선택 가능 (<code class="inline">#3회차 · 26/04/20 14:30 · 12턴 · 15분</code> 형식)</li>
+                <li><strong>🔒 서버 프록시 (보안)</strong> — Gemini API 키는 서버에만 보관. 모든 AI 호출은 <code class="inline">/api/gemini</code> Edge Function 경유</li>
+                <li><strong>📈 호출 로그</strong> — Gemini 호출마다 <code class="inline">api_call_logs</code> 테이블에 자동 기록. 관리자 대시보드에서 병원별 사용량 모니터링</li>
               </ul>
-              <p style="font-size:0.9375rem;">실제 환자 앞에서 상담이 끊기지 않도록 빠른 응답 우선 설계. 기본 모델 <code>gemini-2.5-flash-lite</code>.</p>
-
-              <h3>&#x1F4C5; 상담 회차 선택</h3>
-              <p>환자가 여러 번 상담한 경우, 환자 드롭다운 바로 아래에 <strong>📅 상담 회차 선택</strong> 드롭다운이 자동 표시됩니다. <code>#3회차 · 26/04/20 14:30 · 12턴 · 15분</code> 형식으로 목록에서 원하는 회차 선택.</p>
-
-              <h3>&#x1F512; 서버 프록시 (SaaS 보안)</h3>
-              <p>Gemini API 키는 <strong>본사 서버에만 보관</strong>되며 브라우저에 노출되지 않습니다. 모든 AI 호출은 <code>/api/gemini</code> Edge Function을 경유(Cold Start &lt;100ms). Supabase Auth 토큰 또는 이메일로 사용자 확인 후 처리.</p>
-
-              <h3>&#x1F4C8; 호출 로그 & 과금 추적</h3>
-              <p>Gemini 호출마다 <code>api_call_logs</code> 테이블에 <em>user, model, prompt/response 길이, 지연, 상태</em> 자동 기록. 본사는 관리자 대시보드에서 병원별 사용량·예상 과금을 모니터링.</p>
             </section>
 
           </main>
