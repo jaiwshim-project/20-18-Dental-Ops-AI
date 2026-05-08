@@ -486,14 +486,13 @@
           <div class="pwd-box">
             <div class="pwd-box-label">현재 비밀번호</div>
             <div class="pin-grid">
-              <input type="text" readonly class="pin-input" id="clinicCurrentPwd1" value="•">
-              <input type="text" readonly class="pin-input" id="clinicCurrentPwd2" value="•">
-              <input type="text" readonly class="pin-input" id="clinicCurrentPwd3" value="•">
-              <input type="text" readonly class="pin-input" id="clinicCurrentPwd4" value="•">
-              <input type="text" readonly class="pin-input" id="clinicCurrentPwd5" value="•">
-              <input type="text" readonly class="pin-input" id="clinicCurrentPwd6" value="•">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd1">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd2">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd3">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd4">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd5">
+              <input type="text" readonly class="pin-input" id="clinicCurrentPwd6">
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="toggleClinicPasswordDisplay(this)">숨김</button>
           </div>
           <div id="clinicPasswordFormContainer" style="display:none;" class="subform">
             <div class="subform-title">새 비밀번호 (숫자 6자리)</div>
@@ -523,14 +522,13 @@
           <div class="pwd-box">
             <div class="pwd-box-label">현재 비밀번호</div>
             <div class="pin-grid">
-              <input type="text" readonly class="pin-input" id="currentPwd1" value="•">
-              <input type="text" readonly class="pin-input" id="currentPwd2" value="•">
-              <input type="text" readonly class="pin-input" id="currentPwd3" value="•">
-              <input type="text" readonly class="pin-input" id="currentPwd4" value="•">
-              <input type="text" readonly class="pin-input" id="currentPwd5" value="•">
-              <input type="text" readonly class="pin-input" id="currentPwd6" value="•">
+              <input type="text" readonly class="pin-input" id="currentPwd1">
+              <input type="text" readonly class="pin-input" id="currentPwd2">
+              <input type="text" readonly class="pin-input" id="currentPwd3">
+              <input type="text" readonly class="pin-input" id="currentPwd4">
+              <input type="text" readonly class="pin-input" id="currentPwd5">
+              <input type="text" readonly class="pin-input" id="currentPwd6">
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="togglePasswordDisplay(this)">숨김</button>
           </div>
           <div id="passwordFormContainer" style="display:none;" class="subform">
             <div class="subform-title">새 비밀번호 (숫자 6자리)</div>
@@ -1118,14 +1116,21 @@
           }
         }
 
-        // 직원로그인 비밀번호 표시 (localStorage에서 로드)
+        // 직원로그인 비밀번호 표시 (항상 보임)
         const staffPwd = loadStaffPassword();
         const staffPwdChars = staffPwd.split('');
         for (let i = 1; i <= 6; i++) {
           const elem = document.getElementById(`currentPwd${i}`);
-          if (elem) elem.value = staffPwdChars[i - 1] || '•';
+          if (elem) elem.value = staffPwdChars[i - 1] || '';
         }
-        console.log('[loadClinicInfo] 직원로그인 비밀번호 로드:', staffPwd);
+        // 병원관리 비밀번호 표시 (항상 보임)
+        const clinicPwd = loadClinicPassword();
+        const clinicPwdChars = clinicPwd.split('');
+        for (let i = 1; i <= 6; i++) {
+          const elem = document.getElementById(`clinicCurrentPwd${i}`);
+          if (elem) elem.value = clinicPwdChars[i - 1] || '';
+        }
+        console.log('[loadClinicInfo] 비밀번호 로드 완료');
 
         loadStaffList();
         loadTranslateLogs();
@@ -2145,7 +2150,6 @@
         document.getElementById('newPwd4').value = '';
         document.getElementById('newPwd5').value = '';
         document.getElementById('newPwd6').value = '';
-        isPasswordDisplaying = false;
         togglePasswordForm();
       } catch (e) {
         console.error('[updatePassword]', e);
@@ -2346,18 +2350,21 @@
         document.getElementById(`clinicNewPwd${i}`).value = '';
       }
 
-      // 표시된 비밀번호 업데이트
-      clinicPasswordVisible = false;
-      document.querySelector('[onclick="toggleClinicPasswordDisplay()"]').textContent = '표시';
+      // 변경된 비밀번호 표시
+      const newChars = pwd.split('');
       for (let i = 1; i <= 6; i++) {
-        document.getElementById(`clinicCurrentPwd${i}`).value = '•';
+        const el = document.getElementById(`clinicCurrentPwd${i}`);
+        if (el) el.value = newChars[i - 1] || '';
       }
     }
 
-    // 페이지 로드 시 현재 비밀번호 표시
+    // 페이지 로드 시 현재 비밀번호 표시 (항상 보임)
     function initClinicPassword() {
+      const pwd = loadClinicPassword();
+      const chars = pwd.split('');
       for (let i = 1; i <= 6; i++) {
-        document.getElementById(`clinicCurrentPwd${i}`).value = '•';
+        const el = document.getElementById(`clinicCurrentPwd${i}`);
+        if (el) el.value = chars[i - 1] || '';
       }
     }
 
