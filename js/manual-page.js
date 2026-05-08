@@ -4,7 +4,6 @@ function scrollTo2(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-  </script>
 
 // ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
 document.addEventListener('DOMContentLoaded', function() {
