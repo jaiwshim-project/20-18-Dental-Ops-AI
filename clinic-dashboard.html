@@ -1214,6 +1214,10 @@
                     style="padding:4px 10px;background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 4px rgba(234,88,12,0.25);">
                     🤖 AI 분석
                   </button>
+                  <button onclick="event.stopPropagation();deleteCoachRecord(${i})"
+                    style="padding:4px 8px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                    🗑️
+                  </button>
                   <span id="coach-arrow-${i}" style="color:#94a3b8;font-size:0.8rem;">▼</span>
                 </div>
               </div>
@@ -1655,6 +1659,10 @@
                   style="padding:4px 10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 4px rgba(124,58,237,0.25);">
                   🤖 AI 분석
                 </button>
+                <button onclick="event.stopPropagation();deleteTLRecord(${globalIdx})"
+                  style="padding:4px 8px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                  🗑️
+                </button>
                 <span id="tl-arrow-${globalIdx}" style="color:#94a3b8;font-size:0.8rem;">▼</span>
               </div>
             </div>
@@ -1741,6 +1749,33 @@
       const open = body.style.display === 'none';
       body.style.display  = open ? 'block' : 'none';
       if (arrow) arrow.textContent = open ? '▲' : '▼';
+    }
+
+    async function deleteCoachRecord(idx) {
+      const rec = window.coachLogsCache && window.coachLogsCache[idx];
+      if (!rec) return;
+      if (!confirm('이 상담 기록을 삭제하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/delete-consult-log?id=${rec.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('삭제 실패');
+        loadCoachInsights();
+      } catch (e) {
+        alert('삭제 중 오류가 발생했습니다: ' + e.message);
+      }
+    }
+
+    async function deleteTLRecord(idx) {
+      const log = window.tlLogsCache && window.tlLogsCache[idx];
+      if (!log) return;
+      if (!confirm('이 통역 기록을 삭제하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/delete-translate-log?id=${log.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('삭제 실패');
+        tlOffset = 0;
+        loadTranslateLogs();
+      } catch (e) {
+        alert('삭제 중 오류가 발생했습니다: ' + e.message);
+      }
     }
 
     async function generateCoachSummary(idx) {
