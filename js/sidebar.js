@@ -181,14 +181,8 @@ function renderSidebar(activePage) {
               <span>비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></span>
               <small style="color:var(--text-tertiary);">병원 공유 비밀번호</small>
             </label>
-            <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
-              <input type="password" class="form-input" id="loginPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="loginPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="loginPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="loginPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="loginPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="loginPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            </div>
+            <input type="password" class="form-input" id="loginPwd" placeholder="숫자 6자리 입력" maxlength="6" pattern="\\d{6}" inputmode="numeric" style="font-size:1.2rem; letter-spacing:0.5em; tracking-tight;">
+            </input>
           </div>
         </div>
 
@@ -219,14 +213,8 @@ function renderSidebar(activePage) {
               <span>비밀번호 (숫자 6자리) <span style="color:var(--danger);">*</span></span>
               <small style="color:var(--text-tertiary);">직원들과 공유하는 비밀번호</small>
             </label>
-            <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px;">
-              <input type="password" class="form-input" id="signupPwd1" placeholder="1" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="signupPwd2" placeholder="2" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="signupPwd3" placeholder="3" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="signupPwd4" placeholder="4" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="signupPwd5" placeholder="5" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-              <input type="password" class="form-input" id="signupPwd6" placeholder="6" maxlength="1" pattern="\\d" style="text-align:center; font-size:1.5rem; font-weight:700;">
-            </div>
+            <input type="password" class="form-input" id="signupPwd" placeholder="숫자 6자리 입력" maxlength="6" pattern="\\d{6}" inputmode="numeric" style="font-size:1.2rem; letter-spacing:0.5em; tracking-tight;">
+            </input>
           </div>
         </div>
       </div>
