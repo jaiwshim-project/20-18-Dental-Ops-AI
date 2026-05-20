@@ -1249,6 +1249,61 @@ function clearTranscript() {
   document.getElementById('questionInput').value = '';
 }
 
+// 🧪 테스트 모드: 음성 인식 시뮬레이션
+window.simulateSpeechInput = async function(inputs) {
+  if (!Array.isArray(inputs)) inputs = [inputs];
+  console.log('🧪 [SIMULATE] 음성 인식 시뮬레이션 시작...');
+
+  if (!currentSession) {
+    console.log('  → 세션 없음. 자동 시작...');
+    startSession();
+  }
+
+  for (const input of inputs) {
+    const { text = '', speaker = 'patient1', delay = 1500 } = typeof input === 'string'
+      ? { text: input }
+      : input;
+
+    console.log(`  ▶ [${speaker}] "${text}"`);
+
+    // 발화자 설정
+    if (speaker !== currentSpeaker) {
+      setSpeaker(speaker);
+      console.log(`    → 발화자 변경: ${speaker}`);
+    }
+
+    // 임시 결과 표시 (중간 부분)
+    const mid = Math.floor(text.length / 2);
+    appendInterim(text.substring(0, mid) + '...');
+
+    // 최종 결과 저장
+    await new Promise(r => setTimeout(r, delay));
+    commitFinal(text);
+    console.log(`    ✓ 저장됨 (turns: ${turns.length})`);
+  }
+
+  console.log('✅ 시뮬레이션 완료\n');
+};
+
+// 🧪 데모 시나리오
+window.demoConversation = async function() {
+  console.log('🎬 데모 상담 시나리오 시작...\n');
+
+  await window.simulateSpeechInput([
+    { text: '안녕하세요, 임플란트 때문에 왔어요.', speaker: 'patient1', delay: 1200 },
+    { text: '어머니도 함께 상담해주시는 거예요.', speaker: 'patient2', delay: 1000 },
+    { text: '네, 저는 어머니 보호자예요. 비용이 얼마나 드는지 궁금합니다.', speaker: 'guardian', delay: 1300 },
+    { text: '그래요, 편하게 설명해주세요.', speaker: 'patient1', delay: 800 },
+  ]);
+
+  console.log('대화가 모두 입력되었습니다. 이제 📤 [전송] 버튼을 클릭해 AI 분석을 받아보세요!');
+};
+
+console.log('💡 테스트 함수 사용법:');
+console.log('  1. simulateSpeechInput("환자 발화") - 단일 입력');
+console.log('  2. simulateSpeechInput([{text:"발화",speaker:"patient1"}, ...]) - 복수 입력');
+console.log('  3. demoConversation() - 데모 시나리오 실행');
+
 initLangSelect();
 initSpeech();
 
