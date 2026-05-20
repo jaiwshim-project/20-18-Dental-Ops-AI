@@ -822,8 +822,9 @@ renderHistory();
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 let isRecording = false;
-let turns = [];        // [{speaker:'unknown'|'patient'|'staff', text, at}]
+let turns = [];        // [{speaker:'staff'|'patient1'|'patient2'|'guardian', text, at}]
 let interimEl = null;  // 임시 DOM 노드
+let currentSpeaker = 'staff';  // 현재 선택된 발화자 (기본값: 상담실장)
 
 // ============================================================
 // 상담 세션 (🎙 첫 시작 ~ 🛑 종료까지 하나의 세션)
@@ -939,7 +940,7 @@ async function endSession() {
       patientId: currentSession.patientId,
       engine: 'consult',
       input: currentSession.turns.map(t =>
-        (t.speaker === 'staff' ? '[실장] ' : t.speaker === 'patient' ? '[환자] ' : '') + t.text
+        (t.speaker === 'staff' ? '[실장] ' : t.speaker === 'patient' || t.speaker === 'patient1' ? '[환자] ' : t.speaker === 'patient2' ? '[동반자] ' : t.speaker === 'guardian' ? '[보호자] ' : '') + t.text
       ).join('\n'),
       output: (currentSession.coachResults.slice(-1)[0]?.data?.recommended_reply || []).join(' / ') || '',
       metadata: {
@@ -1016,22 +1017,37 @@ async function endSession() {
 }
 
 function labelText(speaker) {
-  if (speaker === 'patient') return '👤 환자';
+  if (speaker === 'patient' || speaker === 'patient1') return '👤 환자';
+  if (speaker === 'patient2') return '👥 동반자';
+  if (speaker === 'guardian') return '👨‍👩‍👧 보호자';
   if (speaker === 'staff')   return '🧑‍⚕️ 상담실장';
   return '🗣 발화';
+}
+
+function getSpeakerClass(speaker) {
+  // CSS 클래스 반환 (색상 구분용)
+  if (speaker === 'patient1') return 'patient1';
+  if (speaker === 'patient2') return 'patient2';
+  if (speaker === 'guardian') return 'guardian';
+  if (speaker === 'staff') return 'staff';
+  return 'unknown';
 }
 
 function renderTurns() {
   const log = document.getElementById('chatLog');
   log.textContent = '';
-  // 마지막 환자 발화 인덱스 (있을 때만 강조)
+  // 마지막 환자측 발화 인덱스 (환자1, 환자2, 보호자 포함)
   let lastPatientIdx = -1;
   for (let i = turns.length - 1; i >= 0; i--) {
-    if (turns[i].speaker === 'patient') { lastPatientIdx = i; break; }
+    const s = turns[i].speaker;
+    if (s === 'patient' || s === 'patient1' || s === 'patient2' || s === 'guardian') {
+      lastPatientIdx = i;
+      break;
+    }
   }
   turns.forEach((t, idx) => {
     const bubble = document.createElement('div');
-    bubble.className = 'turn ' + (t.speaker || 'unknown');
+    bubble.className = 'turn ' + getSpeakerClass(t.speaker);
     if (idx === lastPatientIdx) bubble.classList.add('turn-last-patient');
 
     const meta = document.createElement('div');
@@ -1071,7 +1087,7 @@ function commitFinal(text) {
   const trimmed = (text || '').trim();
   if (interimEl) { interimEl.remove(); interimEl = null; }
   if (!trimmed) return;
-  turns.push({ speaker: 'unknown', text: trimmed, at: Date.now() });
+  turns.push({ speaker: currentSpeaker, text: trimmed, at: Date.now() });
   renderTurns();
   if (currentSession) {
     currentSession.turns = turns.map(t => ({ ...t }));
@@ -1079,14 +1095,18 @@ function commitFinal(text) {
   }
 }
 
-// 전송 후 AI가 분리한 diarized_turns로 재라벨링
+// 전송 후 AI가 분리한 diarized_turns로 재라벨링 (다중 발화자 지원)
 function applyDiarization(diarized) {
   if (!Array.isArray(diarized) || !diarized.length) return;
-  turns = diarized.map(t => ({
-    speaker: (t.speaker === 'staff' || t.speaker === 'patient') ? t.speaker : 'unknown',
-    text: t.text || '',
-    at: Date.now()
-  }));
+  turns = diarized.map(t => {
+    const s = t.speaker;
+    const validSpeakers = ['staff', 'patient', 'patient1', 'patient2', 'guardian'];
+    return {
+      speaker: validSpeakers.includes(s) ? s : 'unknown',
+      text: t.text || '',
+      at: Date.now()
+    };
+  });
   renderTurns();
   if (currentSession) {
     currentSession.turns = turns.map(t => ({ ...t }));
@@ -1160,6 +1180,8 @@ function startMic() {
     s.textContent = '🔴 녹음 중… 자연스럽게 대화하세요';
     s.classList.add('recording');
     document.getElementById('chatLog').classList.add('recording');
+    // 화자 선택 UI 표시
+    document.getElementById('speakerSelector').style.display = 'flex';
   } catch (e) {
     showToast('녹음 시작 실패: ' + e.message, 'error');
   }
@@ -1177,6 +1199,16 @@ function stopMic() {
   s.textContent = '상담 시작 버튼을 누르세요';
   s.classList.remove('recording');
   document.getElementById('chatLog').classList.remove('recording');
+  // 화자 선택 UI 숨김
+  document.getElementById('speakerSelector').style.display = 'none';
+}
+
+function setSpeaker(role) {
+  currentSpeaker = role;
+  // 버튼 상태 업데이트
+  document.querySelectorAll('.speaker-select-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.role === role);
+  });
 }
 
 function toggleMic() {
@@ -1579,7 +1611,7 @@ async function runCoach() {
       if (!isTestMode && typeof SupabaseDB !== 'undefined' && SupabaseDB.isReady()) {
         try {
           const turnsSnapshot = currentSession.turns.map(t => (
-            (t.speaker === 'staff' ? '[실장] ' : t.speaker === 'patient' ? '[환자] ' : '') + t.text
+            (t.speaker === 'staff' ? '[실장] ' : t.speaker === 'patient' || t.speaker === 'patient1' ? '[환자] ' : t.speaker === 'patient2' ? '[동반자] ' : t.speaker === 'guardian' ? '[보호자] ' : '') + t.text
           )).join('\n');
           await SupabaseDB.saveConsultLog({
             patientId: currentSession.patientId,

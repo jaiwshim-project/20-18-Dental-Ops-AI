@@ -224,11 +224,26 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       position: relative;
     }
-    .turn.patient {
+    .turn.patient,
+    .turn.patient1 {
       align-self: flex-start;
       background: var(--primary-bg);
       color: #1E3A8A;
       border-bottom-left-radius: 4px;
+    }
+    .turn.patient2 {
+      align-self: flex-start;
+      background: #EFF6FF;
+      color: #0F5DB5;
+      border-bottom-left-radius: 4px;
+      border-left: 3px solid #0F5DB5;
+    }
+    .turn.guardian {
+      align-self: flex-start;
+      background: #FCE7F3;
+      color: #BE123C;
+      border-bottom-left-radius: 4px;
+      border-left: 3px solid #BE123C;
     }
     .turn.staff {
       align-self: flex-end;
@@ -301,6 +316,58 @@
     }
     .speaker-btn.active[data-speaker="patient"] { color: #1E3A8A; }
     .speaker-btn.active[data-speaker="staff"]   { color: #14532D; }
+
+    /* 화자 선택 UI (녹음 중 발화자 선택) */
+    .speaker-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .speaker-selector-label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.65);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .speaker-select-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .speaker-select-btn {
+      padding: 10px 8px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.7);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .speaker-select-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.9);
+      border-color: rgba(255,255,255,0.4);
+    }
+    .speaker-select-btn.active {
+      font-weight: 800;
+      border-color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .speaker-select-btn[data-role="patient1"].active,
+    .speaker-select-btn[data-role="patient2"].active,
+    .speaker-select-btn[data-role="guardian"].active {
+      background: #EFF6FF;
+      color: #1E3A8A;
+    }
+    .speaker-select-btn[data-role="staff"].active {
+      background: #F0FDF4;
+      color: #14532D;
+    }
 
     /* 상담실장 코칭 카드 */
     .coach-header {
@@ -844,11 +911,23 @@
               <div class="mic-block">
                 <button class="mic-btn" id="micBtn" onclick="toggleMic()" aria-label="상담 시작/정지" title="클릭하여 녹음 시작/정지">🎙</button>
                 <div class="mic-status" id="micStatus">상담 시작 버튼을 누르세요</div>
+
+                <!-- 화자 선택 (녹음 중에만 표시) -->
+                <div class="speaker-selector" id="speakerSelector" style="display:none;">
+                  <div class="speaker-selector-label">🗣️ 현재 발화자 선택</div>
+                  <div class="speaker-select-buttons">
+                    <button type="button" class="speaker-select-btn" data-role="patient1" onclick="setSpeaker('patient1')" title="환자가 말하는 경우">👤 환자1</button>
+                    <button type="button" class="speaker-select-btn" data-role="patient2" onclick="setSpeaker('patient2')" title="환자 동반자">👥 환자2</button>
+                    <button type="button" class="speaker-select-btn" data-role="guardian" onclick="setSpeaker('guardian')" title="보호자가 말하는 경우">👨‍👩‍👧 보호자</button>
+                    <button type="button" class="speaker-select-btn active" data-role="staff" onclick="setSpeaker('staff')" title="상담실장이 말하는 경우">🧑‍⚕️ 실장</button>
+                  </div>
+                </div>
+
                 <button class="btn w-full" id="endSessionBtn" onclick="endSession()"
                   style="background:rgba(220,38,38,0.15); color:var(--danger-border); border:1.5px solid rgba(252,165,165,0.35); margin-top:14px; font-size:0.82rem;"
                   disabled title="🎙 상담 시작 후 활성화됩니다">🛑 상담 종료 및 저장</button>
                 <div style="font-size:0.7rem; color:rgba(255,255,255,0.55); margin-top:12px; line-height:1.5;">
-                  🤖 두 사람이 자연스럽게 대화하세요.<br>전송 시 AI가 대화 문맥으로 <strong style="color:#FFF;">환자 / 상담실장</strong>을 자동 분리합니다.
+                  🤖 <strong>다중 발화자 지원:</strong> 환자와 보호자가 함께 상담하는 경우,<br>각자 발화할 때마다 상단 버튼으로 <strong style="color:#FFF;">발화자를 선택</strong>하세요.<br>✨ AI가 자동으로 구분하여 분석합니다.
                 </div>
               </div>
 

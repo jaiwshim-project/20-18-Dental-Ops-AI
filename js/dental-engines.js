@@ -65,24 +65,40 @@ ${ctx}
       ? '이전 세션 이력:\n' + history.slice(-5).map((h, i) => `${i + 1}. ${h}`).join('\n') + '\n'
       : '';
 
-    // 입력 소스 판별
-    const hasLabeled = Array.isArray(transcript) && transcript.length && transcript.every(t => t.speaker === 'patient' || t.speaker === 'staff');
+    // 입력 소스 판별 (patient, patient2, guardian, staff 등 다중 발화자 지원)
+    const hasLabeled = Array.isArray(transcript) && transcript.length && transcript.every(t => {
+      const s = t.speaker;
+      return s === 'patient' || s === 'patient1' || s === 'patient2' || s === 'guardian' || s === 'staff';
+    });
     const raw = !hasLabeled ? (utterances || transcript || []) : [];
     const rawBlock = raw.length
       ? '대화 녹취 (화자 미구분, 시간 순):\n' +
         raw.map((u, i) => `[${i + 1}] "${u.text}"`).join('\n') + '\n' +
-        '\n👉 먼저 각 발화의 화자를 추론하여 "patient" 또는 "staff"로 라벨링하라.\n' +
-        '기준: 어미(습니다체 vs 반말/존댓말 혼용), 업무 용어(치료/비용/예약/상담), 질문 주체, 의료 지식 수준, 불안·요구 표현 유무.\n' +
-        '같은 발화 내 여러 화자가 섞여 있으면 의미 단위로 나눠 라벨링해도 된다.\n'
+        '\n👉 먼저 각 발화의 화자를 추론하여 라벨링하라. **환자측 다중 발화자 지원** (보호자 동반 상담 고려):\n' +
+        '- "patient" 또는 "patient1": 주 환자의 발화\n' +
+        '- "patient2": 환자와 함께 온 동반자(배우자, 자녀 등)\n' +
+        '- "guardian": 보호자(부모, 형제 등)\n' +
+        '- "staff": 상담실장(의사, 간호사, 상담사)\n' +
+        '기준: 어미(습니다체 vs 반말/존댓말 혼용), 업무 용어, 질문 주체, 의료 지식 수준, 불안·요구 표현. 같은 발화 내 여러 화자가 섞여 있으면 의미 단위로 나눠라.\n'
       : '';
     const labeledBlock = hasLabeled
-      ? '현재 세션 대화 녹취 (시간 순):\n' +
-        transcript.map(t => (t.speaker === 'staff' ? '[상담실장] ' : '[환자] ') + t.text).join('\n') + '\n'
+      ? '현재 세션 대화 녹취 (시간 순, 사용자가 선택한 화자 정보 포함):\n' +
+        transcript.map(t => {
+          let label = '[?] ';
+          if (t.speaker === 'staff') label = '[상담실장] ';
+          else if (t.speaker === 'patient' || t.speaker === 'patient1') label = '[환자] ';
+          else if (t.speaker === 'patient2') label = '[동반자] ';
+          else if (t.speaker === 'guardian') label = '[보호자] ';
+          return label + t.text;
+        }).join('\n') + '\n'
       : '';
 
-    // 최근 환자 발화 자동 추출 (라벨 있으면 그대로, 없으면 AI가 추론 후 last_patient_utterance 필드로 반환)
+    // 최근 환자측 발화 자동 추출 (환자, 동반자, 보호자 모두 포함)
     const lastPatient = hasLabeled
-      ? (transcript.filter(t => t.speaker === 'patient').slice(-1)[0]?.text || question || '')
+      ? (transcript.filter(t => {
+          const s = t.speaker;
+          return s === 'patient' || s === 'patient1' || s === 'patient2' || s === 'guardian';
+        }).slice(-1)[0]?.text || question || '')
       : (question || '');
 
     // 다언어 지시문
@@ -134,8 +150,8 @@ ${typeof QLRCQFramework !== 'undefined' ? '[QLRCQ Framework 참조 — 단계별
 
 JSON으로만 출력:
 {
-  "diarized_turns": [ { "speaker": "patient|staff", "text": "발화 내용" } ],
-  "last_patient_utterance": "라벨링 결과 중 마지막 환자 발화 원문",
+  "diarized_turns": [ { "speaker": "patient|patient2|guardian|staff", "text": "발화 내용" } ],
+  "last_patient_utterance": "라벨링 결과 중 마지막 환자측(환자/동반자/보호자) 발화 원문",
   "macro_stage": 1~5 숫자 (현재 대단계),
   "macro_stage_name": "공감|이해|선택권 제공|가치 전달|신뢰 구축",
   "qlrcq_position": "Q|L|R|C|Q'  (현재 상담사가 수행해야 할 마이크로 사이클 위치)",
