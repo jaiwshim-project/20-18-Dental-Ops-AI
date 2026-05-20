@@ -1037,8 +1037,8 @@ async function endSession() {
 
 function labelText(speaker) {
   if (speaker === 'patient' || speaker === 'patient1') return '👤 환자';
-  if (speaker === 'patient2') return '👥 동반자';
-  if (speaker === 'guardian') return '👨‍👩‍👧 보호자';
+  if (speaker === 'patient2') return '👥 보호자1';
+  if (speaker === 'guardian') return '👨‍👩‍👧 보호자2';
   if (speaker === 'staff')   return '🧑‍⚕️ 상담실장';
   return '🗣 발화';
 }
@@ -1134,11 +1134,19 @@ function inferSpeaker(text) {
     patientScore += (matches ? matches.length : 0);
   });
 
-  // 보호자 특정 신호
+  // 보호자 특정 신호 (보호자만의 고유 특징)
   let guardianScore = 0;
   const guardianPatterns = [
-    /어머니|아버지|부모|엄마|아빠|형|누나|언니|오빠|동생|아들|딸|아내|남편/g,
-    /여쭤보고|보호자|함께|동반|같이|의논/g,
+    // 가족 관계 언급
+    /어머니|아버지|부모|엄마|아빠|형|누나|언니|오빠|동생|아들|딸|아내|남편|아이|자녀|가족/g,
+    // 보호자 입장에서의 발화
+    /여쭤보고|보호자|함께|동반|같이|의논|데려왔어|데려갔어/g,
+    // 누군가의 말을 전달 (과거형)
+    /다고 했어요|하더라고요|그러더라고요|다고 하더라고요|말하길|말했을|얘기했어요|얘기하더라고|얘기했길/g,
+    // 보호자만 사용하는 표현
+    /우리 아이|우리 아들|우리 딸|저희 아이|우리 애|저희 애/g,
+    // 보호자 역할 표현
+    /데려올|챙겨|봐주다|봐줄|관찰|봤을|봤어요|지켜봤|지켜본/g,
   ];
   guardianPatterns.forEach(pattern => {
     const matches = text.match(pattern);
@@ -1155,10 +1163,26 @@ function inferSpeaker(text) {
   }
 
   // staff 버튼이 선택된 상태에서 환자측 신호 감지 → 자동 보정
+  if (guardianScore > 0) {
+    // 보호자 신호가 강함 → 현재 선택된 보호자 역할에 맞춰서 반환
+    // guardian1만 선택: patient2로 반환
+    // guardian2만 선택: guardian으로 반환
+    // 둘 다 선택되면: patient2 우선
+    if (selectedParticipants.guardian1) {
+      console.log(`  ↳ 자동 추론: patient2 (보호자1 신호 감지)`);
+      return 'patient2';
+    } else if (selectedParticipants.guardian2) {
+      console.log(`  ↳ 자동 추론: guardian (보호자2 신호 감지)`);
+      return 'guardian';
+    }
+    console.log(`  ↳ 자동 추론: patient2 (보호자 신호 감지, 기본)`);
+    return 'patient2';
+  }
+
   if (patientScore > staffScore && patientScore > 0) {
-    const inferred = guardianScore > patientScore ? 'guardian' : 'patient1';
-    console.log(`  ↳ 자동 추론: ${inferred} (환자측 신호 감지)`);
-    return inferred;
+    // 보호자 신호는 없고 환자 신호만 있으면 patient1
+    console.log(`  ↳ 자동 추론: patient1 (환자측 신호 감지)`);
+    return 'patient1';
   }
 
   // staff 신호 충분 → 상담실장
