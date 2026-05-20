@@ -1344,11 +1344,13 @@ function updateSpeakerButtons() {
     doctor: { label: '👨‍⚕️ 원장', key: 'doctor' }
   };
 
-  Object.entries(buttonMap).forEach(([role, { key }]) => {
+  Object.entries(buttonMap).forEach(([role, { label, key }]) => {
     const btn = container.querySelector(`[data-role="${role}"]`);
     if (btn) {
       const isSelected = selectedParticipants[key];
       btn.style.display = isSelected ? 'block' : 'none';
+      // 선택된 참여자의 버튼 텍스트 동적 업데이트
+      btn.textContent = label;
 
       // 선택되지 않은 참여자는 비활성화
       if (!isSelected) {
