@@ -1304,6 +1304,14 @@ console.log('  1. simulateSpeechInput("환자 발화") - 단일 입력');
 console.log('  2. simulateSpeechInput([{text:"발화",speaker:"patient1"}, ...]) - 복수 입력');
 console.log('  3. demoConversation() - 데모 시나리오 실행');
 
+// 테스트 모드일 때 데모 버튼 표시
+if (isTestMode) {
+  setTimeout(() => {
+    const demoBtn = document.getElementById('demoBtn');
+    if (demoBtn) demoBtn.style.display = 'inline-block';
+  }, 500);
+}
+
 initLangSelect();
 initSpeech();
 
