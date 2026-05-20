@@ -6,6 +6,13 @@ if (isTestMode) {
   document.body.style.borderTop = "3px solid #FF9500";
 }
 
+// 📋 상담 모드: interpret(통역), record(녹음), coach(코치)
+const consultMode = new URLSearchParams(window.location.search).get("mode") || "coach";
+console.log(`📋 상담 모드: ${consultMode} — ${consultMode === 'record' ? '순수 녹음' : consultMode === 'interpret' ? '실시간 통역' : '코칭'}`);
+if (consultMode === 'record') {
+  document.body.style.borderRight = "3px solid #10B981";
+}
+
 const LANG_OPTIONS = [
   { code: 'ko-KR', label: '한국어' },
   { code: 'en-US', label: 'English (US)' },
@@ -872,13 +879,24 @@ function startSession() {
   };
   document.getElementById('sessionCard').style.display = 'block';
   document.getElementById('endSessionBtn').disabled = false;
-  document.getElementById('evalNowBtn').disabled = false;
+  if (consultMode !== 'record') {
+    document.getElementById('evalNowBtn').disabled = false;
+  }
   // 세션 중에는 환자·언어 변경 금지 (일관성)
   document.getElementById('patientSelect').disabled = true;
   document.getElementById('langSelect').disabled = true;
   startSessionTimer();
   updateSessionMeta();
-  showToast(`상담 세션 시작: [${participantLabels.join(', ')}]`, 'info');
+
+  let modeMsg = '';
+  if (consultMode === 'record') {
+    modeMsg = ' (순수 녹음)';
+  } else if (consultMode === 'interpret') {
+    modeMsg = ' (실시간 통역)';
+  } else {
+    modeMsg = ' (코칭 포함)';
+  }
+  showToast(`상담 세션 시작: [${participantLabels.join(', ')}]${modeMsg}`, 'info');
 }
 
 function startSessionTimer() {
@@ -2032,3 +2050,57 @@ document.addEventListener('DOMContentLoaded', function() {
   // 주기적 확인 (1초마다 - 사이드바가 사라지면 다시 추가)
   setInterval(ensureSidebar, 1000);
 })();
+
+// ===== 상담 모드별 UI 초기화 =====
+function initConsultMode() {
+  const modeLabels = {
+    interpret: '📞 상담AI통역',
+    record: '🎙 상담AI녹음',
+    coach: '🧑‍⚕️ 상담AI코치'
+  };
+
+  const modeDesc = {
+    interpret: '| Medvo',
+    record: '| Medvo',
+    coach: '| Medvo'
+  };
+
+  const pageTitle = document.querySelector('h1') || document.querySelector('.page-title');
+  const submitBtn = document.getElementById('submitBtn');
+  const evalNowBtn = document.getElementById('evalNowBtn');
+  const coachArea = document.getElementById('coachArea');
+  const replyArea = document.getElementById('replyArea');
+
+  // 페이지 제목 업데이트 (HTML 및 브라우저 탭)
+  const modeLabel = modeLabels[consultMode] || '상담 AI';
+  if (pageTitle) {
+    pageTitle.textContent = modeLabel;
+  }
+  document.title = modeLabel + ' ' + modeDesc[consultMode];
+
+  if (consultMode === 'record') {
+    // 🎙 순수 녹음 모드 - 전송 버튼, 코칭 영역 숨김
+    if (submitBtn) submitBtn.style.display = 'none';
+    if (evalNowBtn) evalNowBtn.style.display = 'none';
+    if (coachArea) coachArea.style.display = 'none';
+    if (replyArea) {
+      replyArea.innerHTML = '<em>🎙 순수 녹음 모드입니다</em><br><br>마이크로 자연스럽게 대화를 나눈 후, 세션을 종료하면 녹음이 저장됩니다.';
+      replyArea.style.color = 'var(--text-secondary)';
+    }
+    console.log('🎙 [RECORD MODE] 녹음 기능만 활성화됨');
+  } else if (consultMode === 'interpret') {
+    // 📞 통역 모드 - 기본 기능 모두 활성화 (코칭은 표시하되, AI 분석만 표시)
+    // 현재 단계에서는 기본 동작과 동일
+    console.log('📞 [INTERPRET MODE] 실시간 통역 기능 활성화됨');
+  } else {
+    // 🧑‍⚕️ 코칭 모드 - 모든 기능 활성화 (기본값)
+    console.log('🧑‍⚕️ [COACH MODE] 완전 기능 활성화됨');
+  }
+}
+
+// DOMContentLoaded 시점에 UI 초기화
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initConsultMode);
+} else {
+  setTimeout(initConsultMode, 100);
+}

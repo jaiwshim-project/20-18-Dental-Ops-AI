@@ -213,7 +213,7 @@
             <div class="hero-actions">
               <button class="btn btn-accent btn-lg" onclick="openModal('loginModal')">🔐 로그인하고 시작하기</button>
               <a href="brand-story.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1); color:#FFF; border:1px solid rgba(255,255,255,0.25);">📖 브랜드 스토리</a>
-              <a href="consult.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1); color:#FFF; border:1px solid rgba(255,255,255,0.25);">💬 상담 AI 바로가기</a>
+              <a href="consult.html?mode=coach" class="btn btn-lg" style="background:rgba(255,255,255,0.1); color:#FFF; border:1px solid rgba(255,255,255,0.25);">🧑‍⚕️ 상담AI코치 바로가기</a>
               <a href="dashboard.html" class="btn btn-lg" style="background:transparent; color:#FFF; border:1px solid rgba(255,255,255,0.2);">📊 대시보드 보기</a>
             </div>
           </div>
@@ -279,11 +279,23 @@
             </div>
           </div>
           <div class="features-grid">
-            <a href="consult.html" class="feature-card">
-              <div class="feature-icon blue">💬</div>
-              <h3>상담 AI</h3>
+            <a href="consult.html?mode=interpret" class="feature-card">
+              <div class="feature-icon blue">📞</div>
+              <h3>상담AI통역</h3>
               <p>환자 질문에 실시간 답변, 증상 Triage, 치료·비용·기간 추천.</p>
               <span class="feature-tag">Consult Engine</span>
+            </a>
+            <a href="consult.html?mode=record" class="feature-card">
+              <div class="feature-icon green">🎙</div>
+              <h3>상담AI녹음</h3>
+              <p>상담 내용을 순수하게 녹음만 하고 저장합니다.</p>
+              <span class="feature-tag">Recording Only</span>
+            </a>
+            <a href="consult.html?mode=coach" class="feature-card">
+              <div class="feature-icon amber">🧑‍⚕️</div>
+              <h3>상담AI코치</h3>
+              <p>실시간 녹음 후 AI가 환자의 속마음을 파악해 코칭 스크립트 제공.</p>
+              <span class="feature-tag">Full Coaching</span>
             </a>
             <a href="conversion.html" class="feature-card">
               <div class="feature-icon green">🎯</div>
