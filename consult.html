@@ -1059,6 +1059,74 @@
     </div>
   </div>
 
+  <!-- 상담 참여자 선택 모달 -->
+  <div class="modal-overlay" id="participantsModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.25rem;">👥</span> 상담 참여자 선택
+        </h3>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('participantsModal')" style="font-size:1rem; padding:4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="padding:10px 14px; background:var(--primary-bg); border-radius:var(--radius-sm); margin-bottom:16px; font-size:0.78rem; color:var(--primary); line-height:1.5;">
+          💡 오늘 상담에 참여하는 사람들을 선택하세요. 음성 인식 시 더 정확하게 화자를 구분합니다.
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <!-- 환자 -->
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--gray-50); border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid var(--gray-200); transition:all 0.2s;">
+            <input type="checkbox" id="participantPatient" checked style="width:18px; height:18px; cursor:pointer;">
+            <span style="flex:1;">
+              <strong style="font-size:0.95rem;">👤 환자</strong><br>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">진료받는 본인</span>
+            </span>
+          </label>
+
+          <!-- 보호자1 -->
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--gray-50); border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid var(--gray-200); transition:all 0.2s;">
+            <input type="checkbox" id="participantGuardian1" style="width:18px; height:18px; cursor:pointer;">
+            <span style="flex:1;">
+              <strong style="font-size:0.95rem;">👨‍👩‍👧 보호자1</strong><br>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">부모, 배우자 등</span>
+            </span>
+          </label>
+
+          <!-- 보호자2 -->
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--gray-50); border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid var(--gray-200); transition:all 0.2s;">
+            <input type="checkbox" id="participantGuardian2" style="width:18px; height:18px; cursor:pointer;">
+            <span style="flex:1;">
+              <strong style="font-size:0.95rem;">👨‍👩‍👧‍👦 보호자2</strong><br>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">형제, 자녀 등</span>
+            </span>
+          </label>
+
+          <!-- 상담실장 -->
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--gray-50); border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid var(--gray-200); transition:all 0.2s;">
+            <input type="checkbox" id="participantStaff" checked style="width:18px; height:18px; cursor:pointer;">
+            <span style="flex:1;">
+              <strong style="font-size:0.95rem;">🧑‍⚕️ 상담실장</strong><br>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">간호사, 담당자</span>
+            </span>
+          </label>
+
+          <!-- 원장 -->
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--gray-50); border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid var(--gray-200); transition:all 0.2s;">
+            <input type="checkbox" id="participantDoctor" style="width:18px; height:18px; cursor:pointer;">
+            <span style="flex:1;">
+              <strong style="font-size:0.95rem;">👨‍⚕️ 원장(의사)</strong><br>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">의료진</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="resetParticipants()">초기화</button>
+        <button class="btn btn-primary" onclick="confirmParticipants()">✓ 확인 · 상담 시작</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 이전 상담 선택 모달 -->
   <div class="modal-overlay" id="pastSessionsModal">
     <div class="modal" style="max-width:560px;">

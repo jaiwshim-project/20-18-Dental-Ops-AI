@@ -832,12 +832,30 @@ let currentSpeaker = 'staff';  // 현재 선택된 발화자 (기본값: 상담�
 let currentSession = null; // { id, patientId, patientName, startedAt, turns[], coachResults[], author }
 let sessionTimerHandle = null;
 
+// 상담 참여자
+let selectedParticipants = {
+  patient: true,          // 환자
+  guardian1: false,       // 보호자1
+  guardian2: false,       // 보호자2
+  staff: true,            // 상담실장
+  doctor: false           // 원장
+};
+
 function startSession() {
   if (currentSession) return;
   const patient = getSelectedPatient();
   const author = Session.get();
   // clinic_id: 세션 → URL 파라미터 순으로 폴백
   const urlClinicId = new URLSearchParams(window.location.search).get('clinic_id') || '';
+
+  // 참여자 이름 생성
+  const participantLabels = [];
+  if (selectedParticipants.patient) participantLabels.push('환자');
+  if (selectedParticipants.guardian1) participantLabels.push('보호자1');
+  if (selectedParticipants.guardian2) participantLabels.push('보호자2');
+  if (selectedParticipants.staff) participantLabels.push('상담실장');
+  if (selectedParticipants.doctor) participantLabels.push('원장');
+
   currentSession = {
     id: 'SES_' + Date.now(),
     patientId: patient?.id || null,
@@ -849,7 +867,8 @@ function startSession() {
     startedAt: Date.now(),
     endedAt: null,
     turns: [],
-    coachResults: []
+    coachResults: [],
+    participants: { ...selectedParticipants }  // 참여자 정보 저장
   };
   document.getElementById('sessionCard').style.display = 'block';
   document.getElementById('endSessionBtn').disabled = false;
@@ -859,7 +878,7 @@ function startSession() {
   document.getElementById('langSelect').disabled = true;
   startSessionTimer();
   updateSessionMeta();
-  showToast('상담 세션이 시작되었습니다', 'info');
+  showToast(`상담 세션 시작: [${participantLabels.join(', ')}]`, 'info');
 }
 
 function startSessionTimer() {
@@ -1242,8 +1261,12 @@ function initSpeech() {
 function startMic() {
   if (!recognition) return;
   try {
-    // 세션이 없으면 자동 시작 (🎙 첫 클릭 = 상담 시작)
-    if (!currentSession) startSession();
+    // 세션이 없으면 참여자 선택 모달 표시
+    if (!currentSession) {
+      openModal('participantsModal');
+      return;
+    }
+
     recognition.start();
     isRecording = true;
     document.getElementById('micBtn').classList.add('recording');
@@ -1252,7 +1275,8 @@ function startMic() {
     s.textContent = '🔴 녹음 중… 자연스럽게 대화하세요';
     s.classList.add('recording');
     document.getElementById('chatLog').classList.add('recording');
-    // 화자 선택 UI 표시
+    // 화자 선택 UI 표시 (선택된 참여자만)
+    updateSpeakerButtons();
     document.getElementById('speakerSelector').style.display = 'flex';
   } catch (e) {
     showToast('녹음 시작 실패: ' + e.message, 'error');
@@ -1281,6 +1305,81 @@ function setSpeaker(role) {
   document.querySelectorAll('.speaker-select-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.role === role);
   });
+}
+
+// 선택된 참여자에만 화자 버튼 표시
+function updateSpeakerButtons() {
+  const container = document.querySelector('.speaker-select-buttons');
+  if (!container) return;
+
+  const buttonMap = {
+    patient1: { label: '👤 환자', key: 'patient' },
+    patient2: { label: '👥 보호자1', key: 'guardian1' },
+    guardian: { label: '👨‍👩‍👧 보호자2', key: 'guardian2' },
+    staff: { label: '🧑‍⚕️ 상담실장', key: 'staff' },
+    doctor: { label: '👨‍⚕️ 원장', key: 'doctor' }
+  };
+
+  Object.entries(buttonMap).forEach(([role, { key }]) => {
+    const btn = container.querySelector(`[data-role="${role}"]`);
+    if (btn) {
+      const isSelected = selectedParticipants[key];
+      btn.style.display = isSelected ? 'block' : 'none';
+
+      // 선택되지 않은 참여자는 비활성화
+      if (!isSelected) {
+        btn.classList.remove('active');
+        if (currentSpeaker === role) {
+          // 현재 선택된 역할이 비활성화되었으면 다른 역할로 변경
+          const available = Object.entries(buttonMap).find(([r, { key: k }]) =>
+            selectedParticipants[k] && r !== role
+          );
+          if (available) setSpeaker(available[0]);
+        }
+      }
+    }
+  });
+}
+
+// 참여자 선택 모달 - 확인 버튼
+function confirmParticipants() {
+  selectedParticipants = {
+    patient: document.getElementById('participantPatient')?.checked ?? true,
+    guardian1: document.getElementById('participantGuardian1')?.checked ?? false,
+    guardian2: document.getElementById('participantGuardian2')?.checked ?? false,
+    staff: document.getElementById('participantStaff')?.checked ?? true,
+    doctor: document.getElementById('participantDoctor')?.checked ?? false
+  };
+
+  closeModal('participantsModal');
+  startSession();
+
+  // 약 200ms 후 마이크 활성화
+  setTimeout(() => {
+    try {
+      recognition.start();
+      isRecording = true;
+      document.getElementById('micBtn').classList.add('recording');
+      document.getElementById('micBtn').textContent = '⏹';
+      const s = document.getElementById('micStatus');
+      s.textContent = '🔴 녹음 중… 자연스럽게 대화하세요';
+      s.classList.add('recording');
+      document.getElementById('chatLog').classList.add('recording');
+      updateSpeakerButtons();
+      document.getElementById('speakerSelector').style.display = 'flex';
+    } catch (e) {
+      console.warn('마이크 시작 실패:', e);
+    }
+  }, 200);
+}
+
+// 참여자 선택 모달 - 초기화 버튼
+function resetParticipants() {
+  document.getElementById('participantPatient').checked = true;
+  document.getElementById('participantGuardian1').checked = false;
+  document.getElementById('participantGuardian2').checked = false;
+  document.getElementById('participantStaff').checked = true;
+  document.getElementById('participantDoctor').checked = false;
 }
 
 function toggleMic() {
