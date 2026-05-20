@@ -1083,11 +1083,83 @@ function appendInterim(text) {
   log.scrollTop = log.scrollHeight;
 }
 
+// 발화 내용 분석으로 화자 자동 추론
+function inferSpeaker(text) {
+  if (!text) return currentSpeaker;
+
+  // 상담실장(원장) 특징 점수 (높을수록 상담실장일 확률 ↑)
+  let staffScore = 0;
+  const staffPatterns = [
+    /습니다|드립니다|있습니다|걸립니다|되겠습니다/g,      // 존댓말
+    /저희|저희 병원|저희는|저희가/g,                        // "저희" 사용
+    /치료|임플란트|신경치료|스케일링|보철|교정|라미네이트/g, // 의료 용어
+    /비용은|가격은|예상|권장|기간|진행|관리|방법/g,         // 전문용어
+    /먼저|다음|함께|확인|설명|자료|정보/g,                  // 상담 패턴
+  ];
+  staffPatterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    staffScore += (matches ? matches.length : 0);
+  });
+
+  // 환자/보호자 특징 점수 (높을수록 환자측일 확률 ↑)
+  let patientScore = 0;
+  const patientPatterns = [
+    /어요|해요|네요|맞아|그래|정말|아니에요|몰라요/g,      // 일상 어미
+    /아파요|아픕니다|불편해요|걱정돼요|두려워요|무서워요/g, // 증상/감정
+    /왜|뭐|언제|어디|누가|어떻게|있나요|되나요|맞나요/g,    // 질문
+    /저는|우리는|엄마가|아빠가|딸이|아들이|아내가|남편이/g, // 1인칭/관계사
+    /비용|돈|값|얼마|월|회차|할부|대출/g,                   // 가격 관심
+  ];
+  patientPatterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    patientScore += (matches ? matches.length : 0);
+  });
+
+  // 보호자 특정 신호
+  let guardianScore = 0;
+  const guardianPatterns = [
+    /어머니|아버지|부모|엄마|아빠|형|누나|언니|오빠|동생|아들|딸|아내|남편/g,
+    /여쭤보고|보호자|함께|동반|같이|의논/g,
+  ];
+  guardianPatterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    guardianScore += (matches ? matches.length : 0);
+  });
+
+  // 점수 기반 판별
+  console.log(`[Speech Analysis] text="${text.substring(0, 30)}..." staff:${staffScore} patient:${patientScore} guardian:${guardianScore}`);
+
+  // 현재 선택된 화자를 기본값으로 우선
+  if (currentSpeaker !== 'staff') {
+    // 사용자가 명시적으로 환자측을 선택했으면 그대로 사용
+    return currentSpeaker;
+  }
+
+  // staff 버튼이 선택된 상태에서 환자측 신호 감지 → 자동 보정
+  if (patientScore > staffScore && patientScore > 0) {
+    const inferred = guardianScore > patientScore ? 'guardian' : 'patient1';
+    console.log(`  ↳ 자동 추론: ${inferred} (환자측 신호 감지)`);
+    return inferred;
+  }
+
+  // staff 신호 충분 → 상담실장
+  if (staffScore >= 2) {
+    console.log(`  ↳ 상담실장 유지 (전문용어 감지)`);
+    return 'staff';
+  }
+
+  // 모호한 경우 현재 선택값 유지
+  return currentSpeaker;
+}
+
 function commitFinal(text) {
   const trimmed = (text || '').trim();
   if (interimEl) { interimEl.remove(); interimEl = null; }
   if (!trimmed) return;
-  turns.push({ speaker: currentSpeaker, text: trimmed, at: Date.now() });
+
+  // 발화 내용 분석으로 화자 자동 추론
+  const speaker = inferSpeaker(trimmed);
+  turns.push({ speaker, text: trimmed, at: Date.now() });
   renderTurns();
   if (currentSession) {
     currentSession.turns = turns.map(t => ({ ...t }));
@@ -1288,21 +1360,56 @@ window.simulateSpeechInput = async function(inputs) {
 // 🧪 데모 시나리오
 window.demoConversation = async function() {
   console.log('🎬 데모 상담 시나리오 시작...\n');
+  console.log('💡 팁: 콘솔을 열어두면 각 발화의 화자 추론 결과를 볼 수 있습니다.\n');
 
   await window.simulateSpeechInput([
-    { text: '안녕하세요, 임플란트 때문에 왔어요.', speaker: 'patient1', delay: 1200 },
-    { text: '어머니도 함께 상담해주시는 거예요.', speaker: 'patient2', delay: 1000 },
-    { text: '네, 저는 어머니 보호자예요. 비용이 얼마나 드는지 궁금합니다.', speaker: 'guardian', delay: 1300 },
-    { text: '그래요, 편하게 설명해주세요.', speaker: 'patient1', delay: 800 },
+    { text: '안녕하세요, 임플란트 때문에 왔어요.', speaker: 'staff', delay: 1200 },  // 자동 추론 test
+    { text: '어머니도 함께 상담해주시는 거예요.', speaker: 'staff', delay: 1000 },   // 자동 추론 test
+    { text: '비용이 얼마나 드는지 궁금합니다.', speaker: 'staff', delay: 1300 },     // 자동 추론 test
+    { text: '그래요, 편하게 설명해주세요.', speaker: 'staff', delay: 800 },        // 자동 추론 test
   ]);
 
-  console.log('대화가 모두 입력되었습니다. 이제 📤 [전송] 버튼을 클릭해 AI 분석을 받아보세요!');
+  console.log('\n✅ 데모 완료! 콘솔의 [Speech Analysis] 로그를 확인해주세요.');
+  console.log('   • 각 발화가 환자/동반자/보호자/상담실장으로 올바르게 분류되었는지 확인');
+  console.log('   • 이제 📤 [전송] 버튼을 클릭해 AI 분석을 받아보세요!');
 };
 
-console.log('💡 테스트 함수 사용법:');
-console.log('  1. simulateSpeechInput("환자 발화") - 단일 입력');
-console.log('  2. simulateSpeechInput([{text:"발화",speaker:"patient1"}, ...]) - 복수 입력');
-console.log('  3. demoConversation() - 데모 시나리오 실행');
+// 🧪 발화 내용 분석 테스트
+window.testSpeechAnalysis = async function() {
+  console.log('🔍 발화 내용 분석 테스트\n');
+
+  const testCases = [
+    '아파요. 어떻게 해야 돼요?',                              // 환자
+    '어머니가 걱정하세요. 비용은?',                           // 보호자
+    '네, 저희 병원은 최신 장비를 갖추고 있습니다.',            // 상담실장
+    '치료 기간은 얼마나 걸려요?',                             // 환자
+    '딸이랑 함께 왔는데 잘 해주실 거죠?',                     // 보호자
+    '임플란트 성공률은 98% 정도입니다.',                      // 상담실장
+  ];
+
+  for (const text of testCases) {
+    await new Promise(r => setTimeout(r, 500));
+    commitFinal(text);
+  }
+
+  console.log('\n✅ 분석 완료! 각 발화의 색상을 확인해주세요.');
+};
+
+console.log('💡 음성 인식 & 발화 분석 테스트 함수:');
+console.log('');
+console.log('1️⃣  demoConversation()');
+console.log('    • 4개 발화 자동 입력 (모두 staff로 설정)');
+console.log('    • 발화 내용으로 자동 추론 (환자/동반자/보호자 자동 분류)');
+console.log('    • 콘솔의 [Speech Analysis] 로그 확인');
+console.log('');
+console.log('2️⃣  testSpeechAnalysis()');
+console.log('    • 6가지 샘플 발화 입력');
+console.log('    • 각각 환자/보호자/상담실장으로 자동 분류되는지 확인');
+console.log('');
+console.log('3️⃣  simulateSpeechInput("발화")');
+console.log('    • 단일 발화 입력 (자동 분석)');
+console.log('');
+console.log('⚙️  중요: 모든 테스트에서 화자 버튼 선택 없이 자동 추론됩니다.');
 
 // 테스트 모드일 때 데모 버튼 표시
 if (isTestMode) {
