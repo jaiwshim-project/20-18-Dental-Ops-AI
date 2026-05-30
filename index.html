@@ -194,12 +194,74 @@
     }
     .section-head p { margin-top: 4px; color: var(--text-tertiary); font-size: 0.9rem; }
 
+    .tutorial-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
+      margin-top: 24px;
+    }
+    .tutorial-card {
+      background: var(--surface);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--duration) var(--ease);
+    }
+    .tutorial-card:hover {
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+    }
+    .video-wrapper {
+      width: 100%;
+      padding-bottom: 56.25%;
+      position: relative;
+      overflow: hidden;
+      background: var(--gray-900);
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .tutorial-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+    .tutorial-content h3 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .tutorial-content p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .qr-code {
+      width: 120px;
+      height: 120px;
+      margin-top: 8px;
+      border: 2px solid var(--gray-300);
+      border-radius: var(--radius-md);
+      object-fit: cover;
+    }
+
     @media (max-width: 768px) {
       .hero { padding: 36px 24px; }
       .hero h1 { font-size: 1.75rem; }
       .hero-stats { gap: 24px; flex-wrap: wrap; }
       .workflow-steps { flex-direction: column; gap: 24px; }
       .workflow-step::after { display: none; }
+      .tutorial-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -354,6 +416,40 @@
               <p>KPI 기반 CEO Top-3 액션·리스크·ROI 자동 제안.</p>
               <span class="feature-tag">CEO Engine</span>
             </a>
+          </div>
+        </section>
+
+        <!-- 사용법 가이드 & 튜토리얼 -->
+        <section class="mt-32">
+          <div class="section-head">
+            <div>
+              <h2>사용법 가이드</h2>
+              <p>YouTube 영상으로 상담 AI의 주요 기능을 배워보세요. QR코드를 스캔하여 더 자세한 가이드를 받을 수 있습니다.</p>
+            </div>
+          </div>
+          <div class="tutorial-grid">
+            <!-- 상담 AI 코치 -->
+            <div class="tutorial-card">
+              <div class="video-wrapper">
+                <iframe src="https://www.youtube.com/embed/sv1g_JR6HCA?rel=0" title="상담 AI 코치 튜토리얼" allowfullscreen></iframe>
+              </div>
+              <div class="tutorial-content">
+                <h3>상담 AI 코치</h3>
+                <p>실시간 녹음 후 AI가 환자의 속마음을 파악해 코칭 스크립트를 제공합니다. 상담 성공률을 높이세요.</p>
+                <img src="qr-coach.jpg" alt="상담 AI 코치 사용법 QR코드" class="qr-code">
+              </div>
+            </div>
+            <!-- 상담 AI 통역 -->
+            <div class="tutorial-card">
+              <div class="video-wrapper">
+                <iframe src="https://www.youtube.com/embed/I98QxhZcmVM?rel=0" title="상담 AI 통역 튜토리얼" allowfullscreen></iframe>
+              </div>
+              <div class="tutorial-content">
+                <h3>상담 AI 통역</h3>
+                <p>환자 질문에 실시간 답변, 증상 Triage, 치료·비용·기간 추천을 제공합니다. 상담 시간을 단축하세요.</p>
+                <img src="qr-translate.jpg" alt="상담 AI 통역 사용법 QR코드" class="qr-code">
+              </div>
+            </div>
           </div>
         </section>
 
