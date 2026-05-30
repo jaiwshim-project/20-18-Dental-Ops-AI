@@ -301,8 +301,9 @@ function renderDetail(s) {
 
   // AI 분석 버튼
   html += `<div class="detail-section" style="display:flex; gap:8px; margin-bottom:14px;">
-    <button id="runAnalysisBtn" class="btn btn-sm btn-outline" onclick="runAiAnalysis()" style="flex:1; font-size:0.78rem;">🔍 AI 분석 실행</button>
-  </div>`;
+    <button id="runAnalysisBtn" class="btn btn-sm btn-outline" style="flex:1; font-size:0.78rem;">🔍 AI 분석 실행</button>
+  </div>
+  <div id="evaluationArea" style="margin-top:16px;"></div>`;
 
   // 대화
   if (turns.length) {
@@ -368,6 +369,12 @@ function renderDetail(s) {
   }
 
   body.innerHTML = html || '<div class="empty-state">표시할 데이터가 없습니다.</div>';
+
+  // AI 분석 버튼 이벤트 리스너 등록
+  const runBtn = document.getElementById('runAnalysisBtn');
+  if (runBtn) {
+    runBtn.addEventListener('click', runAiAnalysis);
+  }
 }
 
 // ===== CSV =====
@@ -580,7 +587,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       html += `</div>`;
-      document.getElementById('detailBody').insertAdjacentHTML('beforeend', html);
+      const evalArea = document.getElementById('evaluationArea');
+      if (evalArea) {
+        evalArea.innerHTML = html;
+      } else {
+        document.getElementById('detailBody').insertAdjacentHTML('beforeend', html);
+      }
     }
     
     if (attempts < maxAttempts) {
