@@ -7,42 +7,6 @@ let sortDir = 'desc';
 let typeFilter = 'all';     // 'all' | 'coach' | 'translate'
 let currentDetailSession = null;
 
-// 이벤트 리스너 등록 (DOMContentLoaded 후)
-function setupEventListeners() {
-  // 필터 변경
-  ['filterRange', 'filterPatient', 'filterAuthor', 'filterScore'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('change', applyFilters);
-  });
-
-  // 검색 입력
-  const searchEl = document.getElementById('filterSearch');
-  if (searchEl) searchEl.addEventListener('input', applyFiltersDebounced);
-
-  // CSV 다운로드
-  const csvBtn = document.getElementById('csvBtn');
-  if (csvBtn) csvBtn.addEventListener('click', downloadCSV);
-
-  // 상세 패널 닫기
-  const closeBtn = document.getElementById('closeDetailBtn');
-  if (closeBtn) closeBtn.addEventListener('click', closeDetail);
-
-  // 타입 필터 탭
-  const tabAll = document.getElementById('tabAll');
-  const tabCoach = document.getElementById('tabCoach');
-  const tabTranslate = document.getElementById('tabTranslate');
-  if (tabAll) tabAll.addEventListener('click', () => setTypeFilter('all'));
-  if (tabCoach) tabCoach.addEventListener('click', () => setTypeFilter('coach'));
-  if (tabTranslate) tabTranslate.addEventListener('click', () => setTypeFilter('translate'));
-
-  console.log('[✅ review-page 이벤트 리스너 등록 완료]');
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupEventListeners);
-} else {
-  setTimeout(setupEventListeners, 100);
-}
 
 async function loadTranslateSessions() {
   try {
@@ -448,10 +412,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeDetail();
 });
 
-// 초기 로딩
-setTimeout(loadAllSessions, 200);
-  </script>
-
 // ===== 사이드바 렌더링 (DOMContentLoaded 대기) =====
 document.addEventListener('DOMContentLoaded', function() {
   const appDiv = document.getElementById('app');
@@ -631,4 +591,51 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 주기적 확인 (1초마다 - 사이드바가 사라지면 다시 추가)
   setInterval(ensureSidebar, 1000);
+})();
+
+// ===== 초기화 코드 =====
+// 이벤트 리스너 등록 (DOMContentLoaded 후)
+function setupEventListeners() {
+  // 필터 변경
+  ['filterRange', 'filterPatient', 'filterAuthor', 'filterScore'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', applyFilters);
+  });
+
+  // 검색 입력
+  const searchEl = document.getElementById('filterSearch');
+  if (searchEl) searchEl.addEventListener('input', applyFiltersDebounced);
+
+  // CSV 다운로드
+  const csvBtn = document.getElementById('csvBtn');
+  if (csvBtn) csvBtn.addEventListener('click', downloadCSV);
+
+  // 상세 패널 닫기
+  const closeBtn = document.getElementById('closeDetailBtn');
+  if (closeBtn) closeBtn.addEventListener('click', closeDetail);
+
+  // 타입 필터 탭
+  const tabAll = document.getElementById('tabAll');
+  const tabCoach = document.getElementById('tabCoach');
+  const tabTranslate = document.getElementById('tabTranslate');
+  if (tabAll) tabAll.addEventListener('click', () => setTypeFilter('all'));
+  if (tabCoach) tabCoach.addEventListener('click', () => setTypeFilter('coach'));
+  if (tabTranslate) tabTranslate.addEventListener('click', () => setTypeFilter('translate'));
+
+  console.log('[✅ review-page 이벤트 리스너 등록 완료]');
+}
+
+// DOMContentLoaded 또는 즉시 실행
+(function init() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('[review-page] DOMContentLoaded 감지, setupEventListeners 호출');
+      setupEventListeners();
+      setTimeout(loadAllSessions, 100);
+    });
+  } else {
+    console.log('[review-page] 문서 이미 로드됨, 즉시 초기화 시작');
+    setupEventListeners();
+    setTimeout(loadAllSessions, 100);
+  }
 })();
