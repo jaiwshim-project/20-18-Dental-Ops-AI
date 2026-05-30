@@ -1719,39 +1719,118 @@
       }
 
       if (btn) { btn.disabled = true; btn.textContent = '분석 중...'; }
-      box.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-secondary);font-size:0.875rem;">🤖 AI가 분석 중입니다...</div>';
+      box.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-secondary);font-size:0.875rem;">🤖 AI 분석 중 (5축 평가 + QLRCQ)</div>';
 
       try {
-        const res = await fetch('/api/translate-summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            clinic_id: clinicId,
-            messages: log.messages || [],
-            patient_lang: log.patient_lang,
-            started_at: log.started_at,
-            ended_at: log.ended_at
-          })
+        // 통역 메시지를 turns 형식으로 변환
+        const turns = (log.messages || []).map(m => ({
+          speaker: m.who, // 'patient' or 'staff'
+          text: m.original,
+          at: new Date(m.timestamp).getTime()
+        }));
+
+        // ConsultEngine.evaluateSession() 호출
+        if (typeof ConsultEngine === 'undefined') {
+          throw new Error('AI 분석 엔진을 로드할 수 없습니다.');
+        }
+
+        const res = await ConsultEngine.evaluateSession({
+          session: { turns, coachResults: [], evaluation: null },
+          patient: null,
+          history: []
         });
-        if (!res.ok) throw new Error('API 오류');
-        const data = await res.json();
-        if (data.summary) {
-          box.innerHTML = `
-            <div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:8px;padding:16px;margin-top:12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div style="font-size:0.8rem;font-weight:700;color:#7c3aed;">🤖 AI 건별 분석</div>
-                <div style="font-size:0.7rem;color:var(--text-secondary);">${escapeHTML(data.model || '')}</div>
-              </div>
-              <div style="font-size:0.85rem;line-height:1.75;color:#1f2937;white-space:pre-wrap;">${escapeHTML(data.summary)}</div>
-            </div>`;
+
+        if (res && res.data) {
+          renderTranslateEvaluation(res.data, box);
         } else {
           box.innerHTML = '<div style="color:var(--danger);font-size:0.875rem;padding:8px 0;">분석 데이터 없음</div>';
         }
       } catch (e) {
+        console.error('[generateSessionSummary] 분석 실패:', e);
         box.innerHTML = `<div style="color:var(--danger);font-size:0.875rem;padding:8px 0;">분석 실패: ${e.message}</div>`;
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 분석'; }
       }
+    }
+
+    // 통역 세션 평가 결과 렌더링 (코치처럼)
+    function renderTranslateEvaluation(data, targetBox) {
+      if (!data) return;
+      const safe = (v) => escapeHTML(String(v == null ? '' : v));
+      const overall = Math.max(0, Math.min(100, data.overall_score || 0));
+      const scores = data.scores || {};
+      const trajectory = data.readiness_trajectory || {};
+
+      const LABELS = {
+        empathy_completion: '공감 완결도', understanding_depth: '이해 깊이',
+        choice_respect: '선택권 존중', value_clarity: '가치 전달', trust_depth: '신뢰 구축'
+      };
+
+      let html = `<div style="margin-top:12px;"><h4 style="font-size:0.88rem;font-weight:800;color:#1f2937;margin-bottom:10px;">🔍 AI 분석 결과</h4>`;
+
+      // 점수
+      html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:#4f46e5;color:#fff;padding:12px;border-radius:6px;text-align:center;">
+          <div style="font-size:1.75rem;font-weight:800;">${overall}</div>
+          <div style="font-size:0.7rem;opacity:0.9;">Overall Score</div>
+        </div>
+        <div style="background:#f3f4f6;padding:12px;border-radius:6px;">
+          <div style="font-size:0.75rem;color:#666;margin-bottom:3px;">준비도</div>
+          <div style="font-size:0.95rem;font-weight:700;">${trajectory.start ?? '-'} → ${trajectory.end ?? '-'}</div>
+        </div>
+      </div>`;
+
+      // 5축 점수 바
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:6px;text-transform:uppercase;">📊 5축 평가</div>`;
+
+      Object.keys(LABELS).forEach(k => {
+        const v = scores[k] || 0;
+        const pct = (v / 20) * 100;
+        html += `<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;margin-bottom:4px;">
+          <span style="width:90px;color:#666;">${LABELS[k]}</span>
+          <div style="flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:#4f46e5;"></div>
+          </div>
+          <span style="width:30px;text-align:right;font-weight:700;color:#4f46e5;">${v}/20</span>
+        </div>`;
+      });
+      html += `</div>`;
+
+      // QLRCQ
+      if (data.qlrcq_cycle_completion != null) {
+        const cycle = Math.max(0, Math.min(100, data.qlrcq_cycle_completion || 0));
+        html += `<div style="background:#f9f5ff;padding:10px 12px;border-radius:6px;margin-bottom:12px;">
+          <div style="font-size:0.75rem;color:#666;margin-bottom:4px;">🧭 QLRCQ 사이클 완주율</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+              <div style="width:${cycle}%;height:100%;background:#7c3aed;"></div>
+            </div>
+            <span style="font-weight:700;color:#7c3aed;">${cycle}%</span>
+          </div>
+        </div>`;
+      }
+
+      // 요약, 강점, 개선
+      if (Array.isArray(data.summary) && data.summary.length) {
+        html += `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:#666;">📝 세션 요약</strong>
+          <ul style="margin:4px 0 0 18px;padding:0;font-size:0.8rem;">${data.summary.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+      if (Array.isArray(data.staff_strengths) && data.staff_strengths.length) {
+        html += `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:#059669;">✅ 잘한 점</strong>
+          <ul style="margin:4px 0 0 18px;padding:0;font-size:0.8rem;">${data.staff_strengths.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+      if (Array.isArray(data.staff_improvements) && data.staff_improvements.length) {
+        html += `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:#d97706;">🔧 개선 기회</strong>
+          <ul style="margin:4px 0 0 18px;padding:0;font-size:0.8rem;">${data.staff_improvements.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+      if (Array.isArray(data.suggested_followup) && data.suggested_followup.length) {
+        html += `<div><strong style="font-size:0.78rem;color:#4f46e5;">🤝 후속 조치</strong>
+          <ul style="margin:4px 0 0 18px;padding:0;font-size:0.8rem;">${data.suggested_followup.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+
+      html += `</div>`;
+      targetBox.innerHTML = html;
     }
 
     function toggleCoachCard(idx) {
