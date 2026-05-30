@@ -150,10 +150,8 @@ function registerClinicInputListeners() {
 
     clinicInput.addEventListener('focus', (e) => {
       console.log('[clinicInput] focus 이벤트');
-      if (e.target.value) {
-        const clinics = filterClinicsList(e.target.value);
-        showClinicDropdown(clinics);
-      }
+      const clinics = filterClinicsList(e.target.value);
+      showClinicDropdown(clinics);
     });
   } else {
     console.warn('[registerClinicInputListeners] clinicName 요소 없음');
