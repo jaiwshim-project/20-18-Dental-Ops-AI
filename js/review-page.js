@@ -40,21 +40,30 @@ async function loadAllSessions() {
     return;
   }
   try {
+    console.log('[review-page] 코치 세션 조회 시작...');
     const coachSessions = await SupabaseDB.getRecentSessions(500);
+    console.log('[review-page] 코치 세션 ' + (coachSessions?.length || 0) + '건 로드됨');
     const coachTagged = coachSessions.map(s => ({ ...s, _type: 'coach' }));
+
+    console.log('[review-page] 통역 세션 조회 시작...');
     const translateSessions = await loadTranslateSessions();
+    console.log('[review-page] 통역 세션 ' + (translateSessions?.length || 0) + '건 로드됨');
+
     allSessions = [...coachTagged, ...translateSessions]
       .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+    console.log('[review-page] 전체 세션 ' + allSessions.length + '건 통합됨');
   } catch (e) {
-    console.warn(e);
+    console.error('[review-page] 세션 조회 에러:', e);
     document.getElementById('reviewTbody').innerHTML = `
       <tr><td colspan="10" class="empty-state" style="color:var(--danger);">조회 실패: ${escapeHTML(e.message)}</td></tr>`;
     return;
   }
+  console.log('[review-page] 필터/렌더링 시작...');
   populateFilters();
   applyFilters();
   renderSummary();
   renderStaffChart();
+  console.log('[review-page] 완료!');
 }
 
 function populateFilters() {
