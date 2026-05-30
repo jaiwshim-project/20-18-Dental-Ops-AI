@@ -275,16 +275,16 @@
 
         <!-- 유형 필터 탭 -->
         <div class="type-tabs">
-          <button id="tabAll" class="type-tab active" onclick="setTypeFilter('all')">전체</button>
-          <button id="tabCoach" class="type-tab" onclick="setTypeFilter('coach')">🧑‍⚕️ 상담AI코치</button>
-          <button id="tabTranslate" class="type-tab" onclick="setTypeFilter('translate')">📞 상담AI통역</button>
+          <button id="tabAll" class="type-tab active">전체</button>
+          <button id="tabCoach" class="type-tab">🧑‍⚕️ 상담AI코치</button>
+          <button id="tabTranslate" class="type-tab">📞 상담AI통역</button>
         </div>
 
         <!-- 필터 바 -->
         <div class="filter-bar">
           <div class="form-group">
             <label>기간</label>
-            <select class="form-input" id="filterRange" onchange="applyFilters()">
+            <select class="form-input" id="filterRange">
               <option value="all">전체</option>
               <option value="today">오늘</option>
               <option value="week" selected>이번 주</option>
@@ -294,19 +294,19 @@
           </div>
           <div class="form-group">
             <label>환자</label>
-            <select class="form-input" id="filterPatient" onchange="applyFilters()">
+            <select class="form-input" id="filterPatient">
               <option value="">전체</option>
             </select>
           </div>
           <div class="form-group">
             <label>상담사</label>
-            <select class="form-input" id="filterAuthor" onchange="applyFilters()">
+            <select class="form-input" id="filterAuthor">
               <option value="">전체</option>
             </select>
           </div>
           <div class="form-group">
             <label>점수</label>
-            <select class="form-input" id="filterScore" onchange="applyFilters()">
+            <select class="form-input" id="filterScore">
               <option value="all">전체</option>
               <option value="high">80점 이상</option>
               <option value="mid">60~79점</option>
@@ -316,9 +316,9 @@
           </div>
           <div class="form-group" style="min-width:160px;">
             <label>🔍 검색 (환자명/발화)</label>
-            <input type="text" class="form-input" id="filterSearch" placeholder="예: 임플란트, 불안" oninput="applyFiltersDebounced()">
+            <input type="text" class="form-input" id="filterSearch" placeholder="예: 임플란트, 불안">
           </div>
-          <button class="btn btn-sm btn-primary" onclick="downloadCSV()">⬇️ CSV</button>
+          <button class="btn btn-sm btn-primary" id="csvBtn">⬇️ CSV</button>
         </div>
 
         <!-- 세션 테이블 -->
@@ -362,7 +362,7 @@
         <h3 id="detailTitle" style="margin:0;">세션 상세</h3>
         <div id="detailMeta" style="font-size:0.78rem; color:var(--text-tertiary); margin-top:3px;"></div>
       </div>
-      <button class="btn btn-sm btn-secondary" onclick="closeDetail()">✕</button>
+      <button class="btn btn-sm btn-secondary" id="closeDetailBtn">✕</button>
     </div>
     <div class="detail-body" id="detailBody"></div>
   </div>
