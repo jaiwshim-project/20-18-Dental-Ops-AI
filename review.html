@@ -216,6 +216,27 @@
       color: var(--text-tertiary);
     }
 
+    /* 타입 필터 탭 */
+    .type-tabs {
+      display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .type-tab {
+      padding: 8px 16px; border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-md); background: var(--surface);
+      color: var(--text-secondary); cursor: pointer; font-size: 0.875rem; font-weight: 600;
+      transition: all var(--duration) var(--ease);
+    }
+    .type-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .type-tab.active { background: var(--primary); color: #FFF; border-color: var(--primary); }
+
+    /* 유형 배지 */
+    .type-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 700;
+    }
+    .type-badge.coach { background: var(--primary-bg); color: var(--primary); }
+    .type-badge.translate { background: #DBEAFE; color: #0284C7; }
+
     @media (max-width: 900px) {
       .detail-panel { width: 100vw; }
       .review-table th:nth-child(n+6),
@@ -229,7 +250,7 @@
       <header class="header">
         <div class="flex items-center gap-12">
           <button class="hamburger" onclick="toggleSidebar()">☰</button>
-          <span class="header-title">📋 상담 리뷰</span>
+          <span class="header-title">📋 상담 리뷰&AI분석</span>
         </div>
         <div class="header-actions">
           <span id="sessionBadge"></span>
@@ -250,6 +271,13 @@
         <div class="staff-chart" id="staffChartCard">
           <h4>🏆 상담사별 성과</h4>
           <div class="staff-bars" id="staffBars"></div>
+        </div>
+
+        <!-- 유형 필터 탭 -->
+        <div class="type-tabs">
+          <button id="tabAll" class="type-tab active" onclick="setTypeFilter('all')">전체</button>
+          <button id="tabCoach" class="type-tab" onclick="setTypeFilter('coach')">🧑‍⚕️ 상담AI코치</button>
+          <button id="tabTranslate" class="type-tab" onclick="setTypeFilter('translate')">📞 상담AI통역</button>
         </div>
 
         <!-- 필터 바 -->
@@ -300,6 +328,7 @@
               <thead>
                 <tr>
                   <th data-sort="startedAt">시작 일시</th>
+                  <th>유형</th>
                   <th data-sort="patientName">환자</th>
                   <th data-sort="author">상담사</th>
                   <th data-sort="durationSec">분</th>
@@ -311,7 +340,7 @@
                 </tr>
               </thead>
               <tbody id="reviewTbody">
-                <tr><td colspan="9" class="empty-state">
+                <tr><td colspan="10" class="empty-state">
                   <div class="spinner" style="margin:0 auto;"></div>
                   <p style="margin-top:10px; font-size:0.85rem;">세션 조회 중…</p>
                 </td></tr>

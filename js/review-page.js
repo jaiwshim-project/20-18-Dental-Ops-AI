@@ -4,6 +4,31 @@ let allSessions = [];       // DB에서 가져온 원본
 let filteredSessions = [];  // 필터/정렬 적용본
 let sortKey = 'startedAt';
 let sortDir = 'desc';
+let typeFilter = 'all';     // 'all' | 'coach' | 'translate'
+let currentDetailSession = null;
+
+async function loadTranslateSessions() {
+  try {
+    const sess = typeof Session !== 'undefined' ? Session.get() : null;
+    const clinic_id = sess?.clinic_id;
+    const url = clinic_id ? `/api/translate-logs?clinic_id=${clinic_id}` : '/api/translate-logs';
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const data = await r.json();
+    return (data.logs || []).map(t => ({
+      ...t,
+      _type: 'translate',
+      patientName: '통역 세션',
+      author: sess?.name || '-',
+      startedAt: t.started_at,
+      endedAt: t.ended_at,
+      durationSec: Math.round((new Date(t.ended_at) - new Date(t.started_at)) / 1000),
+      turns: (t.messages || []).map(m => ({ speaker: m.who, text: m.original, at: new Date(m.timestamp).getTime() })),
+      coachResults: [],
+      evaluation: null,
+    }));
+  } catch (e) { console.warn('통역 세션 로드 실패', e); return []; }
+}
 
 async function loadAllSessions() {
   if (!SupabaseDB || !SupabaseDB.isReady()) {
@@ -11,15 +36,19 @@ async function loadAllSessions() {
   }
   if (!SupabaseDB || !SupabaseDB.isReady()) {
     document.getElementById('reviewTbody').innerHTML = `
-      <tr><td colspan="9" class="empty-state">Supabase 연결 필요</td></tr>`;
+      <tr><td colspan="10" class="empty-state">Supabase 연결 필요</td></tr>`;
     return;
   }
   try {
-    allSessions = await SupabaseDB.getRecentSessions(500);
+    const coachSessions = await SupabaseDB.getRecentSessions(500);
+    const coachTagged = coachSessions.map(s => ({ ...s, _type: 'coach' }));
+    const translateSessions = await loadTranslateSessions();
+    allSessions = [...coachTagged, ...translateSessions]
+      .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
   } catch (e) {
     console.warn(e);
     document.getElementById('reviewTbody').innerHTML = `
-      <tr><td colspan="9" class="empty-state" style="color:var(--danger);">조회 실패: ${escapeHTML(e.message)}</td></tr>`;
+      <tr><td colspan="10" class="empty-state" style="color:var(--danger);">조회 실패: ${escapeHTML(e.message)}</td></tr>`;
     return;
   }
   populateFilters();
@@ -48,6 +77,15 @@ function applyFiltersDebounced() {
   _filterTimer = setTimeout(applyFilters, 200);
 }
 
+function setTypeFilter(t) {
+  typeFilter = t;
+  ['tabAll', 'tabCoach', 'tabTranslate'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('active', (t === 'all' && id === 'tabAll') || (t === 'coach' && id === 'tabCoach') || (t === 'translate' && id === 'tabTranslate'));
+  });
+  applyFilters();
+}
+
 function applyFilters() {
   const range = document.getElementById('filterRange').value;
   const pat   = document.getElementById('filterPatient').value;
@@ -64,6 +102,7 @@ function applyFilters() {
                : 0;
 
   filteredSessions = allSessions.filter(s => {
+    if (typeFilter !== 'all' && s._type !== typeFilter) return false;
     const t = typeof s.startedAt === 'number' ? s.startedAt : new Date(s.startedAt).getTime();
     if (cutoff && (!t || t < cutoff)) return false;
     if (pat  && s.patientName !== pat) return false;
@@ -130,12 +169,14 @@ document.querySelectorAll('#reviewTable th[data-sort]').forEach(th => {
 function renderTable() {
   const tb = document.getElementById('reviewTbody');
   if (!filteredSessions.length) {
-    tb.innerHTML = `<tr><td colspan="9" class="empty-state">조건에 맞는 세션이 없습니다</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="10" class="empty-state">조건에 맞는 세션이 없습니다</td></tr>`;
     return;
   }
   tb.innerHTML = filteredSessions.map((s, i) => {
     const t = typeof s.startedAt === 'number' ? new Date(s.startedAt) : new Date(s.startedAt);
     const dtStr = isNaN(t) ? '-' : t.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const typeIcon = s._type === 'translate' ? '📞 통역' : '🧑‍⚕️ 코치';
+    const typeBadgeClass = s._type === 'translate' ? 'translate' : 'coach';
     const mins = Math.max(1, Math.round((s.durationSec || 0) / 60));
     const sc = s.evaluation?.overall_score;
     const scClass = sc == null ? 'none' : sc >= 80 ? 'high' : sc >= 60 ? 'mid' : 'low';
@@ -149,6 +190,7 @@ function renderTable() {
     return `
       <tr onclick="openDetailByIdx(${i})">
         <td>${escapeHTML(dtStr)}</td>
+        <td><span class="type-badge ${typeBadgeClass}">${typeIcon}</span></td>
         <td><strong>${escapeHTML(s.patientName || '-')}</strong></td>
         <td>${escapeHTML(s.author || '-')}</td>
         <td>${mins}</td>
@@ -224,6 +266,7 @@ function renderStaffChart() {
 function openDetailByIdx(i) {
   const s = filteredSessions[i];
   if (!s) return;
+  currentDetailSession = s;
   renderDetail(s);
   document.getElementById('detailPanel').classList.add('open');
   document.getElementById('detailOverlay').classList.add('open');
@@ -245,6 +288,11 @@ function renderDetail(s) {
   const ev = s.evaluation || {};
 
   let html = '';
+
+  // AI 분석 버튼
+  html += `<div class="detail-section" style="display:flex; gap:8px; margin-bottom:14px;">
+    <button id="runAnalysisBtn" class="btn btn-sm btn-outline" onclick="runAiAnalysis()" style="flex:1; font-size:0.78rem;">🔍 AI 분석 실행</button>
+  </div>`;
 
   // 대화
   if (turns.length) {
@@ -387,6 +435,111 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('[❌ Sidebar load error]', e);
         return false;
       }
+    }
+
+    // AI 분석 실행
+    async function runAiAnalysis() {
+      if (!currentDetailSession) return;
+      const btn = document.getElementById('runAnalysisBtn');
+      const body = document.getElementById('detailBody');
+      if (!btn) return;
+
+      btn.disabled = true;
+      btn.textContent = '분석 중...';
+      const prevHTML = body.innerHTML;
+
+      try {
+        const session = currentDetailSession;
+        const res = await ConsultEngine.evaluateSession({ session, patient: null, history: [] });
+        renderEvaluationInDetail(res.data, res.demo);
+      } catch (e) {
+        console.error('분석 실패', e);
+        showToast('분석 실패: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 다시 분석';
+      }
+    }
+
+    // 상세 패널에서 평가 렌더링 (간단 버전)
+    function renderEvaluationInDetail(data, isDemo) {
+      if (!data) return;
+      const safe = (v) => escapeHTML(String(v == null ? '' : v));
+      const overall = Math.max(0, Math.min(100, data.overall_score || 0));
+      const scores = data.scores || {};
+      const trajectory = data.readiness_trajectory || {};
+
+      const LABELS = {
+        empathy_completion: '공감 완결도', understanding_depth: '이해 깊이',
+        choice_respect: '선택권 존중', value_clarity: '가치 전달', trust_depth: '신뢰 구축'
+      };
+
+      let html = `<div style="margin-top:16px;"><h4 style="font-size:0.88rem; font-weight:800; color:var(--text-primary); margin-bottom:10px;">🔍 AI 분석 결과</h4>`;
+
+      // 점수
+      html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+        <div style="background:var(--primary-bg); padding:12px; border-radius:6px; text-align:center;">
+          <div style="font-size:1.75rem; font-weight:800; color:var(--primary);">${overall}</div>
+          <div style="font-size:0.7rem; color:var(--text-tertiary);">Overall Score</div>
+        </div>
+        <div style="background:var(--gray-50); padding:12px; border-radius:6px;">
+          <div style="font-size:0.75rem; color:var(--text-tertiary); margin-bottom:3px;">준비도</div>
+          <div style="font-size:0.95rem; font-weight:700;">${trajectory.start ?? '-'} → ${trajectory.end ?? '-'}</div>
+          ${trajectory.note ? `<div style="font-size:0.7rem; color:var(--text-secondary); margin-top:2px;">${safe(trajectory.note)}</div>` : ''}
+        </div>
+      </div>`;
+
+      // 5축 점수
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:0.75rem; font-weight:700; color:var(--text-tertiary); margin-bottom:6px; text-transform:uppercase;">📊 5축 평가</div>`;
+
+      Object.keys(LABELS).forEach(k => {
+        const v = scores[k] || 0;
+        const pct = (v / 20) * 100;
+        html += `<div style="display:flex; align-items:center; gap:8px; font-size:0.8rem; margin-bottom:4px;">
+          <span style="width:90px; color:var(--text-secondary);">${LABELS[k]}</span>
+          <div style="flex:1; height:6px; background:var(--gray-200); border-radius:3px; overflow:hidden;">
+            <div style="width:${pct}%; height:100%; background:var(--primary);"></div>
+          </div>
+          <span style="width:30px; text-align:right; font-weight:700; color:var(--primary);">${v}/20</span>
+        </div>`;
+      });
+      html += `</div>`;
+
+      // QLRCQ
+      if (data.qlrcq_cycle_completion != null) {
+        const cycle = Math.max(0, Math.min(100, data.qlrcq_cycle_completion || 0));
+        html += `<div style="background:var(--gray-50); padding:10px 12px; border-radius:6px; margin-bottom:12px;">
+          <div style="font-size:0.75rem; color:var(--text-tertiary); margin-bottom:4px;">🧭 QLRCQ 사이클 완주율</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="flex:1; height:8px; background:var(--gray-200); border-radius:4px; overflow:hidden;">
+              <div style="width:${cycle}%; height:100%; background:var(--accent);"></div>
+            </div>
+            <span style="font-weight:700; color:var(--accent);">${cycle}%</span>
+          </div>
+        </div>`;
+      }
+
+      // 요약, 강점, 개선
+      if (Array.isArray(data.summary) && data.summary.length) {
+        html += `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem; color:var(--text-secondary);">📝 세션 요약</strong>
+          <ul style="margin:4px 0 0 18px; padding:0; font-size:0.8rem;">${data.summary.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+      if (Array.isArray(data.staff_strengths) && data.staff_strengths.length) {
+        html += `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem; color:var(--success-text);">✅ 잘한 점</strong>
+          <ul style="margin:4px 0 0 18px; padding:0; font-size:0.8rem;">${data.staff_strengths.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+      if (Array.isArray(data.staff_improvements) && data.staff_improvements.length) {
+        html += `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem; color:var(--warning-text);">🔧 개선 기회</strong>
+          <ul style="margin:4px 0 0 18px; padding:0; font-size:0.8rem;">${data.staff_improvements.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+      if (Array.isArray(data.suggested_followup) && data.suggested_followup.length) {
+        html += `<div><strong style="font-size:0.78rem; color:var(--primary);">🤝 후속 조치</strong>
+          <ul style="margin:4px 0 0 18px; padding:0; font-size:0.8rem;">${data.suggested_followup.map(s => `<li>${safe(s)}</li>`).join('')}</ul></div>`;
+      }
+
+      html += `</div>`;
+      document.getElementById('detailBody').insertAdjacentHTML('beforeend', html);
     }
     
     if (attempts < maxAttempts) {

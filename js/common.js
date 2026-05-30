@@ -707,7 +707,7 @@ function renderSidebar(activePage) {
         <span class="nav-item-icon">💬</span> 상담AI코치
       </a>
       <a href="review.html" class="nav-item ${activePage === 'review' ? 'active' : ''}">
-        <span class="nav-item-icon">📋</span> 상담 리뷰
+        <span class="nav-item-icon">📋</span> 상담 리뷰&AI분석
       </a>
       <a href="consult_review_wide.html" class="nav-item nav-subitem ${activePage === 'review-wide' ? 'active' : ''}">
         <span class="nav-item-icon">📑</span> · Wide
