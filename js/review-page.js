@@ -452,15 +452,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
       btn.disabled = true;
       btn.textContent = '분석 중...';
-      const prevHTML = body.innerHTML;
 
       try {
         const session = currentDetailSession;
-        const res = await ConsultEngine.evaluateSession({ session, patient: null, history: [] });
+        console.log('[review-page] 분석 시작. 세션 타입:', session._type);
+
+        // 통역 세션인 경우 turns 데이터 검증
+        if (session._type === 'translate' && (!session.turns || session.turns.length === 0)) {
+          console.warn('[review-page] 통역 세션의 turns 없음, messages에서 변환 시도');
+          // messages가 있으면 turns로 변환
+          if (session.messages && Array.isArray(session.messages)) {
+            session.turns = session.messages.map(m => ({
+              speaker: m.who,
+              text: m.original,
+              at: new Date(m.timestamp).getTime()
+            }));
+            console.log('[review-page] turns 변환 완료:', session.turns.length, '개');
+          }
+        }
+
+        if (!session.turns || session.turns.length === 0) {
+          throw new Error('분석할 대화 기록이 없습니다');
+        }
+
+        const res = await ConsultEngine.evaluateSession({
+          session: {
+            turns: session.turns,
+            coachResults: session.coachResults || [],
+            evaluation: session.evaluation || null
+          },
+          patient: null,
+          history: []
+        });
+
+        console.log('[review-page] 분석 완료:', res.data?.overall_score);
         renderEvaluationInDetail(res.data, res.demo);
       } catch (e) {
-        console.error('분석 실패', e);
+        console.error('[review-page] 분석 실패:', e);
         showToast('분석 실패: ' + e.message, 'error');
+        const evalArea = document.getElementById('evaluationArea');
+        if (evalArea) {
+          evalArea.innerHTML = `<div style="color:var(--danger); font-size:0.875rem; padding:12px; background:#fee2e2; border-radius:6px;">
+            분석 실패: ${escapeHTML(e.message)}
+          </div>`;
+        }
       } finally {
         btn.disabled = false;
         btn.textContent = '🔍 다시 분석';
