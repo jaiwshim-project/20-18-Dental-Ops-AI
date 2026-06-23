@@ -46,7 +46,7 @@ function updateSessionUI() {
     badge.appendChild(out);
     el.appendChild(badge);
   } else {
-    el.innerHTML = `<button class="btn btn-sm btn-primary" onclick="openModal('loginModal')">로그인</button>`;
+    el.innerHTML = `<span style="padding:6px 12px; background:var(--success-bg, #ecfdf5); color:var(--success-text, #065f46); border-radius:var(--radius-full, 9999px); font-size:0.8125rem; font-weight:600;">자유 접속 중</span>`;
   }
 }
 document.addEventListener('DOMContentLoaded', updateSessionUI);

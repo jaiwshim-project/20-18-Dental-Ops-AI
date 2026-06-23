@@ -1,26 +1,6 @@
-function gateSessionOrRedirect() {
-  const path = window.location.pathname.split('/').pop() || 'index.html';
-  const isPublic = PUBLIC_PAGES.includes(path);
-  if (!isPublic && !Session.isLoggedIn()) {
-    window.location.href = 'index.html?redirect=' + encodeURIComponent(path);
-  }
-}
+// 모든 페이지 자유 접속 (로그인 불필요)
+function gateSessionOrRedirect() {}
 document.addEventListener('DOMContentLoaded', gateSessionOrRedirect);
-
-// redirect 파라미터로 복귀한 경우, 사이드바 주입 후 로그인 모달 자동 오픈
-document.addEventListener('DOMContentLoaded', () => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('redirect') && !Session.isLoggedIn()) {
-    setTimeout(() => {
-      openModal('loginModal');
-      const badge = document.getElementById('sessionBadge');
-      if (badge) {
-        badge.insertAdjacentHTML('beforebegin',
-          '<span style="padding:4px 10px; background:var(--warning-bg); color:var(--warning-text); border-radius:var(--radius-full); font-size:0.75rem; font-weight:600; margin-right:8px;">🔐 로그인이 필요합니다</span>');
-      }
-    }, 400);
-  }
-});
 
 // ============================================================
 // 주: 이전 매직링크 로그인(demoLogin) 제거됨 → submitClinicLogin 사용
